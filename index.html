@@ -211,21 +211,24 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   </div>
   
   <div class="card" id="cardAuditBarang">
-  <h3>📋 Audit Stok Massal (Stock Opname)</h3>
-  <p style="font-size:12px;color:#64748b;margin-top:0">Isi kolom "Fisik" hanya untuk barang yang sedang dihitung. Kosongkan jika tidak diaudit.</p>
-  <input id="cariAudit" placeholder="🔍 Scan barcode atau cari nama produk..." oninput="renderAuditMassal()" style="margin-bottom:10px">
+  <h3>📋 Audit Stok Global (Produk, Part, Baterai)</h3>
+  <p style="font-size:12px;color:#64748b;margin-top:0">Ketik stok fisik di kolom kanan. Kosongkan jika tidak dihitung.</p>
   
-  <div id="listAuditMassal" style="max-height: 400px; overflow-y: auto; margin-bottom:10px; border:1px solid #e2e8f0; border-radius:8px;"></div>
+  <input id="cariAudit" placeholder="🔍 Cari nama barang..." oninput="renderAuditGlobal()" style="margin-bottom:10px">
   
-  <div class="row">
-    <div>
-      <label>Catatan Audit Massal (Opsional)</label>
-      <input id="auditCatatanMassal" placeholder="Contoh: Stock opname akhir bulan" style="margin-bottom:10px">
-    </div>
-  </div>
-  <button class="btn warn" onclick="simpanAuditMassal()">💾 Simpan Semua Audit</button>
+  <div id="listAuditGlobal" style="max-height: 500px; overflow-y: auto; border:1px solid #e2e8f0; border-radius:8px; margin-bottom:10px;"></div>
+  
+  <label>Catatan Audit (Wajib diisi)</label>
+  <input id="auditCatatanMassal" placeholder="Contoh: Opname akhir bulan" style="margin-bottom:10px">
+  
+  <button class="btn warn" onclick="simpanAuditGlobal()">💾 Simpan Semua Audit</button>
   
   <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
+  <div style="display:flex; gap:5px; margin-bottom:10px;">
+    <button class="btn-sm ghost" onclick="filterAudit('')">Semua</button>
+    <button class="btn-sm ghost" onclick="filterAudit('kasir')">Oleh Kasir</button>
+    <button class="btn-sm ghost" onclick="filterAudit('admin')">Oleh Admin</button>
+  </div>
   <h3>Riwayat Audit Terakhir</h3>
   <div id="listAuditBarang"></div>
 </div>
