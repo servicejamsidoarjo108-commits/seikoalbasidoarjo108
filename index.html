@@ -556,113 +556,6 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-// === FITUR AUDIT BARANG MASSAL ===
-let tempAuditData = {}; // Menyimpan inputan sementara
-
-function renderAuditMassal() {
-  const el = document.getElementById('listAuditMassal');
-  if(!el) return;
-  
-  const q = (document.getElementById('cariAudit').value || '').toLowerCase().trim();
-  const filtered = db.produk.filter(p => !q || p.nama.toLowerCase().includes(q) || (p.merek||'').toLowerCase().includes(q) || (p.barcode||'').includes(q));
-
-  if(filtered.length === 0) {
-    el.innerHTML = '<div class="empty" style="padding:10px">Produk tidak ditemukan</div>';
-    return;
-  }
-
-  let html = `<table style="margin:0;"><thead style="position:sticky;top:0;z-index:1"><tr><th>Produk</th><th>Sistem</th><th>Fisik</th><th>Selisih</th></tr></thead><tbody>`;
-  
-  filtered.forEach(p => {
-    // Cek apakah sudah ada inputan sementara untuk produk ini
-    const valFisik = tempAuditData[p.id] !== undefined ? tempAuditData[p.id] : '';
-    const selisih = valFisik !== '' ? (+valFisik - p.stok) : '';
-    
-    let selisihHTML = '-';
-    if(selisih !== '') {
-      if(selisih > 0) selisihHTML = `<span style="color:#16a34a;font-weight:bold;">+${selisih}</span>`;
-      else if(selisih < 0) selisihHTML = `<span style="color:#dc2626;font-weight:bold;">${selisih}</span>`;
-      else selisihHTML = `<span style="color:#64748b;">0</span>`;
-    }
-
-    html += `<tr>
-      <td><strong>${esc(p.nama)}</strong><br><small style="color:#64748b">${esc(p.barcode||'-')}</small></td>
-      <td style="text-align:center">${p.stok}</td>
-      <td><input type="number" id="auditFisik_${p.id}" value="${valFisik}" placeholder="-" oninput="updateAuditMassal('${p.id}', this.value)" style="width:60px;padding:4px;text-align:center"></td>
-      <td style="text-align:center">${selisihHTML}</td>
-    </tr>`;
-  });
-  
-  html += `</tbody></table>`;
-  el.innerHTML = html;
-}
-
-function updateAuditMassal(id, val) {
-  if (val === '') {
-    delete tempAuditData[id];
-  } else {
-    tempAuditData[id] = val;
-  }
-  // Hanya update kolom selisih tanpa render ulang seluruh tabel agar input tidak kehilangan fokus
-  const p = db.produk.find(x => x.id == id);
-  const selisih = +val - p.stok;
-  const tr = document.getElementById('auditFisik_' + id).closest('tr');
-  const tdSelisih = tr.cells[3];
-  
-  if(selisih > 0) tdSelisih.innerHTML = `<span style="color:#16a34a;font-weight:bold;">+${selisih}</span>`;
-  else if(selisih < 0) tdSelisih.innerHTML = `<span style="color:#dc2626;font-weight:bold;">${selisih}</span>`;
-  else tdSelisih.innerHTML = `<span style="color:#64748b;">0</span>`;
-}
-
-function simpanAuditMassal() {
-  const catatanMassal = document.getElementById('auditCatatanMassal').value.trim() || 'Audit Massal';
-  const keys = Object.keys(tempAuditData);
-  
-  if(keys.length === 0) return flash('Belum ada stok fisik yang diisi', 'err');
-  
-  let berhasil = 0;
-  let itemBerubah = 0;
-  
-  keys.forEach(id => {
-    const p = db.produk.find(x => x.id == id);
-    if(p) {
-      const fisik = +tempAuditData[id];
-      const sistem = p.stok;
-      const selisih = fisik - sistem;
-      
-      if(selisih !== 0) {
-        itemBerubah++;
-        p.stok = fisik;
-        
-        // Catat riwayat audit per item
-        db.auditBarang.unshift({
-          id: 'AUD' + Date.now() + Math.random().toString(36).slice(2,4),
-          waktu: nowISO(),
-          produkId: p.id,
-          namaProduk: p.nama,
-          stokSistem: sistem,
-          stokFisik: fisik,
-          selisih: selisih,
-          catatan: catatanMassal,
-          user: sessionStorage.getItem('ta_user') || 'admin'
-        });
-      }
-      berhasil++;
-    }
-  });
-
-  save('ta_produk', db.produk);
-  save('ta_audit_barang', db.auditBarang);
-  catatLog('AUDIT_MASSAL', `Audit massal: ${berhasil} item dicek, ${itemBerubah} item disesuaikan.`);
-  
-  flash(`Audit selesai. ${itemBerubah} produk disesuaikan stoknya.`, 'ok');
-  
-  tempAuditData = {}; // Bersihkan memori sementara
-  document.getElementById('auditCatatanMassal').value = '';
-  document.getElementById('cariAudit').value = '';
-  renderAuditMassal();
-  render(); // Update daftar produk utama
-}
 function simpanKasKecilKasir() {
   const jenis = document.getElementById('kkJenis').value;
   const nominal = +document.getElementById('kkNominal').value || 0;
@@ -1224,8 +1117,25 @@ function showCustomerHistory(nama, telp) {
 }
 
 function render(){
-  if(document.getElementById('listAuditMassal')) renderAuditMassal();
-  // Render Riwayat Kas Kecil di Menu Kasir
+  const elListAudit = document.getElementById('listAuditBarang');
+if(elListAudit && db.auditBarang) {
+  let listAudit = db.auditBarang;
+  if(filterAuditUser === 'admin') listAudit = listAudit.filter(a => a.user === 'admin');
+  else if(filterAuditUser === 'kasir') listAudit = listAudit.filter(a => a.user !== 'admin');
+  
+  elListAudit.innerHTML = listAudit.slice(0, 15).map(a => `
+    <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px 0;">
+      <div style="display:flex; justify-content:space-between;">
+        <b>${new Date(a.waktu).toLocaleDateString('id-ID')}</b>
+        <span class="badge ${a.user === 'admin' ? 'danger' : 'proses'}">${a.user.toUpperCase()}</span>
+      </div>
+      ${esc(a.tipe ? a.tipe.toUpperCase() : 'ITEM')} - ${esc(a.namaProduk)}<br>
+      Sistem: ${a.stokSistem} | Fisik: ${a.stokFisik} | 
+      <span style="color:${a.selisih < 0 ? '#dc2626' : '#16a34a'};font-weight:bold;">Selisih: ${a.selisih}</span><br>
+      <small>Ket: ${esc(a.catatan)}</small>
+    </div>
+  `).join('') || '<div class="empty">Belum ada riwayat audit.</div>';
+}  // Render Riwayat Kas Kecil di Menu Kasir
 const elKasKecilKasir = document.getElementById('listKasKecilKasir');
 if(elKasKecilKasir) {
   const today = new Date().toDateString();
@@ -1242,6 +1152,117 @@ if(elKasKecilKasir) {
         </tr>`;
       }).join('') + `</tbody></table>`
     : '<div class="empty">Belum ada catatan kas kecil hari ini.</div>';
+}
+  // === FITUR AUDIT GLOBAL ===
+function renderAuditGlobal() {
+  const el = document.getElementById('listAuditGlobal');
+  if(!el) return;
+  
+  const q = (document.getElementById('cariAudit').value || '').toLowerCase().trim();
+  
+  let allItems = [];
+  db.produk.forEach(p => allItems.push({ tipe: 'produk', id: p.id, nama: p.nama, sistem: p.stok }));
+  db.sparePart.forEach(s => allItems.push({ tipe: 'sparepart', id: s.id, nama: s.nama, sistem: s.stok }));
+  db.stokBaterai.forEach(b => allItems.push({ tipe: 'baterai', id: b.id, nama: b.tipe, sistem: b.stok }));
+
+  const filtered = allItems.filter(x => !q || x.nama.toLowerCase().includes(q));
+
+  if(filtered.length === 0) {
+    el.innerHTML = '<div class="empty" style="padding:20px">Barang tidak ditemukan</div>';
+    return;
+  }
+
+  let html = `<table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:#f8fafc"><tr><th>Tipe</th><th>Nama Barang</th><th>Stok Sistem</th><th style="width:80px">Fisik</th></tr></thead><tbody>`;
+  
+  filtered.forEach(item => {
+    const key = `${item.tipe}_${item.id}`;
+    const valFisik = tempAuditData[key] !== undefined ? tempAuditData[key] : '';
+    
+    let badge = '';
+    if(item.tipe === 'produk') badge = '<span class="badge proses" style="font-size:9px">JAM</span>';
+    if(item.tipe === 'sparepart') badge = '<span class="badge warn" style="font-size:9px">PART</span>';
+    if(item.tipe === 'baterai') badge = '<span class="badge ok" style="font-size:9px">BAT</span>';
+
+    html += `<tr>
+      <td>${badge}</td>
+      <td><strong>${esc(item.nama)}</strong></td>
+      <td style="text-align:center; font-weight:bold;">${item.sistem}</td>
+      <td><input type="number" id="auditFisik_${key}" value="${valFisik}" placeholder="-" oninput="updateAuditGlobal('${key}', this.value)" style="width:100%;padding:6px;text-align:center;font-weight:bold;border:1px solid #cbd5e1;border-radius:4px;"></td>
+    </tr>`;
+  });
+  
+  html += `</tbody></table>`;
+  el.innerHTML = html;
+}
+
+function updateAuditGlobal(key, val) {
+  if (val === '') delete tempAuditData[key];
+  else tempAuditData[key] = +val;
+}
+
+function simpanAuditGlobal() {
+  const catatan = document.getElementById('auditCatatanMassal').value.trim();
+  if(!catatan) return flash('Catatan audit wajib diisi', 'err');
+  
+  const keys = Object.keys(tempAuditData);
+  if(keys.length === 0) return flash('Belum ada stok fisik yang diisi', 'err');
+  
+  let itemBerubah = 0;
+  
+  keys.forEach(key => {
+    const parts = key.split('_');
+    const tipe = parts[0];
+    const id = parts[1];
+    const fisik = tempAuditData[key];
+    
+    let item = null;
+    let sistem = 0;
+    
+    if(tipe === 'produk') { item = db.produk.find(x => x.id == id); sistem = item ? item.stok : 0; }
+    else if(tipe === 'sparepart') { item = db.sparePart.find(x => x.id === id); sistem = item ? item.stok : 0; }
+    else if(tipe === 'baterai') { item = db.stokBaterai.find(x => x.id === id); sistem = item ? item.stok : 0; }
+    
+    if(item) {
+      const selisih = fisik - sistem;
+      if(selisih !== 0) {
+        itemBerubah++;
+        item.stok = fisik;
+        item.updated = nowISO();
+        
+        if(!db.auditBarang) db.auditBarang = [];
+        db.auditBarang.unshift({
+          id: 'AUD' + Date.now() + Math.random().toString(36).slice(2,4),
+          waktu: nowISO(),
+          tipe: tipe,
+          namaProduk: item.nama || item.tipe,
+          stokSistem: sistem,
+          stokFisik: fisik,
+          selisih: selisih,
+          catatan: catatan,
+          user: sessionStorage.getItem('ta_user') || 'admin'
+        });
+      }
+    }
+  });
+
+  save('ta_produk', db.produk);
+  save('ta_sparepart', db.sparePart);
+  save('ta_stokbaterai', db.stokBaterai);
+  save('ta_audit_barang', db.auditBarang);
+  
+  catatLog('AUDIT_GLOBAL', `Audit global: ${itemBerubah} item disesuaikan.`);
+  flash(`Audit selesai. ${itemBerubah} barang disesuaikan stoknya.`, 'ok');
+  
+  tempAuditData = {};
+  document.getElementById('auditCatatanMassal').value = '';
+  document.getElementById('cariAudit').value = '';
+  renderAuditGlobal();
+  render();
+}
+
+function filterAudit(user) {
+  filterAuditUser = user;
+  render();
 }
   if(document.getElementById('rsItem')) updateRsItem();
   document.querySelectorAll('nav button').forEach(b => { const adminOnly = ['setting', 'supplier', 'pembelian']; if(adminOnly.includes(b.dataset.tab)) b.style.display = isAdmin() ? '' : 'none'; });
