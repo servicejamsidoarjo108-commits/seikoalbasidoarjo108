@@ -1220,6 +1220,7 @@ function showCustomerHistory(nama, telp) {
 }
 
 function render(){
+  if(document.getElementById('listAuditMassal')) renderAuditMassal();
   // Render Riwayat Kas Kecil di Menu Kasir
 const elKasKecilKasir = document.getElementById('listKasKecilKasir');
 if(elKasKecilKasir) {
