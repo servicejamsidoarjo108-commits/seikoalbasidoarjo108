@@ -366,16 +366,6 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <button class="btn" onclick="simpanKasManual()">Simpan Kas</button>
   </div>
 
-  <div class="card" id="cardKasKecil">
-    <h3>Catat Kas Kecil (Kasir)</h3>
-    <div class="row">
-      <div><label>Jenis</label><select id="kkJenis"><option value="masuk">Masuk (Pendapatan Jasa)</option><option value="keluar">Keluar (Pengeluaran)</option></select></div>
-      <div><label>Nominal (Maks. Rp500.000)</label><input type="number" id="kkNominal" placeholder="0" max="500000"></div>
-    </div>
-    <label>Keterangan</label><input id="kkKet" placeholder="Contoh: Jasa potong rantai, beli galon" style="margin-bottom:10px">
-    <button class="btn ok" onclick="simpanKasKecilKasir()">Simpan Kas Kecil</button>
-  </div>
-
   <div class="card"><h3>Riwayat Kas</h3>
     <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
       <button class="btn-sm ghost" onclick="filterKas('')">Semua</button>
