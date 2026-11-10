@@ -608,9 +608,11 @@ function simpanKasKecilKasir() {
   const ket = document.getElementById('kkKet').value.trim();
   if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
   if (!ket) return flash('Keterangan wajib diisi', 'err');
+  
   catatKas({ jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' });
   catatLog('KAS_KECIL', `${jenis} - ${ket} - Rp${nominal}`);
   flash('Kas kecil dicatat');
+  
   ['kkNominal','kkKet'].forEach(x => document.getElementById(x).value = '');
   render();
 }
