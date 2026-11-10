@@ -211,37 +211,25 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   </div>
   
   <div class="card" id="cardAuditBarang">
-    <h3>📋 Audit Stok (Stock Opname)</h3>
-    <p style="font-size:12px;color:#64748b;margin-top:0">Gunakan menu ini untuk mencocokkan stok fisik dengan sistem.</p>
-    <div class="row">
-      <div>
-        <label>Pilih Produk</label>
-        <select id="auditProdukId" onchange="pilihProdukAudit()"></select>
-      </div>
-      <div>
-        <label>Stok di Sistem</label>
-        <input type="number" id="auditStokSistem" readonly style="background:#f1f5f9">
-      </div>
+  <h3>📋 Audit Stok Massal (Stock Opname)</h3>
+  <p style="font-size:12px;color:#64748b;margin-top:0">Isi kolom "Fisik" hanya untuk barang yang sedang dihitung. Kosongkan jika tidak diaudit.</p>
+  <input id="cariAudit" placeholder="🔍 Scan barcode atau cari nama produk..." oninput="renderAuditMassal()" style="margin-bottom:10px">
+  
+  <div id="listAuditMassal" style="max-height: 400px; overflow-y: auto; margin-bottom:10px; border:1px solid #e2e8f0; border-radius:8px;"></div>
+  
+  <div class="row">
+    <div>
+      <label>Catatan Audit Massal (Opsional)</label>
+      <input id="auditCatatanMassal" placeholder="Contoh: Stock opname akhir bulan" style="margin-bottom:10px">
     </div>
-    <div class="row">
-      <div>
-        <label>Stok Fisik Sebenarnya *</label>
-        <input type="number" id="auditStokFisik" placeholder="Hitung manual..." oninput="hitungSelisihAudit()">
-      </div>
-      <div>
-        <label>Selisih</label>
-        <input type="text" id="auditSelisih" readonly style="font-weight:bold;background:#f1f5f9">
-      </div>
-    </div>
-    <label>Catatan Audit (Alasan selisih)</label>
-    <input id="auditCatatan" placeholder="Contoh: Barang rusak, hilang, atau salah input" style="margin-bottom:10px">
-    <button class="btn warn" onclick="simpanAuditBarang()">💾 Simpan & Sesuaikan Stok</button>
-    
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
-    <h3>Riwayat Audit Terakhir</h3>
-    <div id="listAuditBarang"></div>
   </div>
-
+  <button class="btn warn" onclick="simpanAuditMassal()">💾 Simpan Semua Audit</button>
+  
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
+  <h3>Riwayat Audit Terakhir</h3>
+  <div id="listAuditBarang"></div>
+</div>
+  
   <div class="card"><h3>Daftar Produk</h3><input id="cariProduk" placeholder="Cari nama/merek/barcode..." oninput="render()" style="margin-bottom:10px"><div id="listProduk"></div></div>
   
   <div class="card" id="cardRestockLain">
