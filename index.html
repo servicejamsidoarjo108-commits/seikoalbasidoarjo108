@@ -152,9 +152,8 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <div class="row"><div><label>Bayar (Rp)</label><input type="number" id="bayar" placeholder="0"></div><div></div></div>
     <button class="btn ok" onclick="prosesBayar()">Proses & Cetak Struk</button>
   </div>
-    <div class="card"><h3>Transaksi Hari Ini</h3><table><thead><tr><th>Jam</th><th>Item</th><th>Total</th><th></th></tr></thead><tbody id="tblJualHariIni"></tbody></table></div>
 
-  <!-- FORM KAS KECIL UNTUK KASIR -->
+  <!-- FORM KAS KECIL DI HALAMAN KASIR -->
   <div class="card" id="cardKasKecilKasir">
     <h3>📝 Catat Kas Kecil (Maks. Rp500.000)</h3>
     <p style="font-size:12px;color:#64748b;margin-top:0">Untuk mencatat uang masuk (jasa potong rantai, dll) atau uang keluar (beli galon, dll).</p>
@@ -165,8 +164,16 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <label>Keterangan</label><input id="kkKet" placeholder="Contoh: Jasa potong rantai, beli air galon" style="margin-bottom:10px">
     <button class="btn ok" onclick="simpanKasKecilKasir()">💾 Simpan Kas Kecil</button>
   </div>
-</section>
 
+  <!-- RIWAYAT KAS KECIL KASIR -->
+  <div class="card" id="cardRiwayatKasKecil">
+    <h3>Riwayat Kas Kecil Hari Ini</h3>
+    <div id="listKasKecilKasir"></div>
+  </div>
+
+  <div class="card"><h3>Transaksi Hari Ini</h3><table><thead><tr><th>Jam</th><th>Item</th><th>Total</th><th></th></tr></thead><tbody id="tblJualHariIni"></tbody></table></div>
+</section>
+  
 <section id="produk">
   <div class="card" id="cardFormProduk">
     <h3>Tambah Produk / Restock Stok</h3>
