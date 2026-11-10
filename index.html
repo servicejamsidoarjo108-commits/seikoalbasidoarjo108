@@ -1182,6 +1182,24 @@ function showCustomerHistory(nama, telp) {
 }
 
 function render(){
+  // Render Riwayat Kas Kecil di Menu Kasir
+const elKasKecilKasir = document.getElementById('listKasKecilKasir');
+if(elKasKecilKasir) {
+  const today = new Date().toDateString();
+  const listKK = db.kas.filter(k => k.sumber === 'kas_kecil' && new Date(k.waktu).toDateString() === today).slice(0, 10);
+  elKasKecilKasir.innerHTML = listKK.length 
+    ? `<table><thead><tr><th>Jam</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>` +
+      listKK.map(k => {
+        const warna = k.jenis === 'masuk' ? '#16a34a' : '#dc2626';
+        const ikon = k.jenis === 'masuk' ? '📥' : '📤';
+        return `<tr>
+          <td>${new Date(k.waktu).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</td>
+          <td>${esc(k.keterangan)}</td>
+          <td style="color:${warna};font-weight:bold;">${ikon} ${rp(k.nominal)}</td>
+        </tr>`;
+      }).join('') + `</tbody></table>`
+    : '<div class="empty">Belum ada catatan kas kecil hari ini.</div>';
+}
   if(document.getElementById('rsItem')) updateRsItem();
   document.querySelectorAll('nav button').forEach(b => { const adminOnly = ['setting', 'supplier', 'pembelian']; if(adminOnly.includes(b.dataset.tab)) b.style.display = isAdmin() ? '' : 'none'; });
   
