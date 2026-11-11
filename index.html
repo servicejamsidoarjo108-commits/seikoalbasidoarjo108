@@ -880,14 +880,15 @@ async function login(){
     const found = getUsers().find(u => u.user === user && u.pin === pass);
     
     if(found){
-      // Simpan sesi login terlebih dahulu
+      // Simpan sesi sementara
       sessionStorage.setItem('ta_logged', '1'); 
       sessionStorage.setItem('ta_user', found.user); 
       sessionStorage.setItem('ta_role', found.user === 'admin' ? 'admin' : found.role);
       
-      // [FITUR BARU] Tawarkan tarik data dari Cloud
+      // [FITUR BARU] Peringatan Sinkronisasi Data
       if (supabaseClient) {
-        const mauTarik = confirm(`Login sebagai ${found.user.toUpperCase()}.\n\nApakah Anda ingin memuat data terbaru dari Cloud (Supabase)?\n\n- Klik OK: Ambil data dari Cloud\n- Klik Cancel: Gunakan data lokal di perangkat ini`);
+        // PERINGATAN PERTAMA
+        const mauTarik = confirm(`⚠️ PERINGATAN SINKRONISASI ⚠️\n\nLogin sebagai: ${found.user.toUpperCase()}\n\nUntuk MENCEGAH DATA HILANG/TERTIMPA (terutama jika toko menggunakan lebih dari 1 HP), Anda WAJIB menarik data terbaru dari Cloud.\n\n👉 Klik [OK] = Tarik Data Terbaru (Sangat Disarankan)\n👉 Klik [CANCEL] = Gunakan Data Lokal (Hanya jika benar-benar OFFLINE)`);
         
         if (mauTarik) {
           const btn = document.querySelector('#loginOverlay button');
@@ -904,18 +905,29 @@ async function login(){
             });
             
             alert('Data dari Cloud berhasil dimuat! Aplikasi akan dimuat ulang.');
-            location.reload(); // Reload agar semua data dan tampilan benar-benar segar
-            return; // Hentikan proses login di sini karena halaman akan di-reload
+            location.reload(); 
+            return; 
           } catch (e) {
             console.error(e);
-            alert('Gagal mengambil data Cloud. Melanjutkan dengan data lokal.');
+            alert('Gagal mengambil data Cloud (Cek internet). Melanjutkan dengan data lokal.');
             btn.textContent = oriText;
             btn.disabled = false;
+          }
+        } else {
+          // PERINGATAN KEDUA (Jika kasir nekat klik Cancel)
+          const yakinLokal = confirm(`🚨 PERINGATAN KERAS 🚨\n\nAnda memilih menggunakan DATA LOKAL (Offline).\n\nJika HP ini terhubung ke internet, atau ada kasir lain yang bertransaksi di HP berbeda, DATA ANDA AKAN TERTIMPA dan HILANG dari Cloud.\n\nApakah Anda 100% YAKIN HP ini sedang tidak ada internet?`);
+          
+          if (!yakinLokal) {
+            // Jika menyesal, batalkan login dan kembalikan ke layar awal
+            sessionStorage.clear();
+            document.getElementById('pinInput').value = '';
+            document.getElementById('loginErr').textContent = 'Login dibatalkan. Silakan tarik data dari Cloud.';
+            return; 
           }
         }
       }
 
-      // Lanjut Masuk ke Aplikasi (Jika memilih Cancel atau gagal tarik data)
+      // Lanjut Masuk ke Aplikasi
       document.getElementById('loginOverlay').classList.add('hidden'); 
       applyRoleUI(); 
       catatLog('LOGIN', 'User berhasil masuk');
