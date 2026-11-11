@@ -1346,15 +1346,17 @@ function setGaransiServis(s){
 // [FIX] Nota hasil klaim tidak bisa klaim lagi
 function bisaKlaimGaransi(s){
   if(!s) return false; 
-  if(s.isKlaim) return false; 
+  if(s.isKlaim) return false; // Nota hasil klaim tidak bisa klaim lagi
   if(!s.tglGaransiServisSampai) return false; 
-  if(!['selesai','diambil'].includes(s.status)) return false;
+  
+  // [FIX] Status HARUS 'diambil'. Jika masih 'selesai', tombol klaim tidak muncul.
+  if(s.status !== 'diambil') return false; 
+  
   const end = new Date(s.tglGaransiServisSampai + 'T23:59:59'); 
   if(new Date() > end) return false; 
   if((s.klaimCount || 0) >= 2) return false; 
   return true;
 }
-
 function mulaiKlaimGaransi(id){
   const s = db.servis.find(x => x.id === id); if(!s) return; 
   if(!bisaKlaimGaransi(s)){ 
