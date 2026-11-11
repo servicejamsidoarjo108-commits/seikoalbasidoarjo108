@@ -1822,7 +1822,7 @@ const totalOmzet = omzetBulan + omzetServis + omzetBat;
 
 // Hitung Beban & Pendapatan Lain (Kas Kecil & MDR)
 const bebanKasKecil = db.kas.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar' && (() => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,k) => s + k.nominal, 0);
-const bebanMdr = biayaBankBulan; // Diambil dari variabel MDR yang sudah dihitung sebelumnya
+const bebanMdr = db.kas.filter(k => k.sumber === 'mdr' && (() => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,k) => s + (k.nominal||0), 0);
 const pendapatanLain = db.kas.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'masuk' && (() => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,k) => s + k.nominal, 0);
 
 const labaBersih = labaKotor - bebanKasKecil - bebanMdr + pendapatanLain;
