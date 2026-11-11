@@ -873,17 +873,61 @@ function getUsers(){
 }
 function isAdmin(){ return sessionStorage.getItem('ta_role') === 'admin'; }
 function applyRoleUI() { document.body.classList.toggle('role-admin', isAdmin()); document.body.classList.toggle('role-kasir', !isAdmin()); }
-function login(){
+async function login(){
   try {
     const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
     const pass = document.getElementById('pinInput').value;
     const found = getUsers().find(u => u.user === user && u.pin === pass);
+    
     if(found){
-      sessionStorage.setItem('ta_logged', '1'); sessionStorage.setItem('ta_user', found.user); sessionStorage.setItem('ta_role', found.user === 'admin' ? 'admin' : found.role);
-      document.getElementById('loginOverlay').classList.add('hidden'); applyRoleUI(); catatLog('LOGIN', 'User berhasil masuk');
-      bukaMenu('home'); flash('Login Berhasil!');
-    } else { document.getElementById('loginErr').textContent = 'Username atau Password salah.'; document.getElementById('pinInput').value = ''; }
-  } catch(e) { alert("Error saat login: " + e.message); }
+      // Simpan sesi login terlebih dahulu
+      sessionStorage.setItem('ta_logged', '1'); 
+      sessionStorage.setItem('ta_user', found.user); 
+      sessionStorage.setItem('ta_role', found.user === 'admin' ? 'admin' : found.role);
+      
+      // [FITUR BARU] Tawarkan tarik data dari Cloud
+      if (supabaseClient) {
+        const mauTarik = confirm(`Login sebagai ${found.user.toUpperCase()}.\n\nApakah Anda ingin memuat data terbaru dari Cloud (Supabase)?\n\n- Klik OK: Ambil data dari Cloud\n- Klik Cancel: Gunakan data lokal di perangkat ini`);
+        
+        if (mauTarik) {
+          const btn = document.querySelector('#loginOverlay button');
+          const oriText = btn.textContent;
+          btn.textContent = 'Memuat Cloud...';
+          btn.disabled = true;
+          
+          try {
+            const { data, error } = await supabaseClient.from('app_data').select('*');
+            if (error) throw error;
+            
+            data.forEach(row => {
+              localStorage.setItem('ta_' + row.id, JSON.stringify(row.content));
+            });
+            
+            alert('Data dari Cloud berhasil dimuat! Aplikasi akan dimuat ulang.');
+            location.reload(); // Reload agar semua data dan tampilan benar-benar segar
+            return; // Hentikan proses login di sini karena halaman akan di-reload
+          } catch (e) {
+            console.error(e);
+            alert('Gagal mengambil data Cloud. Melanjutkan dengan data lokal.');
+            btn.textContent = oriText;
+            btn.disabled = false;
+          }
+        }
+      }
+
+      // Lanjut Masuk ke Aplikasi (Jika memilih Cancel atau gagal tarik data)
+      document.getElementById('loginOverlay').classList.add('hidden'); 
+      applyRoleUI(); 
+      catatLog('LOGIN', 'User berhasil masuk');
+      bukaMenu('home'); 
+      flash('Login Berhasil!');
+    } else { 
+      document.getElementById('loginErr').textContent = 'Username atau Password salah.'; 
+      document.getElementById('pinInput').value = ''; 
+    }
+  } catch(e) { 
+    alert("Error saat login: " + e.message); 
+  }
 }
 function logout(){ catatLog('LOGOUT', 'User keluar dari sistem'); sessionStorage.clear(); document.body.classList.remove('role-admin','role-kasir'); document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('loginUser').value = ''; document.getElementById('pinInput').value = ''; }
 
