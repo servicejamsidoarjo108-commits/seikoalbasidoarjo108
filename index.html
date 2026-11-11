@@ -404,6 +404,20 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
 
 <section id="laporan">
   <div class="stat">
+    <div class="card">
+  <h3>📊 Laporan Laba Rugi (Bulan Ini)</h3>
+  <table style="width:100%; font-size:14px; border-collapse: collapse;">
+    <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0">Total Omzet (Produk+Servis+Baterai)</td><td style="text-align:right" id="lrOmzet">Rp 0</td></tr>
+    <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0">Total HPP (Modal Barang)</td><td style="text-align:right; color:#dc2626" id="lrHpp">-Rp 0</td></tr>
+    <tr style="border-bottom:2px solid #0f172a; background:#f8fafc;"><td style="padding:10px 0"><b>LABA KOTOR</b></td><td style="text-align:right; font-weight:bold; font-size:15px;" id="lrLabaKotor">Rp 0</td></tr>
+    
+    <tr><td style="padding:8px 0">Beban Kas Kecil (Keluar)</td><td style="text-align:right; color:#dc2626" id="lrBebanKasKecil">-Rp 0</td></tr>
+    <tr><td style="padding:8px 0">Biaya Bank (MDR)</td><td style="text-align:right; color:#dc2626" id="lrBebanMdr">-Rp 0</td></tr>
+    <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0">Pendapatan Lain (Kas Kecil Masuk)</td><td style="text-align:right; color:#16a34a" id="lrPendapatanLain">+Rp 0</td></tr>
+    
+    <tr style="background:#0284c7; color:white;"><td style="padding:12px; font-weight:bold; font-size:16px;">LABA BERSIH</td><td style="text-align:right; font-weight:bold; font-size:16px;" id="lrLabaBersih">Rp 0</td></tr>
+  </table>
+</div>
     <div class="card"><div class="lbl">Kas Masuk Hari Ini</div><div class="num" id="lapKasHari">Rp 0</div></div>
     <div class="card"><div class="lbl">Omzet Bulan Ini</div><div class="num" id="lapOmzet">Rp 0</div></div>
     <div class="card"><div class="lbl">Laba Kotor Bulan Ini</div><div class="num" id="lapLabaKotor" style="color:#16a34a">Rp 0</div></div>
@@ -1776,25 +1790,57 @@ function render(){
   document.getElementById('lapPiutang').textContent = rp(piutang); 
   document.getElementById('lapHutang').textContent = rp(hutangTotal);
   
-  let labaKotor = 0;
-  db.jual.filter(t => { const d = new Date(t.waktu); return d.getMonth()===bln && d.getFullYear()===thn; }).forEach(t => {
-    let hppTrx = 0;
-    t.items.forEach(i => { const p = db.produk.find(x => x.id === i.id); if(p) hppTrx += (p.hargaBeli || 0) * i.qty; });
-    labaKotor += (t.total - hppTrx);
-  });
-  db.servis.filter(s => s.tglBayar && (() => { const d = new Date(s.tglBayar); return d.getMonth()===bln && d.getFullYear()===thn; })()).forEach(s => {
-    let hppParts = 0;
-    (s.parts||[]).forEach(p => { const sp = db.sparePart.find(x => x.id === p.id); if(sp) hppParts += (sp.hargaBeli||0)*p.qty; });
-    (s.baterai||[]).forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.id); if(sb) hppParts += (sb.hargaBeli||0)*b.qty; });
-    labaKotor += (s.biayaPelanggan - hppParts);
-  });
-  db.baterai.filter(b => { const d = new Date(b.tglGanti); return d.getMonth()===bln && d.getFullYear()===thn; }).forEach(b => {
-    const sb = db.stokBaterai.find(x => x.id === b.sbId);
-    const hppBat = sb ? (sb.hargaBeli || 0) : 0;
-    labaKotor += (b.biaya - hppBat);
-  });
-  const elLabaKotor = document.getElementById('lapLabaKotor');
-  if(elLabaKotor) elLabaKotor.textContent = rp(labaKotor);
+  // --- MULAI PERHITUNGAN LABA RUGI ---
+let totalHppProduk = 0, labaProduk = 0;
+db.jual.filter(t => { const d = new Date(t.waktu); return d.getMonth()===bln && d.getFullYear()===thn; }).forEach(t => {
+  let hppTrx = 0;
+  t.items.forEach(i => { const p = db.produk.find(x => x.id === i.id); if(p) hppTrx += (p.hargaBeli || 0) * i.qty; });
+  labaProduk += (t.total - hppTrx);
+  totalHppProduk += hppTrx;
+});
+
+let totalHppServis = 0, labaServis = 0;
+db.servis.filter(s => s.tglBayar && (() => { const d = new Date(s.tglBayar); return d.getMonth()===bln && d.getFullYear()===thn; })()).forEach(s => {
+  let hppParts = 0;
+  (s.parts||[]).forEach(p => { const sp = db.sparePart.find(x => x.id === p.id); if(sp) hppParts += (sp.hargaBeli||0)*p.qty; });
+  (s.baterai||[]).forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.id); if(sb) hppParts += (sb.hargaBeli||0)*b.qty; });
+  labaServis += (s.biayaPelanggan - hppParts);
+  totalHppServis += hppParts;
+});
+
+let totalHppBaterai = 0, labaBaterai = 0;
+db.baterai.filter(b => { const d = new Date(b.tglGanti); return d.getMonth()===bln && d.getFullYear()===thn; }).forEach(b => {
+  const sb = db.stokBaterai.find(x => x.id === b.sbId);
+  const hppBat = sb ? (sb.hargaBeli || 0) : 0;
+  labaBaterai += (b.biaya - hppBat);
+  totalHppBaterai += hppBat;
+});
+
+const labaKotor = labaProduk + labaServis + labaBaterai;
+const totalHpp = totalHppProduk + totalHppServis + totalHppBaterai;
+const totalOmzet = omzetBulan + omzetServis + omzetBat;
+
+// Hitung Beban & Pendapatan Lain (Kas Kecil & MDR)
+const bebanKasKecil = db.kas.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar' && (() => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,k) => s + k.nominal, 0);
+const bebanMdr = biayaBankBulan; // Diambil dari variabel MDR yang sudah dihitung sebelumnya
+const pendapatanLain = db.kas.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'masuk' && (() => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,k) => s + k.nominal, 0);
+
+const labaBersih = labaKotor - bebanKasKecil - bebanMdr + pendapatanLain;
+
+// Tampilkan ke Layar
+const elLabaKotor = document.getElementById('lapLabaKotor');
+if(elLabaKotor) elLabaKotor.textContent = rp(labaKotor);
+
+if(document.getElementById('lrOmzet')) {
+  document.getElementById('lrOmzet').textContent = rp(totalOmzet);
+  document.getElementById('lrHpp').textContent = '-' + rp(totalHpp);
+  document.getElementById('lrLabaKotor').textContent = rp(labaKotor);
+  document.getElementById('lrBebanKasKecil').textContent = '-' + rp(bebanKasKecil);
+  document.getElementById('lrBebanMdr').textContent = '-' + rp(bebanMdr);
+  document.getElementById('lrPendapatanLain').textContent = '+' + rp(pendapatanLain);
+  document.getElementById('lrLabaBersih').textContent = rp(labaBersih);
+}
+// --- AKHIR PERHITUNGAN LABA RUGI ---
   
   const biayaBankBulan = db.kas.filter(k => k.sumber === 'mdr' && (() => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,k) => s + (k.nominal||0), 0); const elLapBiaya = document.getElementById('lapBiayaBank'); if(elLapBiaya) elLapBiaya.textContent = rp(biayaBankBulan);
   const laris = {}; db.jual.forEach(t => t.items.forEach(i => { if(!laris[i.nama]) laris[i.nama] = { qty: 0, omzet: 0 }; laris[i.nama].qty += i.qty; laris[i.nama].omzet += i.qty*i.harga; })); const top = Object.entries(laris).sort((a,b)=>b[1].qty-a[1].qty).slice(0,10); document.getElementById('tblLaris').innerHTML = top.length ? top.map(([n,v]) => `<tr><td>${esc(n)}</td><td>${v.qty}</td><td>${rp(v.omzet)}</td></tr>`).join('') : '<tr><td colspan="3" class="empty">Belum ada data</td></tr>';
