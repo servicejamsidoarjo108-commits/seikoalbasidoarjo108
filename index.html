@@ -280,13 +280,40 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   <div class="card"><h3>Daftar Produk</h3><input id="cariProduk" placeholder="Cari nama/merek/barcode..." oninput="render()" style="margin-bottom:10px"><div id="listProduk"></div></div>
   
   <div class="card" id="cardRestockLain">
-    <h3>Restock Terpadu (Produk / Spare Part / Baterai)</h3>
-    <div class="row"><div><label>Pilih Tipe</label><select id="rsTipe" onchange="updateRsItem()"><option value="produk">Produk Jualan</option><option value="sparepart">Spare Part</option><option value="baterai">Baterai</option></select></div><div><label>Pilih Item</label><select id="rsItem"></select></div></div>
-    <div class="row"><div><label>Jumlah Masuk (Qty)</label><input type="number" id="rsQty" value="1" min="1"></div><div><label>Harga Beli / Modal Baru (Rp)</label><input type="number" id="rsHarga" value="0" min="0"></div></div>
+        <h3>Restock Terpadu (Produk / Spare Part / Baterai)</h3>
+    <div class="row">
+      <div>
+        <label>Pilih Tipe</label>
+        <select id="rsTipe" onchange="updateRsItem()">
+          <option value="produk">Produk Jualan</option>
+          <option value="sparepart">Spare Part</option>
+          <option value="baterai">Baterai</option>
+        </select>
+      </div>
+      <div>
+        <label>Pilih Item</label>
+        <select id="rsItem"></select>
+      </div>
+    </div>
+    
+    <div class="row">
+      <div>
+        <label>Jumlah Masuk (Qty)</label>
+        <input type="number" id="rsQty" value="1" min="1">
+      </div>
+      
+      <!-- BAGIAN INI YANG KITA UBAH -->
+      <div id="wrapHargaBeliRestock">
+        <label>Harga Beli / Modal Baru (Rp)</label>
+        <input type="number" id="rsHarga" value="0" min="0">
+      </div>
+      <!-- ======================= -->
+
+    </div>
     <button class="btn ok" onclick="prosesRestock()">Tambah Stok & Hitung Rata-rata</button>
   </div>
 </section>
-
+  
 <section id="servis">
   <div class="card"><h3>Input Servis</h3>
     <div id="klaimBanner" style="display:none;background:#fef3c7;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400e"></div>
@@ -371,6 +398,7 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
 </section>
 
 <section id="baterai">
+  <!-- CARD 1: CATAT GANTI BATERAI -->
   <div class="card"><h3>Catat Ganti Baterai</h3>
     <div class="row"><div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi"></div><div><label>No HP</label><input id="bHp" placeholder="0812..."></div></div>
     <div class="row"><div><label>Produk *</label><input id="bProduk" placeholder="Seiko 5"></div><div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div></div>
@@ -380,7 +408,6 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <div class="row">
       <div>
         <label>Metode Bayar</label>
-        <!-- METODE BAYAR BARU (BATERAI) -->
         <select id="metodeBaterai" onchange="toggleBankBaterai()">
           <option value="tunai">Tunai</option>
           <option value="transfer">Transfer</option>
@@ -402,10 +429,28 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     </div>
     
     <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
+    
     <button class="btn" onclick="simpanBaterai()">Simpan & Kurangi Stok</button>
-  </div>
-</section>
+  </div> <!-- PERHATIKAN: CARD 1 DITUTUP DI SINI -->
 
+  <!-- CARD 2: FORM TAMBAH TIPE BATERAI -->
+  <div class="card" id="cardTambahBaterai"><h3>Tambah Tipe Baterai</h3>
+    <div class="row"><div><label>Tipe *</label><input id="sbTipe" placeholder="SR626SW"></div><div><label>Min Stok</label><input type="number" id="sbMin" value="5" min="0"></div></div>
+    <div class="row" id="wrapHargaBeliBaterai">
+      <div><label>Harga Beli</label><input type="number" id="sbBeli" placeholder="8000"></div>
+      <div><label>Harga Jual</label><input type="number" id="sbJual" placeholder="35000"></div>
+    </div>
+    <div class="row"><div><label>Stok Awal</label><input type="number" id="sbStok" value="0" min="0"></div><div></div></div>
+    <button class="btn" onclick="tambahStokBaterai()">+ Tambah Tipe</button>
+  </div> <!-- PERHATIKAN: CARD 2 DITUTUP DI SINI -->
+
+  <!-- CARD 3: DAFTAR STOK BATERAI (Pastikan ini ada di bawahnya) -->
+  <div class="card"><h3>Daftar Stok Baterai</h3><div id="listStokBaterai"></div></div>
+  
+  <!-- CARD 4: CEK GARANSI BATERAI -->
+  <div class="card"><h3>Cek Garansi Baterai</h3><input id="bCari" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listBaterai"></div></div>
+</section>
+  
 <section id="supplier">
   <div class="card"><h3>Tambah / Edit Supplier</h3>
     <input type="hidden" id="supId">
@@ -618,13 +663,29 @@ function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
 
 function applyRoleUI() { 
   const r = sessionStorage.getItem('ta_role');
-  // Sembunyikan form Harga Beli jika bukan Pemilik
-const wrapHB = document.getElementById('wrapHargaBeliProduk');
-if(wrapHB) wrapHB.style.display = (r === 'pemilik') ? 'block' : 'none';
-  // Tampilkan Audit Trail hanya untuk Pemilik
-const cardAudit = document.getElementById('cardAuditTrail');
-if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
   
+  // 1. Sembunyikan/Tampilkan Card Audit Trail (Khusus Pemilik)
+  const cardAudit = document.getElementById('cardAuditTrail');
+  if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
+
+  // 2. Sembunyikan Form Harga Beli jika bukan Pemilik (Produk, Baterai, Restock)
+  const wrapHBProduk = document.getElementById('wrapHargaBeliProduk');
+  if(wrapHBProduk) wrapHBProduk.style.display = (r === 'pemilik') ? 'block' : 'none';
+
+  const wrapHBBaterai = document.getElementById('wrapHargaBeliBaterai');
+  if(wrapHBBaterai) wrapHBBaterai.style.display = (r === 'pemilik') ? 'block' : 'none';
+
+  const wrapHBRestock = document.getElementById('wrapHargaBeliRestock');
+  if(wrapHBRestock) wrapHBRestock.style.display = (r === 'pemilik') ? 'block' : 'none';
+  
+  // 3. Sembunyikan Form Tambah Baterai & Sparepart jika Kasir
+  const cardTambahBaterai = document.getElementById('cardTambahBaterai');
+  if(cardTambahBaterai) cardTambahBaterai.style.display = (r === 'kasir') ? 'none' : 'block';
+
+  const cardTambahSparePart = document.getElementById('cardTambahSparePart');
+  if(cardTambahSparePart) cardTambahSparePart.style.display = (r === 'kasir') ? 'none' : 'block';
+  
+  // 4. Ambil semua elemen tombol menu
   const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
   const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
   const btnBaterai = document.querySelector('button[onclick="bukaMenu(\'baterai\')"]');
@@ -637,10 +698,11 @@ if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
   const btnSupplier = document.querySelector('button[onclick="bukaMenu(\'supplier\')"]');
   const btnSetting = document.querySelector('button[onclick="bukaMenu(\'setting\')"]');
 
-  // Sembunyikan semua terlebih dahulu
+  // 5. Sembunyikan semua menu dulu (reset)
   [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
   [btnKasir, btnBaterai, btnPelanggan].forEach(b => { if(b) b.style.display = 'flex'; });
 
+  // 6. Tampilkan menu sesuai Role
   if (r === 'kasir') {
     document.body.classList.add('role-kasir');
     document.body.classList.remove('role-admin');
@@ -666,7 +728,6 @@ if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
     if(btnSetting) btnSetting.style.display = 'flex';
   }
 }
-
 // === MENGAMBIL SEMUA DATA DARI CLOUD ===
 async function tarikSemuaData() {
   if(!supabaseClient) return;
