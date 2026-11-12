@@ -794,8 +794,10 @@ async function login(){
 
 async function logout(){ 
   if(supabaseClient) {
-    await catatLog('LOGOUT', 'User keluar dari sistem'); // <--- TAMBAHKAN INI
+    await catatLog('LOGOUT', 'User keluar dari sistem');
     await supabaseClient.auth.signOut();
+  } // <--- KURUNG KURAWAL INI YANG TADI HILANG
+  
   sessionStorage.clear(); 
   document.body.classList.remove('role-admin','role-kasir'); 
   document.getElementById('loginOverlay').classList.remove('hidden'); 
@@ -869,7 +871,8 @@ async function hapusProduk(id){
   await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id); // Pindah ke dalam sini
   flash('Dihapus'); 
   tarikSemuaData(); 
-}async function prosesRestock(){
+}
+  async function prosesRestock(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
   if(!id || qty < 1) return flash('Data tidak valid', 'err'); 
