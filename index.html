@@ -465,21 +465,13 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <button class="btn" onclick="simpanToko()">Simpan Identitas</button>
   </div>
   <div class="card"><h3>Kelola User</h3>
-    <div id="listUsers"></div>
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0">
-    <label>Tambah User Baru</label>
-    <div class="row"><div><input id="newUserName" placeholder="Username"></div><div><input type="password" id="newUserPin" placeholder="Password Kuat"></div></div>
-    <div class="row"><div><select id="newUserRole"><option value="admin">Admin</option><option value="kasir">Kasir</option></select></div><div></div></div>
-    <button class="btn" onclick="tambahUser()">+ Tambah User</button>
-  </div>
-  <div class="card" id="cardCloud">
-    <h3>Sinkronisasi Supabase</h3>
-    <p style="font-size:12px;color:#64748b">Data Anda otomatis tersimpan ke Cloud Supabase secara *real-time*.</p>
-    <button class="btn blue" onclick="tarikDataDariCloud()">Ambil Data Terbaru dari Cloud</button>
-  </div>
-  <div class="card" id="cardBackup"><h3>Backup Data (Lokal)</h3><button class="btn" onclick="exportData()">Download Backup</button></div>
-  <div class="card" id="cardRestore"><h3>Restore Data</h3><input type="file" id="fileRestore" accept=".json" style="margin-bottom:10px"><button class="btn warn" onclick="importData()">Restore dari File</button></div>
-  <div class="card" id="cardReset"><button class="btn blue" onclick="jalankanTesSistem()" style="margin-bottom:10px">Jalankan Tes Sistem</button><h3>Reset</h3><button class="btn danger" onclick="resetAll()">Hapus Semua Data (Lokal)</button></div>
+  <div id="listUsers"></div>
+  <hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0">
+  <label>Tambah User Baru</label>
+  <div class="row"><div><input id="newUserName" placeholder="Username"></div><div><input type="password" id="newUserPin" placeholder="Password Kuat"></div></div>
+  <div class="row"><div><select id="newUserRole"><option value="admin">Admin</option><option value="kasir">Kasir</option></select></div><div></div></div>
+  <button class="btn" onclick="tambahUser()">+ Tambah User</button>
+</div>
 </section>
 
 </main>
