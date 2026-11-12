@@ -793,7 +793,9 @@ async function login(){
 }
 
 async function logout(){ 
-  if(supabaseClient) await supabaseClient.auth.signOut();
+  if(supabaseClient) {
+    await catatLog('LOGOUT', 'User keluar dari sistem'); // <--- TAMBAHKAN INI
+    await supabaseClient.auth.signOut();
   sessionStorage.clear(); 
   document.body.classList.remove('role-admin','role-kasir'); 
   document.getElementById('loginOverlay').classList.remove('hidden'); 
