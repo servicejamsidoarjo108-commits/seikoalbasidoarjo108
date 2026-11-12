@@ -1122,6 +1122,22 @@ async function simpanAturanDiskon(){
 
 // === CETAK & E-WARRANTY ===
 function getToko(){ return db.settings || {}; }
+// === FUNGSI LABEL METODE PEMBAYARAN ===
+function labelMetode(m) {
+  const labels = {
+    'tunai': 'Tunai', 
+    'transfer': 'Transfer', 
+    'qris': 'QRIS', 
+    'hutang': 'Hutang',
+    'edc_cc_bca': 'BCA Card', 
+    'edc_cc_vm': 'Visa/Master/JCB', 
+    'edc_cc_amex': 'Amex',
+    'edc_dc_bca': 'Debit BCA', 
+    'edc_dc_lain': 'Debit Bank Lain', 
+    'edc_dc_maestro': 'Maestro'
+  };
+  return labels[m] || m;
+}  
 function hitungMDR(total, metode){
   if(metode === 'tunai' || metode === 'hutang') return 0;
   const s = db.settings || {};
