@@ -853,7 +853,7 @@ function editProduk(id){
   const p = db.produk.find(x => x.id === id); 
   if(!p) return;
   document.getElementById('pId').value = p.id; document.getElementById('pNama').value = p.nama; document.getElementById('pMerek').value = p.merek || '';
-  document.getElementById('pHBeli').value = isAdmin() ? (p.harga_beli || '') : ''; document.getElementById('pHJual').value = p.harga_jual;
+  document.getElementById('pHBeli').value = isPemilik() ? (p.harga_beli || '') : ''; document.getElementById('pHJual').value = p.harga_jual;
   document.getElementById('pStok').value = p.stok; document.getElementById('pSerial').value = p.barcode || '';
   window.scrollTo(0,0);
 }
