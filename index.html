@@ -632,15 +632,23 @@ async function login(){
     sessionStorage.setItem('ta_user', user); 
     sessionStorage.setItem('ta_role', role);
     
-    document.querySelector('#loginOverlay button').textContent = 'Memuat Data...';
+      document.querySelector('#loginOverlay button').textContent = 'Memuat Data...';
+  
+  // Kita gunakan try-catch-finally agar layar login PASTI tertutup
+  try {
     await tarikSemuaData();
     setupRealtime();
-
+  } catch (err) {
+    console.error("Gagal load data awal:", err);
+    alert("Peringatan: Gagal mengambil sebagian data dari Cloud. Aplikasi tetap dibuka, silakan cek koneksi.");
+  } finally {
     document.getElementById('loginOverlay').classList.add('hidden'); 
     applyRoleUI(); 
     bukaMenu('home'); 
     flash('Login Berhasil!');
-  } catch(e) { alert("Error: " + e.message); }
+  }
+} catch(e) { 
+  alert("Error Login: " + e.message); 
 }
 
 async function logout(){ 
