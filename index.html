@@ -600,17 +600,6 @@ function setupRealtime() {
   // 3. BARU panggil subscribe() setelah SEMUA listener terpasang
   newChannel.subscribe();
 }
-// === LOGIN & AUTH ===
-function isAdmin(){ const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
-function applyRoleUI() { 
-  const r = sessionStorage.getItem('ta_role');
-  document.body.classList.toggle('role-admin', isAdmin()); 
-  document.body.classList.toggle('role-kasir', r === 'kasir'); 
-  const mLap = document.querySelector('button[onclick="bukaMenu(\'laporan\')"]');
-  const mKas = document.querySelector('button[onclick="bukaMenu(\'kas\')"]');
-  if(r === 'kasir') { if(mLap) mLap.style.display='none'; if(mKas) mKas.style.display='none'; } 
-  else { if(mLap) mLap.style.display='flex'; if(mKas) mKas.style.display='flex'; }
-}
 
 async function login(){
   try {
@@ -631,6 +620,61 @@ async function login(){
       document.getElementById('loginErr').textContent = error.message; 
       return; 
     }
+
+    // === FUNGSI PEMISAH ROLE ===
+function isPemilik() { return sessionStorage.getItem('ta_role') === 'pemilik'; }
+function isAdmin() { const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
+function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
+
+function applyRoleUI() { 
+  const r = sessionStorage.getItem('ta_role');
+  
+  // Daftar tombol menu
+  const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
+  const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
+  const btnBaterai = document.querySelector('button[onclick="bukaMenu(\'baterai\')"]');
+  const btnProduk = document.querySelector('button[onclick="bukaMenu(\'produk\')"]');
+  const btnSparepart = document.querySelector('button[onclick="bukaMenu(\'sparepart\')"]');
+  const btnLaporan = document.querySelector('button[onclick="bukaMenu(\'laporan\')"]');
+  const btnPelanggan = document.querySelector('button[onclick="bukaMenu(\'pelanggan\')"]');
+  
+  // Tombol menu di dalam menuAdmin
+  const btnKas = document.querySelector('button[onclick="bukaMenu(\'kas\')"]');
+  const btnSupplier = document.querySelector('button[onclick="bukaMenu(\'supplier\')"]');
+  const btnSetting = document.querySelector('button[onclick="bukaMenu(\'setting\')"]');
+
+  // Reset semua: Sembunyikan yang perlu disembunyikan
+  [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
+  [btnKasir, btnBaterai, btnPelanggan].forEach(b => { if(b) b.style.display = 'flex'; });
+
+  // 1. Tampilan KASIR (Hanya Kasir, Baterai, Pelanggan)
+  if (r === 'kasir') {
+    document.body.classList.add('role-kasir');
+    document.body.classList.remove('role-admin');
+  } 
+  // 2. Tampilan ADMIN (Semua operasional, TANPA Laporan & Setting)
+  else if (r === 'admin') {
+    document.body.classList.remove('role-kasir');
+    document.body.classList.add('role-admin');
+    if(btnServis) btnServis.style.display = 'flex';
+    if(btnProduk) btnProduk.style.display = 'flex';
+    if(btnSparepart) btnSparepart.style.display = 'flex';
+    if(btnKas) btnKas.style.display = 'flex';
+    if(btnSupplier) btnSupplier.style.display = 'flex';
+  } 
+  // 3. Tampilan PEMILIK (Semua Menu)
+  else if (r === 'pemilik') {
+    document.body.classList.remove('role-kasir');
+    document.body.classList.add('role-admin');
+    if(btnServis) btnServis.style.display = 'flex';
+    if(btnProduk) btnProduk.style.display = 'flex';
+    if(btnSparepart) btnSparepart.style.display = 'flex';
+    if(btnLaporan) btnLaporan.style.display = 'flex';
+    if(btnKas) btnKas.style.display = 'flex';
+    if(btnSupplier) btnSupplier.style.display = 'flex';
+    if(btnSetting) btnSetting.style.display = 'flex';
+  }
+}
 
     // 2. Tentukan Role
     let role = 'kasir';
@@ -691,7 +735,11 @@ function bukaMenu(tabId){
   render(); 
 }
 // === PRODUK & STOK ===
+// === PRODUK & STOK ===
 async function simpanProduk(){
+  // TAMBAHKAN BARIS INI (Mencegah Kasir mengubah produk)
+  if (!isAdmin()) return flash('Akses ditolak. Hanya Admin yang bisa mengubah produk.', 'err');
+
   if (!checkRequired(['pNama', 'pHJual'])) return flash('Lengkapi kolom wajib', 'err');
   const id = document.getElementById('pId').value; 
   const nama = document.getElementById('pNama').value.trim();
