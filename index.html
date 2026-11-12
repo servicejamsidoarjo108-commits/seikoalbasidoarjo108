@@ -1275,9 +1275,20 @@ function openWA(hp, text) {
 }
 function shareStrukDigital(trxId){
   const t = db.jual.find(x => x.id === trxId); if(!t) return; const toko = getToko(); const garis = '=========================';
-  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*NOTA PENJUALAN*\n${garis}\n*No:* ${t.id}\nTanggal: ${new Date(t.waktu).toLocaleString('id-ID')}\n${garis}\n`;
-  t.items.forEach(i => { text += `- ${i.nama}\n  ${i.qty} x ${rp(i.harga)} = ${rp(i.qty * i.harga)}\n`; });
-  text += `${garis}\n*TOTAL: ${rp(t.total)}*\n${garis}\n${toko.footer}`; openWA(t.cust_hp, text);
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*NOTA PENJUALAN*\n${garis}\n*No:* ${t.id}\nTanggal: ${new Date(t.waktu).toLocaleString('id-ID')}\nPembeli: ${t.cust_nama || '-'}\n${garis}\n*DAFTAR BELANJA*\n`;
+  
+  t.items.forEach(i => { 
+    text += `- ${i.nama}\n  ${i.qty} x ${rp(i.harga)} = ${rp(i.qty * i.harga)}\n`; 
+  });
+  
+  text += `${garis}\nSubtotal : ${rp(t.subtotal)}\n`;
+  if(t.diskon > 0) text += `Diskon   : -${rp(t.diskon)}\n`;
+  text += `*TOTAL    : ${rp(t.total)}*\nBayar    : ${rp(t.bayar)}\nKembali  : ${rp(t.kembali)}\n`;
+  text += `${garis}\n`;
+  
+  if(toko.syarat_singkat) text += `*SYARAT & KETENTUAN:*\n${toko.syarat_singkat}\n${garis}\n`;
+  text += `${toko.footer}\n_Simpan pesan ini sebagai bukti pembelian_`; 
+  openWA(t.cust_hp, text);
 }
 function waServisSelesai(id){
   const s = db.servis.find(x => x.id === id); if(!s || !s.telp) return; const toko = getToko(); const garis = '=========================';
