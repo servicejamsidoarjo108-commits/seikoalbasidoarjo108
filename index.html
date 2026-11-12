@@ -1340,63 +1340,109 @@ async function hapusPelanggan(id) {
 }
 
 // === RENDER UI UTAMA ===
+// === RENDER UI UTAMA ===
 function render(){
   if(!document.getElementById('selProduk')) return;
   
-  // Fungsi bantuan untuk mencegah error jika elemen tidak ditemukan
   const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
   const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
 
-  // Tampilkan Nama User & Role
+  // 1. Tampilkan User & Menu Admin
   const homeUser = document.getElementById('homeUser'); 
   if(homeUser) {
     const u = sessionStorage.getItem('ta_user') || 'Guest';
     const r = (sessionStorage.getItem('ta_role') || 'guest').toUpperCase();
     homeUser.innerHTML = `Login sebagai: <b>${u}</b> (${r})`;
   }
-
-  // Sembunyikan/Tampilkan Menu Admin
   const menuAdmin = document.getElementById('menuAdmin'); 
   if(menuAdmin) { menuAdmin.style.display = isAdmin() ? 'grid' : 'none'; }
   
-  // Render Dropdown / Select
+  // 2. Render Dropdown / Select
   setHTML('selProduk', db.produk.filter(p => p.stok > 0).map(p => `<option value="${p.id}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option>Tidak ada stok</option>');
   setHTML('selSparePart', '<option value="">-- pilih --</option>' + db.sparePart.map(sp => `<option value="${sp.id}" ${sp.stok===0?'disabled':''}>${esc(sp.nama)} - stok ${sp.stok}</option>`).join(''));
   setHTML('selBateraiServis', '<option value="">-- pilih --</option>' + db.stokBaterai.map(sb => `<option value="${sb.id}" ${sb.stok===0?'disabled':''}>${sb.tipe} - stok ${sb.stok}</option>`).join(''));
 
-  // Render Daftar (Tabel)
+  // 3. Render Daftar Produk, Part, Baterai
   setHTML('listProduk', db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
-  
   setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr><td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
-  
   setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr><td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   
-  setHTML('listServis', db.servis.length ? db.servis.map(s => `<div class="servis-item ${s.status}"><h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4><p>Barang: ${esc(s.produk)}</p><p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Status</button><button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}</div></div>`).join('') : '<div class="empty">Tidak ada servis</div>');
+  // 4. Render Daftar Servis (LENGKAP DENGAN TOMBOL BAYAR SISA)
+  setHTML('listServis', db.servis.length ? db.servis.map(s => {
+    const btnBayar = (!s.paid && s.sisa > 0) ? `<button class="btn-sm ok" onclick="bayarSisaServis('${s.id}')">Bayar Sisa</button>` : '';
+    const btnStruk = s.paid ? `<button class="btn-sm blue" onclick="cetakStrukServis('${s.id}')">Struk</button>` : '';
+    
+    return `<div class="servis-item ${s.status}">
+      <h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4>
+      <p>Barang: ${esc(s.produk)}</p>
+      <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Ganti Status</button>
+        <button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>
+        ${btnBayar} ${btnStruk}
+        ${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}
+        ${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Tidak ada servis</div>');
 
+  // 5. Render Kas
   const masuk = db.kas.filter(k => k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
   const keluar = db.kas.filter(k => k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
   if(document.getElementById('kasTunai')) document.getElementById('kasTunai').textContent = rp(masuk - keluar);
   setHTML('listKas', db.kas.slice(0,20).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join(''));
 
+  // 6. Render Pelanggan
   setHTML('listPelanggan', db.pelanggan.length ? `<table><thead><tr><th>Nama</th><th>HP</th><th>Poin</th></tr></thead><tbody>` + db.pelanggan.map(p => `<tr><td>${esc(p.nama)}</td><td>${esc(p.telp)}</td><td>${p.poin}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   
-  const totalOmzet = db.jual.reduce((s,t) => s + t.total, 0);
-  if(document.getElementById('lapOmzet')) document.getElementById('lapOmzet').textContent = rp(totalOmzet);
+  // 7. HITUNG LAPORAN LABA RUGI LENGKAP
+  const totalOmzet = db.jual.reduce((s,t) => s + t.total, 0) + 
+                     db.servis.filter(s=>s.paid).reduce((s,t) => s + (t.biaya_pelanggan||0), 0) +
+                     db.baterai.reduce((s,b) => s + (b.biaya||0), 0);
   
-  // Isi Form Setting
+  const hppJual = db.jual.reduce((sum, t) => {
+    let hppTrx = 0;
+    t.items.forEach(i => { const p = db.produk.find(x => x.id === i.produk_id); if(p) hppTrx += (p.harga_beli || 0) * i.qty; });
+    return sum + hppTrx;
+  }, 0);
+  
+  const hppServis = db.servis.filter(s=>s.paid).reduce((sum, s) => {
+    let hpp = 0;
+    (s.parts||[]).forEach(p => { const sp = db.sparePart.find(x => x.id === p.part_id); if(sp) hpp += (sp.harga_beli||0)*p.qty; });
+    (s.baterai||[]).forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.baterai_id); if(sb) hpp += (sb.harga_beli||0)*b.qty; });
+    return sum + hpp;
+  }, 0);
+  
+  const hppBaterai = db.baterai.reduce((sum, b) => { const sb = db.stokBaterai.find(x => x.id === b.sb_id); return sum + (sb ? (sb.harga_beli || 0) : 0); }, 0);
+  
+  const totalHpp = hppJual + hppServis + hppBaterai;
+  const labaKotor = totalOmzet - totalHpp;
+  
+  const bebanKasKecil = db.kas.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+  const bebanMdr = db.kas.filter(k => k.sumber === 'mdr').reduce((s,k) => s + (k.nominal||0), 0);
+  const pendapatanLain = db.kas.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
+  const labaBersih = labaKotor - bebanKasKecil - bebanMdr + pendapatanLain;
+  
+  // Tampilkan ke HTML
+  if(document.getElementById('lapOmzet')) document.getElementById('lapOmzet').textContent = rp(totalOmzet);
+  setVal('lrOmzet', rp(totalOmzet));
+  setVal('lrHpp', '-' + rp(totalHpp));
+  setVal('lrLabaKotor', rp(labaKotor));
+  setVal('lrBebanKasKecil', '-' + rp(bebanKasKecil));
+  setVal('lrBebanMdr', '-' + rp(bebanMdr));
+  setVal('lrPendapatanLain', '+' + rp(pendapatanLain));
+  setVal('lrLabaBersih', rp(labaBersih));
+  
+  // 8. Isi Form Setting
   if(db.settings) {
     setVal('tkNama', db.settings.nama || '');
     setVal('tkTelp', db.settings.telp || '');
     setVal('tkAlamat', db.settings.alamat || '');
     setVal('tkFooter', db.settings.footer || '');
-    
-    // Gunakan TOKO_DEFAULT sebagai cadangan
     setVal('tkSyarat', db.settings.syarat || TOKO_DEFAULT.syarat);
     setVal('tkSyaratSingkat', db.settings.syarat_singkat || TOKO_DEFAULT.syaratSingkat);
     
     setVal('setGaransiServisBulan', db.settings.garansi_servis_bulan ?? 3);
-    
-    // MDR BARU
     setVal('setMdrCcBca', db.settings.mdr_cc_bca ?? 1.5);
     setVal('setMdrCcVm', db.settings.mdr_cc_vm ?? 2);
     setVal('setMdrCcAmex', db.settings.mdr_cc_amex ?? 3.25);
@@ -1405,7 +1451,6 @@ function render(){
     setVal('setMdrDcMaestro', db.settings.mdr_dc_maestro ?? 2);
     setVal('setMdrQrisBesar', db.settings.mdr_qris_besar ?? 0.7);
     setVal('setMdrTransfer', db.settings.mdr_transfer ?? 0);
-    
     setVal('setDiskonPersen', db.settings.diskon_persen ?? 10);
     setVal('setDiskonNominal', db.settings.diskon_nominal ?? 20000);
   }
