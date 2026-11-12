@@ -677,8 +677,19 @@ async function logout(){
 function flash(text, type='ok'){ const el = document.getElementById('msg'); el.textContent = text; el.className = 'msg ' + type; clearTimeout(window.__msgT); window.__msgT = setTimeout(() => el.className = 'msg', 3500); }
 function checkRequired(ids) { let valid = true; ids.forEach(id => { const el = document.getElementById(id); if (!el) return; if (!el.value.trim()) { el.classList.add('input-error'); valid = false; } else { el.classList.remove('input-error'); } }); return valid; }
 document.addEventListener('DOMContentLoaded', () => { document.querySelectorAll('input, select, textarea').forEach(el => { el.addEventListener('input', function() { this.classList.remove('input-error'); }); }); });
-function bukaMenu(tabId){ document.querySelectorAll('section').forEach(x => x.classList.remove('active')); const target = document.getElementById(tabId); if(target) target.classList.add('active'); window.scrollTo(0, 0); render(); }
+function bukaMenu(tabId){ 
+  document.querySelectorAll('section').forEach(x => x.classList.remove('active')); 
+  const target = document.getElementById(tabId); 
+  if(target) target.classList.add('active'); 
+  
+  const btnBack = document.querySelector('main > div > button[onclick="bukaMenu(\'home\')"]');
+  if (btnBack) {
+    btnBack.parentElement.style.display = (tabId === 'home') ? 'none' : 'block';
+  }
 
+  window.scrollTo(0, 0); 
+  render(); 
+}
 // === PRODUK & STOK ===
 async function simpanProduk(){
   if (!checkRequired(['pNama', 'pHJual'])) return flash('Lengkapi kolom wajib', 'err');
