@@ -1184,6 +1184,19 @@ async function hapusPelanggan(id) {
 // === RENDER UI UTAMA ===
 function render(){
   if(!document.getElementById('selProduk')) return;
+  // Tampilkan Nama User & Role
+const homeUser = document.getElementById('homeUser'); 
+if(homeUser) {
+  const u = sessionStorage.getItem('ta_user') || 'Guest';
+  const r = (sessionStorage.getItem('ta_role') || 'guest').toUpperCase();
+  homeUser.innerHTML = `Login sebagai: <b>${u}</b> (${r})`;
+}
+
+// Sembunyikan/Tampilkan Menu Admin (Kas, Supplier, Setting)
+const menuAdmin = document.getElementById('menuAdmin'); 
+if(menuAdmin) {
+  menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
+}
   
   document.getElementById('selProduk').innerHTML = db.produk.filter(p => p.stok > 0).map(p => `<option value="${p.id}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option>Tidak ada stok</option>';
   document.getElementById('listProduk').innerHTML = db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>';
