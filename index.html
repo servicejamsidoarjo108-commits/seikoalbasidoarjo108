@@ -704,6 +704,9 @@ async function tarikSemuaData() {
     const { data: aud } = await supabaseClient.from('audit_barang').select('*').order('waktu', {ascending: false});
     db.auditBarang = aud || [];
 
+    const { data: alog } = await supabaseClient.from('audit_log').select('*').order('waktu', {ascending: false}).limit(500);
+db.auditLog = alog || [];
+
     render();
   } catch(e) { console.error("Gagal tarik data:", e); }
 }
@@ -1401,9 +1404,90 @@ async function hapusPelanggan(id) {
   await supabaseClient.from('pelanggan').delete().eq('id', id); flash('Pelanggan dihapus'); tarikSemuaData();
 }
 
-// === RENDER UI UTAMA ===
 // === RENDER UI UTAMA (VERSI LENGKAP & ANTI BUG) ===
 function render(){
+ // === FUNGSI LAPORAN WA & AUDIT TRAIL ===
+
+async function catatLog(aksi, detail) {
+  if(!supabaseClient) return;
+  const user = sessionStorage.getItem('ta_user') || 'guest';
+  const role = sessionStorage.getItem('ta_role') || 'guest';
+  try {
+    await supabaseClient.from('audit_log').insert([{ 
+      id: genId('LOG'), waktu: nowISO(), user_name: user, role: role, aksi: aksi, detail: detail 
+    }]);
+  } catch(e) { console.error("Gagal catat log:", e); }
+}
+
+function renderAuditLog() {
+  const el = document.getElementById('listAuditLog'); if(!el) return;
+  const q = (document.getElementById('cariAuditLog').value || '').toLowerCase();
+  const list = (db.auditLog || []).filter(l => !q || (l.user_name||'').toLowerCase().includes(q) || (l.aksi||'').toLowerCase().includes(q));
+  
+  el.innerHTML = list.length ? list.map(l => `
+    <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <strong>${new Date(l.waktu).toLocaleString('id-ID')}</strong>
+        <span class="badge ${l.role === 'admin' ? 'danger' : 'proses'}">${esc(l.user_name)} (${l.role})</span>
+      </div>
+      <span style="color:#0284c7; font-weight:bold;">${esc(l.aksi)}</span>: ${esc(l.detail)}
+    </div>
+  `).join('') : '<div class="empty">Belum ada aktivitas.</div>';
+}
+
+function waAdminLaporan(){
+  const toko = getToko(); 
+  if(!toko.telp) return flash('Isi No WA Toko di menu Setting terlebih dahulu', 'err'); 
+  const today = new Date().toDateString();
+  
+  // Kalkulasi Data Hari Ini
+  const trxHari = db.jual.filter(t => new Date(t.waktu).toDateString() === today); 
+  const omzetJual = trxHari.reduce((s,t) => s + t.total, 0);
+  
+  const servisHari = db.servis.filter(s => s.tgl_selesai && new Date(s.tgl_selesai).toDateString() === today); 
+  const omzetServis = servisHari.reduce((s,t) => s + (t.biaya_pelanggan||0), 0);
+  
+  const batHari = db.baterai.filter(b => new Date(b.waktu).toDateString() === today); 
+  const omzetBat = batHari.reduce((s,b) => s + (b.biaya||0), 0);
+  
+  const totalOmzet = omzetJual + omzetServis + omzetBat;
+  const mdrHari = db.kas.filter(k => k.sumber === 'mdr' && new Date(k.waktu).toDateString() === today).reduce((s,k) => s + (k.nominal||0), 0);
+  
+  const piutang = db.servis.filter(s => !s.paid && s.sisa > 0); 
+  const piutangTotal = piutang.reduce((s,t) => s + t.sisa, 0);
+  const servisAktif = db.servis.filter(s => s.status === 'antri' || s.status === 'proses').length; 
+  
+  const prodLow = db.produk.filter(p => p.stok <= 2);
+  const spLow = db.sparePart.filter(s => s.stok <= s.min_stok); 
+  const batLow = db.stokBaterai.filter(b => b.stok <= b.min_stok);
+
+  const tgl = new Date().toLocaleDateString('id-ID', { weekday:'long', day:'numeric', month:'long', year:'numeric' }); 
+  const jam = new Date().toLocaleTimeString('id-ID', { hour:'2-digit', minute:'2-digit' });
+  const garis = '========================='; const tipis = '-------------------------';
+  
+  let text = `*${toko.nama.toUpperCase()}*\n${garis}\n*LAPORAN HARIAN*\n${tgl}\nDikirim: ${jam}\n${garis}\n*KAS MASUK HARI INI*\n${tipis}\n`;
+  text += `- Penjualan Jam : ${rp(omzetJual)}\n  (${trxHari.length} transaksi)\n`;
+  text += `- Servis lunas  : ${rp(omzetServis)}\n  (${servisHari.length} servis)\n`;
+  text += `- Baterai       : ${rp(omzetBat)}\n  (${batHari.length} ganti)\n${tipis}\n`;
+  text += `*TOTAL: ${rp(totalOmzet)}*\n`;
+  
+  if(mdrHari > 0) text += `Biaya Bank (MDR): -${rp(mdrHari)}\nNet Diterima    : ${rp(totalOmzet - mdrHari)}\n`;
+  
+  text += `${garis}\n*STATUS TOKO*\n${tipis}\n`;
+  text += `Servis Aktif: ${servisAktif}\n`;
+  text += `Piutang Servis: ${rp(piutangTotal)} (${piutang.length} nota)\n${garis}\n`;
+  
+  if(prodLow.length || spLow.length || batLow.length){ 
+    text += `*⚠️ STOK MENIPIS*\n${tipis}\n`; 
+    if(prodLow.length) text += `Produk: ${prodLow.map(p=>p.nama+' ('+p.stok+')').join(', ')}\n`; 
+    if(spLow.length) text += `Part: ${spLow.map(s=>s.nama+' ('+s.stok+')').join(', ')}\n`; 
+    if(batLow.length) text += `Baterai: ${batLow.map(b=>b.tipe+' ('+b.stok+')').join(', ')}\n`; 
+    text += `${garis}\n`; 
+  }
+  
+  text += `${toko.footer}\n_Laporan otomatis dari Sistem Toko_`; 
+  openWA(toko.telp, text);
+}
   if(!document.getElementById('selProduk')) return;
   
   const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
