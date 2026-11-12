@@ -592,7 +592,7 @@ try {
 } catch(e) { console.error("Supabase Init Error:", e); }
 
 // === STATE GLOBAL ===
-let db = { produk: [], jual: [], servis: [], baterai: [], stokBaterai: [], sparePart: [], supplier: [], pembelian: [], kas: [], pelanggan: [], bank: [], auditBarang: [], settings: {} };
+let db = { produk: [], jual: [], servis: [], baterai: [], stokBaterai: [], sparePart: [], supplier: [], pembelian: [], kas: [], pelanggan: [], bank: [], auditBarang: [], settings: {}, auditLog: [] };
 let cart = [], cartServis = [], cartBaterai = [];
 let filterServisStatus = '', filterKasJenis = '';
 let tempFotoBase64 = '';
@@ -855,9 +855,13 @@ function editProduk(id){
   window.scrollTo(0,0);
 }
 
-async function hapusProduk(id){ if(!isAdmin() || !confirm('Hapus?')) return; await supabaseClient.from('produk').delete().eq('id', id); flash('Dihapus'); tarikSemuaData(); }
-await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id);
-async function prosesRestock(){
+async function hapusProduk(id){ 
+  if(!isAdmin() || !confirm('Hapus?')) return; 
+  await supabaseClient.from('produk').delete().eq('id', id); 
+  await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id); // Pindah ke dalam sini
+  flash('Dihapus'); 
+  tarikSemuaData(); 
+}async function prosesRestock(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
   if(!id || qty < 1) return flash('Data tidak valid', 'err'); 
@@ -1406,9 +1410,7 @@ async function hapusPelanggan(id) {
   await supabaseClient.from('pelanggan').delete().eq('id', id); flash('Pelanggan dihapus'); tarikSemuaData();
 }
 
-// === RENDER UI UTAMA (VERSI LENGKAP & ANTI BUG) ===
-function render(){
- // === FUNGSI LAPORAN WA & AUDIT TRAIL ===
+   // === FUNGSI LAPORAN WA & AUDIT TRAIL ===
 
 async function catatLog(aksi, detail) {
   if(!supabaseClient) return;
@@ -1490,6 +1492,8 @@ function waAdminLaporan(){
   text += `${toko.footer}\n_Laporan otomatis dari Sistem Toko_`; 
   openWA(toko.telp, text);
 }
+// === RENDER UI UTAMA (VERSI LENGKAP & ANTI BUG) ===
+function render(){
   if(!document.getElementById('selProduk')) return;
   
   const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
