@@ -925,6 +925,9 @@ async function prosesBayar(){
   const bayarInput = document.getElementById('bayar'); const bayar = +bayarInput.value || 0;
   if(metode === 'tunai' && bayar < total) return flash('Uang kurang', 'err');
   
+  // 1. HITUNG MDR DI SINI (INI YANG HILANG DI KODE LAMA ANDA)
+  const mdr = hitungMDR(total, metode);
+  
   const trxId = genId('TRX');
   const trxHeader = {
     id: trxId, waktu: nowISO(), subtotal, diskon: potongan, total, bayar: metode === 'tunai' ? bayar : total, 
@@ -935,28 +938,48 @@ async function prosesBayar(){
   const trxItems = cart.map(c => ({ jual_id: trxId, produk_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty }));
 
   try {
+    // Simpan Transaksi
     await supabaseClient.from('jual').insert([trxHeader]);
     await supabaseClient.from('jual_items').insert(trxItems);
     
+    // Kurangi Stok
     for(const c of cart) {
       const p = db.produk.find(x => x.id === c.id);
       if(p) await supabaseClient.from('produk').update({ stok: p.stok - c.qty }).eq('id', c.id);
     }
     
+    // Catat Kas Masuk (Uang Masuk)
     await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: total, keterangan: `Penjualan ${trxId}`, sumber: 'jual', ref_id: trxId }]);
     
+    // 2. CATAT MDR SEBAGAI KAS KELUAR (INI JUGA HILANG DI KODE LAMA)
+    if(mdr > 0) {
+      await supabaseClient.from('kas').insert([{ 
+        id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode, nominal: mdr, 
+        keterangan: `MDR ${labelMetode(metode)} - ${trxId}`, sumber: 'mdr', ref_id: trxId 
+      }]);
+    }
+    
+    // Update Poin Pelanggan
     const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
     if(cNama || cHp) {
       const { data: exPel } = await supabaseClient.from('pelanggan').select('*').eq('nama', cNama).eq('telp', cHp).maybeSingle();
       if(exPel) await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) - tukarPoin + trxHeader.poin_didapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
       else await supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: cNama || 'Tanpa Nama', telp: cHp || '-', poin: trxHeader.poin_didapat, terakhir_transaksi: nowISO() }]);
     }
-    await catatLog('TRANSAKSI', 'Penjualan ' + rp(total) + ' via ' + labelMetode(metode));
-    flash('Transaksi berhasil'); cetakStruk(trxId); 
-    cart = []; ['bayar','custNama','custHp','nilaiDiskon','tukarPoin'].forEach(x => document.getElementById(x).value = 0); renderCart(); tarikSemuaData();
-  } catch(e) { flash('Gagal: ' + e.message, 'err'); }
-}
 
+    // Catat Audit Trail
+    await catatLog('TRANSAKSI', 'Penjualan ' + rp(total) + ' via ' + labelMetode(metode) + ' (MDR: ' + rp(mdr) + ')');
+    
+    flash('Transaksi berhasil'); 
+    cetakStruk(trxId); 
+    cart = []; 
+    ['bayar','custNama','custHp','nilaiDiskon','tukarPoin'].forEach(x => document.getElementById(x).value = 0); 
+    renderCart(); 
+    tarikSemuaData();
+  } catch(e) { 
+    flash('Gagal: ' + e.message, 'err'); 
+  }
+}
 // === SERVIS ===
 function addPartServis(){
   const id = document.getElementById('selSparePart').value; const qty = +document.getElementById('qtyPart').value; const sp = db.sparePart.find(x => x.id === id);
