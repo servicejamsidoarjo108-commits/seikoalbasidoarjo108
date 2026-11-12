@@ -649,7 +649,6 @@ function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
 function applyRoleUI() { 
   const r = sessionStorage.getItem('ta_role');
   
-  // Daftar tombol menu
   const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
   const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
   const btnBaterai = document.querySelector('button[onclick="bukaMenu(\'baterai\')"]');
@@ -658,21 +657,17 @@ function applyRoleUI() {
   const btnLaporan = document.querySelector('button[onclick="bukaMenu(\'laporan\')"]');
   const btnPelanggan = document.querySelector('button[onclick="bukaMenu(\'pelanggan\')"]');
   
-  // Tombol menu di dalam menuAdmin
   const btnKas = document.querySelector('button[onclick="bukaMenu(\'kas\')"]');
   const btnSupplier = document.querySelector('button[onclick="bukaMenu(\'supplier\')"]');
   const btnSetting = document.querySelector('button[onclick="bukaMenu(\'setting\')"]');
 
-  // Reset semua: Sembunyikan yang perlu disembunyikan
   [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
   [btnKasir, btnBaterai, btnPelanggan].forEach(b => { if(b) b.style.display = 'flex'; });
 
-  // 1. Tampilan KASIR (Hanya Kasir, Baterai, Pelanggan)
   if (r === 'kasir') {
     document.body.classList.add('role-kasir');
     document.body.classList.remove('role-admin');
   } 
-  // 2. Tampilan ADMIN (Semua operasional, TANPA Laporan & Setting)
   else if (r === 'admin') {
     document.body.classList.remove('role-kasir');
     document.body.classList.add('role-admin');
@@ -682,7 +677,6 @@ function applyRoleUI() {
     if(btnKas) btnKas.style.display = 'flex';
     if(btnSupplier) btnSupplier.style.display = 'flex';
   } 
-  // 3. Tampilan PEMILIK (Semua Menu)
   else if (r === 'pemilik') {
     document.body.classList.remove('role-kasir');
     document.body.classList.add('role-admin');
@@ -696,7 +690,25 @@ function applyRoleUI() {
   }
 }
 
-    // 2. Tentukan Role
+// === LOGIN ===
+async function login(){
+  try {
+    const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
+    const pass = document.getElementById('pinInput').value;
+    
+    if (!user || !pass) {
+      document.getElementById('loginErr').textContent = 'Username dan Password wajib diisi.';
+      return;
+    }
+
+    const emailLogin = user + '@tokoseiko.com';
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailLogin, password: pass });
+    
+    if (error) { 
+      document.getElementById('loginErr').textContent = error.message; 
+      return; 
+    }
+
     let role = 'kasir';
     if (user === 'admin') role = 'admin';
     if (user === 'pemilik') role = 'pemilik';
@@ -705,7 +717,6 @@ function applyRoleUI() {
     sessionStorage.setItem('ta_user', user); 
     sessionStorage.setItem('ta_role', role);
     
-    // 3. Ubah tombol jadi loading & Tarik Data
     const btn = document.querySelector('#loginOverlay button');
     btn.textContent = 'Memuat Data...';
     btn.disabled = true;
@@ -715,15 +726,11 @@ function applyRoleUI() {
       setupRealtime();
     } catch (err) {
       console.error("Gagal load data awal:", err);
-      // Jika gagal tarik data, kita tetap lanjut masuk
     } finally {
-      // 4. PASTI masuk ke aplikasi, apapun yang terjadi
       document.getElementById('loginOverlay').classList.add('hidden'); 
       applyRoleUI(); 
       bukaMenu('home'); 
       flash('Login Berhasil!');
-      
-      // Kembalikan tombol ke semula (untuk berjaga-jaga jika nanti logout)
       btn.textContent = 'Masuk';
       btn.disabled = false;
     }
@@ -732,9 +739,15 @@ function applyRoleUI() {
     alert("Error Sistem: " + e.message); 
   }
 }
+
+// === LOGOUT ===
 async function logout(){ 
   if(supabaseClient) await supabaseClient.auth.signOut();
-  sessionStorage.clear(); document.body.classList.remove('role-admin','role-kasir'); document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('loginUser').value = ''; document.getElementById('pinInput').value = ''; 
+  sessionStorage.clear(); 
+  document.body.classList.remove('role-admin','role-kasir'); 
+  document.getElementById('loginOverlay').classList.remove('hidden'); 
+  document.getElementById('loginUser').value = ''; 
+  document.getElementById('pinInput').value = ''; 
 }
 
 // === FUNGSI BANTU ===
