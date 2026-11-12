@@ -433,8 +433,14 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <div id="listBank"></div>
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
     <label>Tambah Rekening Baru</label>
-<div class="row"><div><input id="bankNama" placeholder="Nama Bank (BCA/BRI) *"></div><div><input id="bankNo" placeholder="No Rekening (opsional)"></div></div>
-<div class="row"><div><input type="number" id="bankSaldoAwal" placeholder="Saldo Awal (Rp)" value="0"></div><div><button class="btn" onclick="tambahBank()">+ Tambah Rekening</button></div></div>    
+<div class="row">
+  <div><label>Nama Bank *</label><input id="bankNama" placeholder="Contoh: BCA"></div>
+  <div><label>No Rekening</label><input id="bankNo" placeholder="Opsional"></div>
+</div>
+<div class="row">
+  <div><label>Saldo Awal (Rp)</label><input type="number" id="bankSaldoAwal" value="0"></div>
+  <div style="display:flex;align-items:flex-end"><button class="btn blue" onclick="tambahBank()">+ Tambah Rekening</button></div>
+</div>    
     <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
     <div class="row"><div><label>Jenis</label><select id="kasJenis"><option value="masuk">Masuk</option><option value="keluar">Keluar</option></select></div><div><label>Metode</label><select id="kasMetode" onchange="toggleKasBank()"><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option><option value="edc_debit">EDC Debit</option><option value="edc_kredit">EDC Kredit</option></select></div></div>
     <div class="row" id="wrapKasBank" style="display:none"><div><label>Rekening Bank</label><select id="kasBank"></select></div><div></div></div>
