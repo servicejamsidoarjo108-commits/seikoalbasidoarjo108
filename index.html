@@ -616,14 +616,23 @@ async function login(){
   try {
     const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
     const pass = document.getElementById('pinInput').value;
+    
+    if (!user || !pass) {
+      document.getElementById('loginErr').textContent = 'Username dan Password wajib diisi.';
+      return;
+    }
+
     const emailLogin = user + '@tokoseiko.com';
 
+    // 1. Proses Autentikasi ke Supabase
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailLogin, password: pass });
+    
     if (error) { 
-  alert("Error dari Supabase: " + error.message); 
-  document.getElementById('loginErr').textContent = error.message; 
-  return; 
-}
+      document.getElementById('loginErr').textContent = error.message; 
+      return; 
+    }
+
+    // 2. Tentukan Role
     let role = 'kasir';
     if (user === 'admin') role = 'admin';
     if (user === 'pemilik') role = 'pemilik';
@@ -632,25 +641,33 @@ async function login(){
     sessionStorage.setItem('ta_user', user); 
     sessionStorage.setItem('ta_role', role);
     
-      document.querySelector('#loginOverlay button').textContent = 'Memuat Data...';
-  
-  // Kita gunakan try-catch-finally agar layar login PASTI tertutup
-  try {
-    await tarikSemuaData();
-    setupRealtime();
-  } catch (err) {
-    console.error("Gagal load data awal:", err);
-    alert("Peringatan: Gagal mengambil sebagian data dari Cloud. Aplikasi tetap dibuka, silakan cek koneksi.");
-  } finally {
-    document.getElementById('loginOverlay').classList.add('hidden'); 
-    applyRoleUI(); 
-    bukaMenu('home'); 
-    flash('Login Berhasil!');
-  }
-} catch(e) { 
-  alert("Error Login: " + e.message); 
-}
+    // 3. Ubah tombol jadi loading & Tarik Data
+    const btn = document.querySelector('#loginOverlay button');
+    btn.textContent = 'Memuat Data...';
+    btn.disabled = true;
+    
+    try {
+      await tarikSemuaData();
+      setupRealtime();
+    } catch (err) {
+      console.error("Gagal load data awal:", err);
+      // Jika gagal tarik data, kita tetap lanjut masuk
+    } finally {
+      // 4. PASTI masuk ke aplikasi, apapun yang terjadi
+      document.getElementById('loginOverlay').classList.add('hidden'); 
+      applyRoleUI(); 
+      bukaMenu('home'); 
+      flash('Login Berhasil!');
+      
+      // Kembalikan tombol ke semula (untuk berjaga-jaga jika nanti logout)
+      btn.textContent = 'Masuk';
+      btn.disabled = false;
+    }
 
+  } catch(e) { 
+    alert("Error Sistem: " + e.message); 
+  }
+}
 async function logout(){ 
   if(supabaseClient) await supabaseClient.auth.signOut();
   sessionStorage.clear(); document.body.classList.remove('role-admin','role-kasir'); document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('loginUser').value = ''; document.getElementById('pinInput').value = ''; 
