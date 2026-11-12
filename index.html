@@ -761,6 +761,7 @@ async function login(){
     sessionStorage.setItem('ta_logged', '1'); 
     sessionStorage.setItem('ta_user', user); 
     sessionStorage.setItem('ta_role', role);
+    await catatLog('LOGIN', 'Berhasil masuk sistem');
     
     const btn = document.querySelector('#loginOverlay button');
     btn.textContent = 'Memuat Data...';
@@ -838,6 +839,7 @@ async function simpanProduk(){
     if(error) return flash(error.message, 'err');
     flash('Produk ditambahkan');
   }
+  await catatLog('PRODUK', (id ? 'Edit' : 'Tambah') + ' produk: ' + nama);
   resetFormProduk(); tarikSemuaData();
 }
 
@@ -854,7 +856,7 @@ function editProduk(id){
 }
 
 async function hapusProduk(id){ if(!isAdmin() || !confirm('Hapus?')) return; await supabaseClient.from('produk').delete().eq('id', id); flash('Dihapus'); tarikSemuaData(); }
-
+await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id);
 async function prosesRestock(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
@@ -942,7 +944,7 @@ async function prosesBayar(){
       if(exPel) await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) - tukarPoin + trxHeader.poin_didapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
       else await supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: cNama || 'Tanpa Nama', telp: cHp || '-', poin: trxHeader.poin_didapat, terakhir_transaksi: nowISO() }]);
     }
-
+    await catatLog('TRANSAKSI', 'Penjualan ' + rp(total) + ' via ' + labelMetode(metode));
     flash('Transaksi berhasil'); cetakStruk(trxId); 
     cart = []; ['bayar','custNama','custHp','nilaiDiskon','tukarPoin'].forEach(x => document.getElementById(x).value = 0); renderCart(); tarikSemuaData();
   } catch(e) { flash('Gagal: ' + e.message, 'err'); }
@@ -1008,7 +1010,7 @@ async function simpanServis(){
       for(const c of cartBaterai){ const sb = db.stokBaterai.find(x => x.id === c.id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); }
     }
     if(dp > 0) await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: document.getElementById('metodeDp').value, nominal: dp, keterangan: `DP Servis ${srvId}`, sumber: 'servis', ref_id: srvId }]);
-    
+    await catatLog('SERVIS', 'Input Servis ID: ' + srvId + ' (' + customer + ')');
     flash(`Servis ${srvId} dibuat`); batalKlaimGaransi(); cartServis = []; cartBaterai = []; 
     ['sNama','sHp','sProduk','sKeluhan','sCatatan'].forEach(x => document.getElementById(x).value = ''); 
     document.getElementById('sJasa').value = 0; document.getElementById('sDp').value = 0; 
@@ -1104,7 +1106,7 @@ async function simpanKasKecilKasir() {
 async function simpanToko(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const data = { nama: document.getElementById('tkNama').value.trim(), telp: document.getElementById('tkTelp').value.trim(), alamat: document.getElementById('tkAlamat').value.trim(), footer: document.getElementById('tkFooter').value.trim(), syarat: document.getElementById('tkSyarat').value.trim(), syarat_singkat: document.getElementById('tkSyaratSingkat').value.trim() };
-  await supabaseClient.from('settings').update(data).eq('id','toko'); flash('Identitas disimpan'); tarikSemuaData();
+  await supabaseClient.from('settings').update(data).eq('id','toko'); flash('Identitas disimpan');await catatLog('SETTING', 'Mengubah Identitas Toko'); tarikSemuaData();
 }
 async function simpanMDR(){ 
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
