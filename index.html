@@ -621,6 +621,26 @@ async function login(){
       return; 
     }
 
+   async function login(){
+  try {
+    const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
+    const pass = document.getElementById('pinInput').value;
+    
+    if (!user || !pass) {
+      document.getElementById('loginErr').textContent = 'Username dan Password wajib diisi.';
+      return;
+    }
+
+    const emailLogin = user + '@tokoseiko.com';
+
+    // 1. Proses Autentikasi ke Supabase
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailLogin, password: pass });
+    
+    if (error) { 
+      document.getElementById('loginErr').textContent = error.message; 
+      return; 
+    }
+
     // === FUNGSI PEMISAH ROLE ===
 function isPemilik() { return sessionStorage.getItem('ta_role') === 'pemilik'; }
 function isAdmin() { const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
@@ -716,6 +736,73 @@ async function logout(){
   if(supabaseClient) await supabaseClient.auth.signOut();
   sessionStorage.clear(); document.body.classList.remove('role-admin','role-kasir'); document.getElementById('loginOverlay').classList.remove('hidden'); document.getElementById('loginUser').value = ''; document.getElementById('pinInput').value = ''; 
 }
+
+// === FUNGSI BANTU ===
+function flash(text, type='ok'){ const el = document.getElementById('msg'); el.textContent = text; el.className = 'msg ' + type; clearTimeout(window.__msgT); window.__msgT = setTimeout(() => el.className = 'msg', 3500); }
+function checkRequired(ids) { let valid = true; ids.forEach(id => { const el = document.getElementById(id); if (!el) return; if (!el.value.trim()) { el.classList.add('input-error'); valid = false; } else { el.classList.remove('input-error'); } }); return valid; }
+document.addEventListener('DOMContentLoaded', () => { document.querySelectorAll('input, select, textarea').forEach(el => { el.addEventListener('input', function() { this.classList.remove('input-error'); }); }); });
+function bukaMenu(tabId){ 
+  document.querySelectorAll('section').forEach(x => x.classList.remove('active')); 
+  const target = document.getElementById(tabId); 
+  if(target) target.classList.add('active'); 
+  
+  const btnBack = document.querySelector('main > div > button[onclick="bukaMenu(\'home\')"]');
+  if (btnBack) {
+    btnBack.parentElement.style.display = (tabId === 'home') ? 'none' : 'block';
+  }
+
+  window.scrollTo(0, 0); 
+  render(); 
+}
+// === PRODUK & STOK ===
+// === PRODUK & STOK ===
+async function simpanProduk(){
+  // TAMBAHKAN BARIS INI (Mencegah Kasir mengubah produk)
+  if (!isAdmin()) return flash('Akses ditolak. Hanya Admin yang bisa mengubah produk.', 'err');
+
+  if (!checkRequired(['pNama', 'pHJual'])) return flash('Lengkapi kolom wajib', 'err');
+  const id = document.getElementById('pId').value; 
+  const nama = document.getElementById('pNama').value.trim();
+  const merek = document.getElementById('pMerek').value.trim(); 
+  const hargaBeli = +document.getElementById('pHBeli').value || 0;
+  const hargaJual = +document.getElementById('pHJual').value || 0; 
+  const stokInput = +document.getElementById('pStok').value || 0;
+  const barcode = document.getElementById('pSerial').value.trim();
+
+  const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
+  if(isAdmin()) data.harga_beli = hargaBeli;
+  if(tempFotoBase64) data.foto = tempFotoBase64;
+
+  if(id){
+    const { error } = await supabaseClient.from('produk').update(data).eq('id', id);
+    if(error) return flash(error.message, 'err');
+    flash('Produk diperbarui');
+  } else {
+    data.id = genId('PRD');
+    const { error } = await supabaseClient.from('produk').insert([data]);
+    if(error) return flash(error.message, 'err');
+    flash('Produk ditambahkan');
+  }
+  resetFormProduk(); tarikSemuaData();
+}
+function resetFormProduk(){ ['pId','pNama','pMerek','pHBeli','pHJual','pStok','pSerial','pFoto'].forEach(x => document.getElementById(x).value = ''); tempFotoBase64 = ''; }
+function editProduk(id){
+  if (!isAdmin()) return flash('Akses ditolak.', 'err'); // <--- Tambahkan baris ini
+  
+  const p = db.produk.find(x => x.id === id); 
+  if(!p) return;
+  // ... (sisa kode editProduk tetap sama) ...
+  document.getElementById('pId').value = p.id; document.getElementById('pNama').value = p.nama; document.getElementById('pMerek').value = p.merek || '';
+  document.getElementById('pHBeli').value = isAdmin() ? (p.harga_beli || '') : ''; document.getElementById('pHJual').value = p.harga_jual;
+  document.getElementById('pStok').value = p.stok; document.getElementById('pSerial').value = p.barcode || '';
+  window.scrollTo(0,0);
+}
+async function hapusProduk(id){ if(!isAdmin() || !confirm('Hapus?')) return; await supabaseClient.from('produk').delete().eq('id', id); flash('Dihapus'); tarikSemuaData(); }
+
+async function prosesRestock(){
+  const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
+  if(!id || qty < 1) return flash('Data tidak valid', 'err'); 
+  let item;
 
 // === FUNGSI BANTU ===
 function flash(text, type='ok'){ const el = document.getElementById('msg'); el.textContent = text; el.className = 'msg ' + type; clearTimeout(window.__msgT); window.__msgT = setTimeout(() => el.className = 'msg', 3500); }
