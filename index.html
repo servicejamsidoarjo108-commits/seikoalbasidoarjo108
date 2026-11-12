@@ -1108,6 +1108,13 @@ async function simpanBaterai(){
   if(metode !== 'hutang' && biaya > 0) await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: biaya, keterangan: `Ganti Baterai ${sb.tipe} - ${nama}`, sumber: 'baterai', ref_id: batId }]);
   flash('Baterai disimpan'); ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); tarikSemuaData();
 }
+  function cekPoinPelanggan(nama) {
+  if(!nama) return;
+  const p = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase());
+  const info = document.getElementById('infoPoin');
+  if(p && info) info.value = p.poin || 0;
+  else if(info) info.value = 0;
+}
 
 // === KAS & KEUANGAN ===
 async function simpanKasManual(){
