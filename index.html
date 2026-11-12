@@ -1291,8 +1291,31 @@ function shareStrukDigital(trxId){
   openWA(t.cust_hp, text);
 }
 function waServisSelesai(id){
-  const s = db.servis.find(x => x.id === id); if(!s || !s.telp) return; const toko = getToko(); const garis = '=========================';
-  let text = `*${toko.nama.toUpperCase()}*\n${garis}\n*SERVIS SELESAI*\nPelanggan: ${s.customer}\nBarang: ${s.produk}\n*No:* ${s.id}\nTotal: ${rp(s.biaya_pelanggan)}\n${s.paid?'*LUNAS*':'Sisa: '+rp(s.sisa)}\n${garis}\nSilakan diambil. ${toko.footer}`; openWA(s.telp, text);
+  const s = db.servis.find(x => x.id === id); if(!s || !s.telp) return; 
+  const toko = getToko(); const garis = '=========================';
+  const partsText = (s.parts||[]).map(p => `- ${p.nama} (${p.qty}x) : ${rp(p.harga*p.qty)}`).join('\n');
+  const batText = (s.baterai||[]).map(b => `- Baterai ${b.nama} (${b.qty}x) : ${rp(b.harga*b.qty)}`).join('\n');
+  
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*SERVIS SELESAI*\n${garis}\nPelanggan: ${s.customer}\nBarang: ${s.produk}\nKeluhan: ${s.keluhan||'-'}\n*No:* ${s.id}\n${garis}\n*RINCIAN BIAYA*\n`;
+  text += `Jasa Servis : ${rp(s.jasa||0)}\n`;
+  if(partsText) text += `${partsText}\n`;
+  if(batText) text += `${batText}\n`;
+  text += `${garis}\n*TOTAL: ${rp(s.biaya_pelanggan)}*\n`;
+  
+  if(s.paid) text += `Status: *LUNAS*\n`;
+  else if(s.dp > 0) text += `DP Masuk: ${rp(s.dp)}\n*Sisa Tagihan: ${rp(s.sisa)}*\n`;
+  else text += `*Sisa Tagihan: ${rp(s.sisa)}*\n`;
+  
+  if(s.tgl_garansi_servis_sampai) {
+    text += `${garis}\n*GARANSI SERVIS*\nBerlaku s/d: *${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')}* (23:59)\n`;
+    if(s.is_klaim) text += `(Klaim dari nota ${s.parent_id})\n`;
+    text += `${garis}\n`;
+  }
+  
+  text += `Silakan diambil di toko kami.\n`;
+  if(toko.syarat) text += `\n*SYARAT & KETENTUAN:*\n${toko.syarat}\n`;
+  text += `\n${toko.footer}\n_Simpan pesan ini sebagai bukti servis_`; 
+  openWA(s.telp, text);
 }
 function waReminderBaterai(id){
   const b = db.baterai.find(x => x.id === id); if(!b || !b.telp) return; const toko = getToko(); const sisaHari = Math.ceil((new Date(b.tgl_expired + 'T23:59:59') - new Date()) / 86400000);
