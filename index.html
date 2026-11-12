@@ -618,6 +618,9 @@ function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
 
 function applyRoleUI() { 
   const r = sessionStorage.getItem('ta_role');
+  // Tampilkan Audit Trail hanya untuk Pemilik
+const cardAudit = document.getElementById('cardAuditTrail');
+if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
   
   const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
   const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
