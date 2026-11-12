@@ -829,7 +829,7 @@ async function simpanProduk(){
   const barcode = document.getElementById('pSerial').value.trim();
 
   const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
-  if(isAdmin()) data.harga_beli = hargaBeli;
+  if(isPemilik()) data.harga_beli = hargaBeli;
   if(tempFotoBase64) data.foto = tempFotoBase64;
 
   if(id){
