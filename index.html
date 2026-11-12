@@ -1337,6 +1337,10 @@ async function hapusPelanggan(id) {
 function render(){
   if(!document.getElementById('selProduk')) return;
   
+  // Fungsi bantuan untuk mencegah error jika elemen tidak ditemukan
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val; };
+  const setHTML = (id, html) => { const el = document.getElementById(id); if(el) el.innerHTML = html; };
+
   // Tampilkan Nama User & Role
   const homeUser = document.getElementById('homeUser'); 
   if(homeUser) {
@@ -1345,61 +1349,63 @@ function render(){
     homeUser.innerHTML = `Login sebagai: <b>${u}</b> (${r})`;
   }
 
-  // Sembunyikan/Tampilkan Menu Admin (Kas, Supplier, Setting)
+  // Sembunyikan/Tampilkan Menu Admin
   const menuAdmin = document.getElementById('menuAdmin'); 
-  if(menuAdmin) {
-    menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
-  }
+  if(menuAdmin) { menuAdmin.style.display = isAdmin() ? 'grid' : 'none'; }
   
-  document.getElementById('selProduk').innerHTML = db.produk.filter(p => p.stok > 0).map(p => `<option value="${p.id}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option>Tidak ada stok</option>';
-  document.getElementById('listProduk').innerHTML = db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>';
-  document.getElementById('selSparePart').innerHTML = '<option value="">-- pilih --</option>' + db.sparePart.map(sp => `<option value="${sp.id}" ${sp.stok===0?'disabled':''}>${esc(sp.nama)} - stok ${sp.stok}</option>`).join('');
-  document.getElementById('listSparePart').innerHTML = db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr><td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>';
-  document.getElementById('selBateraiServis').innerHTML = '<option value="">-- pilih --</option>' + db.stokBaterai.map(sb => `<option value="${sb.id}" ${sb.stok===0?'disabled':''}>${sb.tipe} - stok ${sb.stok}</option>`).join('');
-  document.getElementById('listStokBaterai').innerHTML = db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr><td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>';
+  // Render Dropdown / Select
+  setHTML('selProduk', db.produk.filter(p => p.stok > 0).map(p => `<option value="${p.id}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option>Tidak ada stok</option>');
+  setHTML('selSparePart', '<option value="">-- pilih --</option>' + db.sparePart.map(sp => `<option value="${sp.id}" ${sp.stok===0?'disabled':''}>${esc(sp.nama)} - stok ${sp.stok}</option>`).join(''));
+  setHTML('selBateraiServis', '<option value="">-- pilih --</option>' + db.stokBaterai.map(sb => `<option value="${sb.id}" ${sb.stok===0?'disabled':''}>${sb.tipe} - stok ${sb.stok}</option>`).join(''));
+
+  // Render Daftar (Tabel)
+  setHTML('listProduk', db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
   
-  document.getElementById('listServis').innerHTML = db.servis.length ? db.servis.map(s => `<div class="servis-item ${s.status}"><h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4><p>Barang: ${esc(s.produk)}</p><p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Status</button><button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}</div></div>`).join('') : '<div class="empty">Tidak ada servis</div>';
+  setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr><td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
+  
+  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr><td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
+  
+  setHTML('listServis', db.servis.length ? db.servis.map(s => `<div class="servis-item ${s.status}"><h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4><p>Barang: ${esc(s.produk)}</p><p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Status</button><button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}</div></div>`).join('') : '<div class="empty">Tidak ada servis</div>');
 
   const masuk = db.kas.filter(k => k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
   const keluar = db.kas.filter(k => k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
-  if(document.getElementById('kasTunai')) {
-    document.getElementById('kasTunai').textContent = rp(masuk - keluar);
-    document.getElementById('listKas').innerHTML = db.kas.slice(0,20).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join('');
-  }
+  if(document.getElementById('kasTunai')) document.getElementById('kasTunai').textContent = rp(masuk - keluar);
+  setHTML('listKas', db.kas.slice(0,20).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join(''));
 
-  document.getElementById('listPelanggan').innerHTML = db.pelanggan.length ? `<table><thead><tr><th>Nama</th><th>HP</th><th>Poin</th></tr></thead><tbody>` + db.pelanggan.map(p => `<tr><td>${esc(p.nama)}</td><td>${esc(p.telp)}</td><td>${p.poin}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>';
+  setHTML('listPelanggan', db.pelanggan.length ? `<table><thead><tr><th>Nama</th><th>HP</th><th>Poin</th></tr></thead><tbody>` + db.pelanggan.map(p => `<tr><td>${esc(p.nama)}</td><td>${esc(p.telp)}</td><td>${p.poin}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   
   const totalOmzet = db.jual.reduce((s,t) => s + t.total, 0);
   if(document.getElementById('lapOmzet')) document.getElementById('lapOmzet').textContent = rp(totalOmzet);
   
+  // Isi Form Setting
   if(db.settings) {
-  if(document.getElementById('tkNama')) document.getElementById('tkNama').value = db.settings.nama || '';
-  if(document.getElementById('tkTelp')) document.getElementById('tkTelp').value = db.settings.telp || '';
-  if(document.getElementById('tkAlamat')) document.getElementById('tkAlamat').value = db.settings.alamat || '';
-  if(document.getElementById('tkFooter')) document.getElementById('tkFooter').value = db.settings.footer || '';
-  
-  // Gunakan TOKO_DEFAULT sebagai cadangan jika database kosong
-  if(document.getElementById('tkSyarat')) document.getElementById('tkSyarat').value = db.settings.syarat || TOKO_DEFAULT.syarat;
-  if(document.getElementById('tkSyaratSingkat')) document.getElementById('tkSyaratSingkat').value = db.settings.syarat_singkat || TOKO_DEFAULT.syaratSingkat;
-  
-  if(document.getElementById('setGaransiServisBulan')) document.getElementById('setGaransiServisBulan').value = db.settings.garansi_servis_bulan ?? 3;
-  
-  // MDR BARU (Menggunakan ?? agar angka 0 tetap terbaca 0)
-  if(document.getElementById('setMdrCcBca')) document.getElementById('setMdrCcBca').value = db.settings.mdr_cc_bca ?? 1.5;
-  if(document.getElementById('setMdrCcVm')) document.getElementById('setMdrCcVm').value = db.settings.mdr_cc_vm ?? 2;
-  if(document.getElementById('setMdrCcAmex')) document.getElementById('setMdrCcAmex').value = db.settings.mdr_cc_amex ?? 3.25;
-  if(document.getElementById('setMdrDcBca')) document.getElementById('setMdrDcBca').value = db.settings.mdr_dc_bca ?? 0.15;
-  if(document.getElementById('setMdrDcLain')) document.getElementById('setMdrDcLain').value = db.settings.mdr_dc_lain ?? 1;
-  if(document.getElementById('setMdrDcMaestro')) document.getElementById('setMdrDcMaestro').value = db.settings.mdr_dc_maestro ?? 2;
-  if(document.getElementById('setMdrQrisBesar')) document.getElementById('setMdrQrisBesar').value = db.settings.mdr_qris_besar ?? 0.7;
-  if(document.getElementById('setMdrTransfer')) document.getElementById('setMdrTransfer').value = db.settings.mdr_transfer ?? 0;
-  
-  if(document.getElementById('setDiskonPersen')) document.getElementById('setDiskonPersen').value = db.settings.diskon_persen ?? 10;
-  if(document.getElementById('setDiskonNominal')) document.getElementById('setDiskonNominal').value = db.settings.diskon_nominal ?? 20000;
-}
+    setVal('tkNama', db.settings.nama || '');
+    setVal('tkTelp', db.settings.telp || '');
+    setVal('tkAlamat', db.settings.alamat || '');
+    setVal('tkFooter', db.settings.footer || '');
+    
+    // Gunakan TOKO_DEFAULT sebagai cadangan
+    setVal('tkSyarat', db.settings.syarat || TOKO_DEFAULT.syarat);
+    setVal('tkSyaratSingkat', db.settings.syarat_singkat || TOKO_DEFAULT.syaratSingkat);
+    
+    setVal('setGaransiServisBulan', db.settings.garansi_servis_bulan ?? 3);
+    
+    // MDR BARU
+    setVal('setMdrCcBca', db.settings.mdr_cc_bca ?? 1.5);
+    setVal('setMdrCcVm', db.settings.mdr_cc_vm ?? 2);
+    setVal('setMdrCcAmex', db.settings.mdr_cc_amex ?? 3.25);
+    setVal('setMdrDcBca', db.settings.mdr_dc_bca ?? 0.15);
+    setVal('setMdrDcLain', db.settings.mdr_dc_lain ?? 1);
+    setVal('setMdrDcMaestro', db.settings.mdr_dc_maestro ?? 2);
+    setVal('setMdrQrisBesar', db.settings.mdr_qris_besar ?? 0.7);
+    setVal('setMdrTransfer', db.settings.mdr_transfer ?? 0);
+    
+    setVal('setDiskonPersen', db.settings.diskon_persen ?? 10);
+    setVal('setDiskonNominal', db.settings.diskon_nominal ?? 20000);
+  }
+
   if(document.getElementById('listAuditGlobal')) renderAuditGlobal();
 }
-
 // === INISIALISASI ===
 if(sessionStorage.getItem('ta_logged') === '1') {
   document.getElementById('loginOverlay').classList.add('hidden');
