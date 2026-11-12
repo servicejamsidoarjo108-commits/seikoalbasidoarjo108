@@ -1404,8 +1404,37 @@ function render(){
   // 3. Render Daftar Produk, Part, Baterai
   setHTML('listProduk', db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
   setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr><td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
-  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr><td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
-  
+  // Render Riwayat Garansi Baterai (Lengkap dengan Tombol WA, Kartu, E-Warranty)
+const cariB = (document.getElementById('bCari')?.value || '').toLowerCase(); 
+const listB = db.baterai.filter(b => !cariB || b.customer.toLowerCase().includes(cariB) || (b.telp||'').includes(cariB) || b.produk.toLowerCase().includes(cariB)).sort((a,b) => new Date(a.tgl_expired) - new Date(b.tgl_expired));
+
+setHTML('listBaterai', listB.length ? listB.map(b => { 
+  // Hitung sisa hari
+  const end = new Date(b.tgl_expired + 'T23:59:59'); 
+  const sisa = Math.ceil((end - new Date()) / 86400000);
+  let cls = 'ok', label = 'AKTIF';
+  if(sisa < 0) { cls = 'danger'; label = 'EXPIRED'; }
+  else if(sisa <= 30) { cls = 'warn'; label = 'HAMPIR HABIS'; }
+
+  return `<div class="bat-item ${cls}">
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <strong>${esc(b.customer)}</strong>
+      <span class="badge ${cls}">${label}${sisa>=0?' ('+sisa+' hr)':''}</span>
+    </div>
+    <div style="font-size:12px;color:#475569;margin-top:2px">
+      Barang: ${esc(b.produk)} - Baterai: ${b.tipe}<br>
+      Tgl: ${new Date(b.tgl_ganti).toLocaleDateString('id-ID')} s/d ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}<br>
+      Biaya: ${rp(b.biaya)} ${b.metode==='hutang'?'<span class="badge warn">HUTANG</span>':''} 
+      ${b.telp?'- Telp: '+esc(b.telp):''}
+    </div>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+      ${b.telp?`<button class="btn-sm ok" onclick="waReminderBaterai('${b.id}')">WA</button>`:''}
+      <button class="btn-sm blue" onclick="cetakKartuBaterai('${b.id}')">Kartu</button>
+      <button class="btn-sm ok" onclick="generateDigitalWarranty('${b.id}', 'baterai')">📸 E-Warranty</button>
+      ${isAdmin()?`<button class="btn-sm danger" onclick="hapusBaterai('${b.id}')">Hapus</button>`:''}
+    </div>
+  </div>`; 
+}).join('') : '<div class="empty">Belum ada data</div>');
   // 4. Render Daftar Servis (LENGKAP DENGAN TOMBOL BAYAR SISA)
   // 4. Render Daftar Servis (LENGKAP DENGAN GARANSI & E-WARRANTY)
 setHTML('listServis', db.servis.length ? db.servis.map(s => {
