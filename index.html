@@ -708,7 +708,7 @@ async function tarikSemuaData() {
     db.auditBarang = aud || [];
 
     const { data: alog } = await supabaseClient.from('audit_log').select('*').order('waktu', {ascending: false}).limit(500);
-db.auditLog = alog || [];
+    db.auditLog = alog || [];
 
     render();
   } catch(e) { console.error("Gagal tarik data:", e); }
@@ -1650,6 +1650,7 @@ function render(){
   }
 
   if(document.getElementById('listAuditGlobal')) renderAuditGlobal();
+  if(document.getElementById('listAuditLog')) renderAuditLog();
 }
 // === INISIALISASI ===
 if(sessionStorage.getItem('ta_logged') === '1') {
