@@ -1115,6 +1115,13 @@ async function simpanBaterai(){
   if(p && info) info.value = p.poin || 0;
   else if(info) info.value = 0;
 }
+  async function hapusBaterai(id){ 
+  if(!isAdmin() || !confirm('Hapus data baterai ini?')) return; 
+  await supabaseClient.from('baterai').delete().eq('id', id); 
+  await catatLog('HAPUS_BATERAI', 'Menghapus riwayat baterai ID: ' + id); 
+  flash('Dihapus'); 
+  tarikSemuaData(); 
+}
 
 // === KAS & KEUANGAN ===
 async function simpanKasManual(){
