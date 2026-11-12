@@ -571,14 +571,35 @@ async function tarikSemuaData() {
 
 // === REAL-TIME SYNC (2 HP Saling Update) ===
 function setupRealtime() {
-  if(!supabaseClient) return;
-  supabaseClient.channel('realtime-db')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'produk' }, () => { supabaseClient.from('produk').select('*').then(({data}) => { if(data){ db.produk = data; render(); } }) })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'servis' }, () => { supabaseClient.from('servis').select('*, servis_parts(*), servis_baterai(*)').then(({data}) => { if(data){ db.servis = data.map(x => ({ ...x, parts: x.servis_parts, baterai: x.servis_baterai })); render(); } }) })
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'jual' }, () => { supabaseClient.from('jual').select('*, jual_items(*)').then(({data}) => { if(data){ db.jual = data.map(x => ({ ...x, items: x.jual_items })); render(); } }) })
-    .subscribe();
-}
+  if (!supabaseClient) return;
 
+  // 1. Hapus channel lama jika sudah ada (mencegah duplikasi listener)
+  const existingChannel = supabaseClient.channel('realtime-db');
+  if (existingChannel) {
+    supabaseClient.removeChannel(existingChannel);
+  }
+
+  // 2. Buat channel baru dan daftarkan semua listener
+  const newChannel = supabaseClient.channel('realtime-db')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'produk' }, () => { 
+      supabaseClient.from('produk').select('*').then(({data}) => { 
+        if(data){ db.produk = data; render(); } 
+      }); 
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'servis' }, () => { 
+      supabaseClient.from('servis').select('*, servis_parts(*), servis_baterai(*)').then(({data}) => { 
+        if(data){ db.servis = data.map(x => ({ ...x, parts: x.servis_parts, baterai: x.servis_baterai })); render(); } 
+      }); 
+    })
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'jual' }, () => { 
+      supabaseClient.from('jual').select('*, jual_items(*)').then(({data}) => { 
+        if(data){ db.jual = data.map(x => ({ ...x, items: x.jual_items })); render(); } 
+      }); 
+    });
+
+  // 3. BARU panggil subscribe() setelah SEMUA listener terpasang
+  newChannel.subscribe();
+}
 // === LOGIN & AUTH ===
 function isAdmin(){ const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
 function applyRoleUI() { 
