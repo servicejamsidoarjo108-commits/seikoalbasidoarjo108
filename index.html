@@ -299,23 +299,25 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
       <div><label>Biaya Jasa (Rp)</label><input type="number" id="sJasa" value="0" min="0" oninput="hitungTotalServis()"></div>
     </div>
   </div>
+  
   <div class="card"><h3>Pakai Spare Part</h3>
     <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
     <div id="cartServisList"><div class="empty">Belum ada part</div></div>
     <div class="cart-total"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
   </div>
+  
   <div class="card"><h3>Pakai Baterai (Opsional)</h3>
     <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
     <div id="cartBateraiList"><div class="empty">Belum ada baterai</div></div>
     <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiTotal">Rp 0</span></div>
   </div>
+  
   <div class="card"><h3>Pembayaran Awal (DP)</h3>
     <div class="row"><div><label>Total Biaya Servis</label><input id="sTotalBiaya" readonly style="font-size:16px;font-weight:700;text-align:right"></div><div><label>DP Awal (Rp)</label><input type="number" id="sDp" value="0" min="0" oninput="hitungTotalServis()"></div></div>
     
     <div class="row">
       <div>
         <label>Metode Bayar DP</label>
-        <!-- METODE BAYAR BARU (SERVIS DP) -->
         <select id="metodeDp" onchange="toggleBankDp()">
           <option value="tunai">Tunai</option>
           <option value="transfer">Transfer</option>
@@ -339,7 +341,8 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <p style="font-size:12px;color:#64748b;margin:6px 0 10px">Jika garansi, customer bayar 0, tapi spare part & baterai tetap keluar stok.</p>
     <button class="btn ok" onclick="simpanServis()">Simpan Servis</button>
   </div>
-</section>
+
+  <!-- DAFTAR SERVIS & CEK GARANSI HARUS DI DALAM SINI -->
   <div class="card"><h3>Daftar Servis</h3>
     <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
       <button class="btn-sm ghost" onclick="filterServis('')">Semua</button>
@@ -350,12 +353,12 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     </div>
     <div id="listServis"></div>
   </div>
+  
   <div class="card"><h3>Cek Garansi Servis</h3>
     <input id="cariGaransi" placeholder="Cari nama / no HP / no servis / produk..." oninput="renderCekGaransi()" style="margin-bottom:10px">
     <div id="hasilCekGaransi"><div class="empty">Ketik untuk mencari garansi</div></div>
   </div>
 </section>
-
 <section id="sparepart">
   <div class="card" id="cardTambahSparePart">
     <h3>Tambah Spare Part</h3>
