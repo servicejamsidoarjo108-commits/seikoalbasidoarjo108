@@ -1373,23 +1373,34 @@ function render(){
   setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr><td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   
   // 4. Render Daftar Servis (LENGKAP DENGAN TOMBOL BAYAR SISA)
-  setHTML('listServis', db.servis.length ? db.servis.map(s => {
-    const btnBayar = (!s.paid && s.sisa > 0) ? `<button class="btn-sm ok" onclick="bayarSisaServis('${s.id}')">Bayar Sisa</button>` : '';
-    const btnStruk = s.paid ? `<button class="btn-sm blue" onclick="cetakStrukServis('${s.id}')">Struk</button>` : '';
+  // 4. Render Daftar Servis (LENGKAP DENGAN GARANSI & E-WARRANTY)
+setHTML('listServis', db.servis.length ? db.servis.map(s => {
+  const btnBayar = (!s.paid && s.sisa > 0) ? `<button class="btn-sm ok" onclick="bayarSisaServis('${s.id}')">Bayar Sisa</button>` : '';
+  const btnStruk = s.paid ? `<button class="btn-sm blue" onclick="cetakStrukServis('${s.id}')">Struk</button>` : '';
+  
+  // Tombol Garansi & E-Warranty
+  const btnKartuGaransi = s.tgl_garansi_servis_sampai 
+    ? `<button class="btn-sm blue" onclick="cetakKartuGaransiServis('${s.id}')">Kartu</button>
+       <button class="btn-sm ok" onclick="generateDigitalWarranty('${s.id}', 'servis')">📸 E-Warranty</button>` 
+    : '';
     
-    return `<div class="servis-item ${s.status}">
-      <h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4>
-      <p>Barang: ${esc(s.produk)}</p>
-      <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
-      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Ganti Status</button>
-        <button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>
-        ${btnBayar} ${btnStruk}
-        ${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}
-        ${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}
-      </div>
-    </div>`;
-  }).join('') : '<div class="empty">Tidak ada servis</div>');
+  const btnKlaim = bisaKlaimGaransi(s) ? `<button class="btn-sm warn" onclick="mulaiKlaimGaransi('${s.id}')">Klaim (${2 - (s.klaim_count||0)}x)</button>` : '';
+
+  return `<div class="servis-item ${s.status}">
+    <h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4>
+    <p>Barang: ${esc(s.produk)}</p>
+    <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
+    ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
+    
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+      <button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Ganti Status</button>
+      <button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>
+      ${btnBayar} ${btnStruk} ${btnKartuGaransi} ${btnKlaim}
+      ${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}
+      ${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}
+    </div>
+  </div>`;
+}).join('') : '<div class="empty">Tidak ada servis</div>');
 
   // 5. Render Kas
   const masuk = db.kas.filter(k => k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
