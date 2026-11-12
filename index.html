@@ -519,8 +519,56 @@ const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
 const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const genId = (prefix) => prefix + Date.now() + Math.random().toString(36).substring(2,6);
-const load = k => []; // Dummy agar tidak error
-const save = async (k,v) => {}; // Dummy agar tidak error
+
+// === FUNGSI PEMISAH ROLE ===
+function isPemilik() { return sessionStorage.getItem('ta_role') === 'pemilik'; }
+function isAdmin() { const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
+function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
+
+function applyRoleUI() { 
+  const r = sessionStorage.getItem('ta_role');
+  
+  const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
+  const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
+  const btnBaterai = document.querySelector('button[onclick="bukaMenu(\'baterai\')"]');
+  const btnProduk = document.querySelector('button[onclick="bukaMenu(\'produk\')"]');
+  const btnSparepart = document.querySelector('button[onclick="bukaMenu(\'sparepart\')"]');
+  const btnLaporan = document.querySelector('button[onclick="bukaMenu(\'laporan\')"]');
+  const btnPelanggan = document.querySelector('button[onclick="bukaMenu(\'pelanggan\')"]');
+  
+  const btnKas = document.querySelector('button[onclick="bukaMenu(\'kas\')"]');
+  const btnSupplier = document.querySelector('button[onclick="bukaMenu(\'supplier\')"]');
+  const btnSetting = document.querySelector('button[onclick="bukaMenu(\'setting\')"]');
+
+  // Sembunyikan semua terlebih dahulu
+  [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
+  [btnKasir, btnBaterai, btnPelanggan].forEach(b => { if(b) b.style.display = 'flex'; });
+
+  if (r === 'kasir') {
+    document.body.classList.add('role-kasir');
+    document.body.classList.remove('role-admin');
+  } 
+  else if (r === 'admin') {
+    document.body.classList.remove('role-kasir');
+    document.body.classList.add('role-admin');
+    if(btnServis) btnServis.style.display = 'flex';
+    if(btnProduk) btnProduk.style.display = 'flex';
+    if(btnSparepart) btnSparepart.style.display = 'flex';
+    if(btnKas) btnKas.style.display = 'flex';
+    if(btnSupplier) btnSupplier.style.display = 'flex';
+  } 
+  else if (r === 'pemilik') {
+    document.body.classList.remove('role-kasir');
+    document.body.classList.add('role-admin');
+    if(btnServis) btnServis.style.display = 'flex';
+    if(btnProduk) btnProduk.style.display = 'flex';
+    if(btnSparepart) btnSparepart.style.display = 'flex';
+    if(btnLaporan) btnLaporan.style.display = 'flex';
+    if(btnKas) btnKas.style.display = 'flex';
+    if(btnSupplier) btnSupplier.style.display = 'flex';
+    if(btnSetting) btnSetting.style.display = 'flex';
+  }
+}
 
 // === MENGAMBIL SEMUA DATA DARI CLOUD ===
 async function tarikSemuaData() {
@@ -569,22 +617,15 @@ async function tarikSemuaData() {
   } catch(e) { console.error("Gagal tarik data:", e); }
 }
 
-// === REAL-TIME SYNC (2 HP Saling Update) ===
+// === REAL-TIME SYNC ===
 function setupRealtime() {
   if (!supabaseClient) return;
-
-  // 1. Hapus channel lama jika sudah ada (mencegah duplikasi listener)
   const existingChannel = supabaseClient.channel('realtime-db');
-  if (existingChannel) {
-    supabaseClient.removeChannel(existingChannel);
-  }
+  if (existingChannel) supabaseClient.removeChannel(existingChannel);
 
-  // 2. Buat channel baru dan daftarkan semua listener
   const newChannel = supabaseClient.channel('realtime-db')
     .on('postgres_changes', { event: '*', schema: 'public', table: 'produk' }, () => { 
-      supabaseClient.from('produk').select('*').then(({data}) => { 
-        if(data){ db.produk = data; render(); } 
-      }); 
+      supabaseClient.from('produk').select('*').then(({data}) => { if(data){ db.produk = data; render(); } }); 
     })
     .on('postgres_changes', { event: '*', schema: 'public', table: 'servis' }, () => { 
       supabaseClient.from('servis').select('*, servis_parts(*), servis_baterai(*)').then(({data}) => { 
@@ -597,100 +638,10 @@ function setupRealtime() {
       }); 
     });
 
-  // 3. BARU panggil subscribe() setelah SEMUA listener terpasang
   newChannel.subscribe();
 }
 
-async function login(){
-  try {
-    const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
-    const pass = document.getElementById('pinInput').value;
-    
-    if (!user || !pass) {
-      document.getElementById('loginErr').textContent = 'Username dan Password wajib diisi.';
-      return;
-    }
-
-    const emailLogin = user + '@tokoseiko.com';
-
-    // 1. Proses Autentikasi ke Supabase
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailLogin, password: pass });
-    
-    if (error) { 
-      document.getElementById('loginErr').textContent = error.message; 
-      return; 
-    }
-
-   async function login(){
-  try {
-    const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
-    const pass = document.getElementById('pinInput').value;
-    
-    if (!user || !pass) {
-      document.getElementById('loginErr').textContent = 'Username dan Password wajib diisi.';
-      return;
-    }
-
-    const emailLogin = user + '@tokoseiko.com';
-
-    // 1. Proses Autentikasi ke Supabase
-    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailLogin, password: pass });
-    
-    if (error) { 
-      document.getElementById('loginErr').textContent = error.message; 
-      return; 
-    }
-
-    // === FUNGSI PEMISAH ROLE ===
-function isPemilik() { return sessionStorage.getItem('ta_role') === 'pemilik'; }
-function isAdmin() { const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
-function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
-
-function applyRoleUI() { 
-  const r = sessionStorage.getItem('ta_role');
-  
-  const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
-  const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
-  const btnBaterai = document.querySelector('button[onclick="bukaMenu(\'baterai\')"]');
-  const btnProduk = document.querySelector('button[onclick="bukaMenu(\'produk\')"]');
-  const btnSparepart = document.querySelector('button[onclick="bukaMenu(\'sparepart\')"]');
-  const btnLaporan = document.querySelector('button[onclick="bukaMenu(\'laporan\')"]');
-  const btnPelanggan = document.querySelector('button[onclick="bukaMenu(\'pelanggan\')"]');
-  
-  const btnKas = document.querySelector('button[onclick="bukaMenu(\'kas\')"]');
-  const btnSupplier = document.querySelector('button[onclick="bukaMenu(\'supplier\')"]');
-  const btnSetting = document.querySelector('button[onclick="bukaMenu(\'setting\')"]');
-
-  [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
-  [btnKasir, btnBaterai, btnPelanggan].forEach(b => { if(b) b.style.display = 'flex'; });
-
-  if (r === 'kasir') {
-    document.body.classList.add('role-kasir');
-    document.body.classList.remove('role-admin');
-  } 
-  else if (r === 'admin') {
-    document.body.classList.remove('role-kasir');
-    document.body.classList.add('role-admin');
-    if(btnServis) btnServis.style.display = 'flex';
-    if(btnProduk) btnProduk.style.display = 'flex';
-    if(btnSparepart) btnSparepart.style.display = 'flex';
-    if(btnKas) btnKas.style.display = 'flex';
-    if(btnSupplier) btnSupplier.style.display = 'flex';
-  } 
-  else if (r === 'pemilik') {
-    document.body.classList.remove('role-kasir');
-    document.body.classList.add('role-admin');
-    if(btnServis) btnServis.style.display = 'flex';
-    if(btnProduk) btnProduk.style.display = 'flex';
-    if(btnSparepart) btnSparepart.style.display = 'flex';
-    if(btnLaporan) btnLaporan.style.display = 'flex';
-    if(btnKas) btnKas.style.display = 'flex';
-    if(btnSupplier) btnSupplier.style.display = 'flex';
-    if(btnSetting) btnSetting.style.display = 'flex';
-  }
-}
-
-// === LOGIN ===
+// === LOGIN & LOGOUT ===
 async function login(){
   try {
     const user = (document.getElementById('loginUser').value || '').trim().toLowerCase();
@@ -740,7 +691,6 @@ async function login(){
   }
 }
 
-// === LOGOUT ===
 async function logout(){ 
   if(supabaseClient) await supabaseClient.auth.signOut();
   sessionStorage.clear(); 
@@ -763,17 +713,15 @@ function bukaMenu(tabId){
   if (btnBack) {
     btnBack.parentElement.style.display = (tabId === 'home') ? 'none' : 'block';
   }
-
   window.scrollTo(0, 0); 
   render(); 
 }
-// === PRODUK & STOK ===
+
 // === PRODUK & STOK ===
 async function simpanProduk(){
-  // TAMBAHKAN BARIS INI (Mencegah Kasir mengubah produk)
   if (!isAdmin()) return flash('Akses ditolak. Hanya Admin yang bisa mengubah produk.', 'err');
-
   if (!checkRequired(['pNama', 'pHJual'])) return flash('Lengkapi kolom wajib', 'err');
+  
   const id = document.getElementById('pId').value; 
   const nama = document.getElementById('pNama').value.trim();
   const merek = document.getElementById('pMerek').value.trim(); 
@@ -798,88 +746,23 @@ async function simpanProduk(){
   }
   resetFormProduk(); tarikSemuaData();
 }
+
 function resetFormProduk(){ ['pId','pNama','pMerek','pHBeli','pHJual','pStok','pSerial','pFoto'].forEach(x => document.getElementById(x).value = ''); tempFotoBase64 = ''; }
+
 function editProduk(id){
-  if (!isAdmin()) return flash('Akses ditolak.', 'err'); // <--- Tambahkan baris ini
-  
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const p = db.produk.find(x => x.id === id); 
   if(!p) return;
-  // ... (sisa kode editProduk tetap sama) ...
   document.getElementById('pId').value = p.id; document.getElementById('pNama').value = p.nama; document.getElementById('pMerek').value = p.merek || '';
   document.getElementById('pHBeli').value = isAdmin() ? (p.harga_beli || '') : ''; document.getElementById('pHJual').value = p.harga_jual;
   document.getElementById('pStok').value = p.stok; document.getElementById('pSerial').value = p.barcode || '';
   window.scrollTo(0,0);
 }
+
 async function hapusProduk(id){ if(!isAdmin() || !confirm('Hapus?')) return; await supabaseClient.from('produk').delete().eq('id', id); flash('Dihapus'); tarikSemuaData(); }
 
 async function prosesRestock(){
-  const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
-  if(!id || qty < 1) return flash('Data tidak valid', 'err'); 
-  let item;
-
-// === FUNGSI BANTU ===
-function flash(text, type='ok'){ const el = document.getElementById('msg'); el.textContent = text; el.className = 'msg ' + type; clearTimeout(window.__msgT); window.__msgT = setTimeout(() => el.className = 'msg', 3500); }
-function checkRequired(ids) { let valid = true; ids.forEach(id => { const el = document.getElementById(id); if (!el) return; if (!el.value.trim()) { el.classList.add('input-error'); valid = false; } else { el.classList.remove('input-error'); } }); return valid; }
-document.addEventListener('DOMContentLoaded', () => { document.querySelectorAll('input, select, textarea').forEach(el => { el.addEventListener('input', function() { this.classList.remove('input-error'); }); }); });
-function bukaMenu(tabId){ 
-  document.querySelectorAll('section').forEach(x => x.classList.remove('active')); 
-  const target = document.getElementById(tabId); 
-  if(target) target.classList.add('active'); 
-  
-  const btnBack = document.querySelector('main > div > button[onclick="bukaMenu(\'home\')"]');
-  if (btnBack) {
-    btnBack.parentElement.style.display = (tabId === 'home') ? 'none' : 'block';
-  }
-
-  window.scrollTo(0, 0); 
-  render(); 
-}
-// === PRODUK & STOK ===
-// === PRODUK & STOK ===
-async function simpanProduk(){
-  // TAMBAHKAN BARIS INI (Mencegah Kasir mengubah produk)
-  if (!isAdmin()) return flash('Akses ditolak. Hanya Admin yang bisa mengubah produk.', 'err');
-
-  if (!checkRequired(['pNama', 'pHJual'])) return flash('Lengkapi kolom wajib', 'err');
-  const id = document.getElementById('pId').value; 
-  const nama = document.getElementById('pNama').value.trim();
-  const merek = document.getElementById('pMerek').value.trim(); 
-  const hargaBeli = +document.getElementById('pHBeli').value || 0;
-  const hargaJual = +document.getElementById('pHJual').value || 0; 
-  const stokInput = +document.getElementById('pStok').value || 0;
-  const barcode = document.getElementById('pSerial').value.trim();
-
-  const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
-  if(isAdmin()) data.harga_beli = hargaBeli;
-  if(tempFotoBase64) data.foto = tempFotoBase64;
-
-  if(id){
-    const { error } = await supabaseClient.from('produk').update(data).eq('id', id);
-    if(error) return flash(error.message, 'err');
-    flash('Produk diperbarui');
-  } else {
-    data.id = genId('PRD');
-    const { error } = await supabaseClient.from('produk').insert([data]);
-    if(error) return flash(error.message, 'err');
-    flash('Produk ditambahkan');
-  }
-  resetFormProduk(); tarikSemuaData();
-}
-function resetFormProduk(){ ['pId','pNama','pMerek','pHBeli','pHJual','pStok','pSerial','pFoto'].forEach(x => document.getElementById(x).value = ''); tempFotoBase64 = ''; }
-function editProduk(id){
-  if (!isAdmin()) return flash('Akses ditolak.', 'err'); // <--- Tambahkan baris ini
-  
-  const p = db.produk.find(x => x.id === id); 
-  if(!p) return;
-  // ... (sisa kode editProduk tetap sama) ...
-  document.getElementById('pId').value = p.id; document.getElementById('pNama').value = p.nama; document.getElementById('pMerek').value = p.merek || '';
-  document.getElementById('pHBeli').value = isAdmin() ? (p.harga_beli || '') : ''; document.getElementById('pHJual').value = p.harga_jual;
-  document.getElementById('pStok').value = p.stok; document.getElementById('pSerial').value = p.barcode || '';
-  window.scrollTo(0,0);
-}
-async function hapusProduk(id){ if(!isAdmin() || !confirm('Hapus?')) return; await supabaseClient.from('produk').delete().eq('id', id); flash('Dihapus'); tarikSemuaData(); }
-
-async function prosesRestock(){
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
   if(!id || qty < 1) return flash('Data tidak valid', 'err'); 
   let item;
@@ -951,10 +834,12 @@ async function prosesBayar(){
   try {
     await supabaseClient.from('jual').insert([trxHeader]);
     await supabaseClient.from('jual_items').insert(trxItems);
+    
     for(const c of cart) {
       const p = db.produk.find(x => x.id === c.id);
       if(p) await supabaseClient.from('produk').update({ stok: p.stok - c.qty }).eq('id', c.id);
     }
+    
     await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: total, keterangan: `Penjualan ${trxId}`, sumber: 'jual', ref_id: trxId }]);
     
     const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
@@ -1072,6 +957,7 @@ async function hapusServis(id){
 
 // === BATERAI ===
 async function tambahStokBaterai(){
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('sbTipe').value.trim().toUpperCase(); if(!tipe) return flash('Tipe wajib', 'err');
   const { error } = await supabaseClient.from('stok_baterai').insert([{ id: genId('SB'), tipe, min_stok: +document.getElementById('sbMin').value || 0, harga_beli: +document.getElementById('sbBeli').value || 0, harga_jual: +document.getElementById('sbJual').value || 0, stok: +document.getElementById('sbStok').value || 0 }]);
   if(error) return flash(error.message, 'err'); flash('Ditambahkan'); ['sbTipe','sbBeli','sbJual'].forEach(id => document.getElementById(id).value = ''); tarikSemuaData();
@@ -1096,6 +982,7 @@ async function simpanBaterai(){
 
 // === KAS & KEUANGAN ===
 async function simpanKasManual(){
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   if (!checkRequired(['kasNominal', 'kasKet'])) return flash('Lengkapi kolom', 'err');
   const nominal = +document.getElementById('kasNominal').value || 0; const ket = document.getElementById('kasKet').value.trim();
   const metode = document.getElementById('kasMetode').value; const jenis = document.getElementById('kasJenis').value;
@@ -1105,19 +992,38 @@ async function simpanKasManual(){
 }
 
 async function tambahBank(){
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   if (!checkRequired(['bankNama'])) return flash('Nama bank wajib', 'err');
   await supabaseClient.from('bank').insert([{ id: genId('BNK'), nama: document.getElementById('bankNama').value.trim(), no: document.getElementById('bankNo').value.trim(), saldo_awal: +document.getElementById('bankSaldoAwal').value || 0 }]);
   flash('Rekening ditambahkan'); ['bankNama','bankNo'].forEach(x => document.getElementById(x).value = ''); tarikSemuaData();
 }
 
+async function simpanKasKecilKasir() {
+  const jenis = document.getElementById('kkJenis').value; const nominal = +document.getElementById('kkNominal').value || 0; const ket = document.getElementById('kkKet').value.trim();
+  if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
+  if (!ket) return flash('Keterangan wajib diisi', 'err');
+  await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' }]);
+  flash('Kas kecil dicatat'); ['kkNominal','kkKet'].forEach(x => document.getElementById(x).value = ''); tarikSemuaData();
+}
+
 // === SETTINGS ===
 async function simpanToko(){
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const data = { nama: document.getElementById('tkNama').value.trim(), telp: document.getElementById('tkTelp').value.trim(), alamat: document.getElementById('tkAlamat').value.trim(), footer: document.getElementById('tkFooter').value.trim(), syarat: document.getElementById('tkSyarat').value.trim(), syarat_singkat: document.getElementById('tkSyaratSingkat').value.trim() };
   await supabaseClient.from('settings').update(data).eq('id','toko'); flash('Identitas disimpan'); tarikSemuaData();
 }
-async function simpanMDR(){ await supabaseClient.from('settings').update({ mdr_qris: +document.getElementById('setMdrQris').value, mdr_edc_debit: +document.getElementById('setMdrEdcDebit').value, mdr_edc_kredit: +document.getElementById('setMdrEdcKredit').value, mdr_transfer: +document.getElementById('setMdrTransfer').value }).eq('id','toko'); flash('MDR disimpan'); }
-async function simpanGaransiServis(){ await supabaseClient.from('settings').update({ garansi_servis_bulan: +document.getElementById('setGaransiServisBulan').value || 0 }).eq('id','toko'); flash('Garansi servis disimpan'); }
-async function simpanAturanDiskon(){ await supabaseClient.from('settings').update({ diskon_persen: +document.getElementById('setDiskonPersen').value || 0, diskon_nominal: +document.getElementById('setDiskonNominal').value || 0 }).eq('id','toko'); flash('Aturan diskon disimpan'); }
+async function simpanMDR(){ 
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  await supabaseClient.from('settings').update({ mdr_qris: +document.getElementById('setMdrQris').value, mdr_edc_debit: +document.getElementById('setMdrEdcDebit').value, mdr_edc_kredit: +document.getElementById('setMdrEdcKredit').value, mdr_transfer: +document.getElementById('setMdrTransfer').value }).eq('id','toko'); flash('MDR disimpan'); 
+}
+async function simpanGaransiServis(){ 
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  await supabaseClient.from('settings').update({ garansi_servis_bulan: +document.getElementById('setGaransiServisBulan').value || 0 }).eq('id','toko'); flash('Garansi servis disimpan'); 
+}
+async function simpanAturanDiskon(){ 
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  await supabaseClient.from('settings').update({ diskon_persen: +document.getElementById('setDiskonPersen').value || 0, diskon_nominal: +document.getElementById('setDiskonNominal').value || 0 }).eq('id','toko'); flash('Aturan diskon disimpan'); 
+}
 
 // === CETAK & E-WARRANTY ===
 function getToko(){ return db.settings || {}; }
@@ -1130,7 +1036,6 @@ function cetakStruk(trxId){
   cetakHTML(html);
 }
 
-// === FUNGSI TAMBAHAN (AUDIT, AI, WA, PRINT) ===
 function renderAuditGlobal() {
   const el = document.getElementById('listAuditGlobal'); if(!el) return;
   const q = (document.getElementById('cariAudit').value || '').toLowerCase().trim();
@@ -1150,6 +1055,7 @@ function renderAuditGlobal() {
 }
 function updateAuditGlobal(key, val) { if (val === '') delete tempAuditData[key]; else tempAuditData[key] = +val; }
 async function simpanAuditGlobal() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const catatan = document.getElementById('auditCatatanMassal').value.trim();
   if(!catatan) return flash('Catatan audit wajib diisi', 'err');
   const keys = Object.keys(tempAuditData);
@@ -1174,13 +1080,7 @@ async function simpanAuditGlobal() {
   flash(`Audit selesai. ${itemBerubah} barang disesuaikan.`, 'ok');
   tempAuditData = {}; document.getElementById('auditCatatanMassal').value = ''; document.getElementById('cariAudit').value = ''; tarikSemuaData();
 }
-async function simpanKasKecilKasir() {
-  const jenis = document.getElementById('kkJenis').value; const nominal = +document.getElementById('kkNominal').value || 0; const ket = document.getElementById('kkKet').value.trim();
-  if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
-  if (!ket) return flash('Keterangan wajib diisi', 'err');
-  await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' }]);
-  flash('Kas kecil dicatat'); ['kkNominal','kkKet'].forEach(x => document.getElementById(x).value = ''); tarikSemuaData();
-}
+
 let scanStream = null, scanTarget = null, scanInterval = null;
 async function scanBarcode(targetId){
   scanTarget = targetId;
@@ -1336,19 +1236,20 @@ async function hapusPelanggan(id) {
 // === RENDER UI UTAMA ===
 function render(){
   if(!document.getElementById('selProduk')) return;
+  
   // Tampilkan Nama User & Role
-const homeUser = document.getElementById('homeUser'); 
-if(homeUser) {
-  const u = sessionStorage.getItem('ta_user') || 'Guest';
-  const r = (sessionStorage.getItem('ta_role') || 'guest').toUpperCase();
-  homeUser.innerHTML = `Login sebagai: <b>${u}</b> (${r})`;
-}
+  const homeUser = document.getElementById('homeUser'); 
+  if(homeUser) {
+    const u = sessionStorage.getItem('ta_user') || 'Guest';
+    const r = (sessionStorage.getItem('ta_role') || 'guest').toUpperCase();
+    homeUser.innerHTML = `Login sebagai: <b>${u}</b> (${r})`;
+  }
 
-// Sembunyikan/Tampilkan Menu Admin (Kas, Supplier, Setting)
-const menuAdmin = document.getElementById('menuAdmin'); 
-if(menuAdmin) {
-  menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
-}
+  // Sembunyikan/Tampilkan Menu Admin (Kas, Supplier, Setting)
+  const menuAdmin = document.getElementById('menuAdmin'); 
+  if(menuAdmin) {
+    menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
+  }
   
   document.getElementById('selProduk').innerHTML = db.produk.filter(p => p.stok > 0).map(p => `<option value="${p.id}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option>Tidak ada stok</option>';
   document.getElementById('listProduk').innerHTML = db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>';
