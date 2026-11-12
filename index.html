@@ -1273,11 +1273,22 @@ function render(){
   if(document.getElementById('lapOmzet')) document.getElementById('lapOmzet').textContent = rp(totalOmzet);
   
   if(db.settings) {
-    if(document.getElementById('tkNama')) document.getElementById('tkNama').value = db.settings.nama || '';
-    if(document.getElementById('tkTelp')) document.getElementById('tkTelp').value = db.settings.telp || '';
-    if(document.getElementById('setMdrQris')) document.getElementById('setMdrQris').value = db.settings.mdr_qris || 0.7;
-  }
-
+  if(document.getElementById('tkNama')) document.getElementById('tkNama').value = db.settings.nama || '';
+  if(document.getElementById('tkTelp')) document.getElementById('tkTelp').value = db.settings.telp || '';
+  if(document.getElementById('tkAlamat')) document.getElementById('tkAlamat').value = db.settings.alamat || '';
+  if(document.getElementById('tkFooter')) document.getElementById('tkFooter').value = db.settings.footer || '';
+  if(document.getElementById('tkSyarat')) document.getElementById('tkSyarat').value = db.settings.syarat || '';
+  if(document.getElementById('tkSyaratSingkat')) document.getElementById('tkSyaratSingkat').value = db.settings.syarat_singkat || '';
+  
+  if(document.getElementById('setGaransiServisBulan')) document.getElementById('setGaransiServisBulan').value = db.settings.garansi_servis_bulan || 3;
+  if(document.getElementById('setMdrQris')) document.getElementById('setMdrQris').value = db.settings.mdr_qris || 0.7;
+  if(document.getElementById('setMdrEdcDebit')) document.getElementById('setMdrEdcDebit').value = db.settings.mdr_edc_debit || 1;
+  if(document.getElementById('setMdrEdcKredit')) document.getElementById('setMdrEdcKredit').value = db.settings.mdr_edc_kredit || 2.5;
+  if(document.getElementById('setMdrTransfer')) document.getElementById('setMdrTransfer').value = db.settings.mdr_transfer || 0;
+  
+  if(document.getElementById('setDiskonPersen')) document.getElementById('setDiskonPersen').value = db.settings.diskon_persen || 10;
+  if(document.getElementById('setDiskonNominal')) document.getElementById('setDiskonNominal').value = db.settings.diskon_nominal || 20000;
+}
   if(document.getElementById('listAuditGlobal')) renderAuditGlobal();
 }
 
