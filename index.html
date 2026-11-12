@@ -618,6 +618,9 @@ function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
 
 function applyRoleUI() { 
   const r = sessionStorage.getItem('ta_role');
+  // Sembunyikan form Harga Beli jika bukan Pemilik
+const wrapHB = document.getElementById('wrapHargaBeliProduk');
+if(wrapHB) wrapHB.style.display = (r === 'pemilik') ? 'block' : 'none';
   // Tampilkan Audit Trail hanya untuk Pemilik
 const cardAudit = document.getElementById('cardAuditTrail');
 if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
