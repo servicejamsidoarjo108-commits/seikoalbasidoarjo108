@@ -888,11 +888,18 @@ async function hapusProduk(id){
 
   const pemId = genId('BLI');
   await supabaseClient.from('pembelian').insert([{ id: pemId, waktu: nowISO(), supplier_nama: 'Manual', total: qty * hargaBaru, status: 'lunas', metode: 'tunai' }]);
-  if(qty * hargaBaru > 0) await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: 'tunai', nominal: qty * hargaBaru, keterangan: `Restock ${namaItem}`, sumber: 'pembelian', ref_id: pemId }]);
+    if(qty * hargaBaru > 0) {
+    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: 'tunai', nominal: qty * hargaBaru, keterangan: `Restock ${namaItem}`, sumber: 'pembelian', ref_id: pemId }]);
+  }
 
-  flash(`Berhasil restock ${qty} ${namaItem}`); document.getElementById('rsQty').value = 1; document.getElementById('rsHarga').value = 0; tarikSemuaData();
+  // TAMBAHKAN BARIS INI UNTUK MENCATAT AUDIT TRAIL RESTOCK
+  await catatLog('RESTOCK', `Restock ${qty} ${namaItem} (Modal: ${rp(qty * hargaBaru)})`);
+
+  flash(`Berhasil restock ${qty} ${namaItem}`); 
+  document.getElementById('rsQty').value = 1; 
+  document.getElementById('rsHarga').value = 0; 
+  tarikSemuaData();
 }
-
 // === TRANSAKSI KASIR (JUAL) ===
 function addCart(){
   const id = document.getElementById('selProduk').value; const qty = +document.getElementById('qty').value;
@@ -1061,9 +1068,15 @@ async function bayarSisaServis(id){
   const nominal = Math.min(bayar, s.sisa); const sisaBaru = s.sisa - nominal;
   const isPaid = sisaBaru <= 0;
   
-  await supabaseClient.from('servis').update({ sisa: sisaBaru, paid: isPaid, status: isPaid ? 'diambil' : s.status }).eq('id', id);
+    await supabaseClient.from('servis').update({ sisa: sisaBaru, paid: isPaid, status: isPaid ? 'diambil' : s.status }).eq('id', id);
+  
   await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: m, nominal, keterangan: `Pelunasan Servis ${s.id}`, sumber: 'servis', ref_id: s.id }]);
-  flash(isPaid ? 'LUNAS' : `Sisa ${rp(sisaBaru)}`); tarikSemuaData();
+  
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('PELUNASAN_SERVIS', `Pelunasan ${s.id} sebesar ${rp(nominal)} via ${labelMetode(m)}`);
+  
+  flash(isPaid ? 'LUNAS' : `Sisa ${rp(sisaBaru)}`); 
+  tarikSemuaData();
 }
 
 async function ubahStatusServis(id){
@@ -1075,15 +1088,41 @@ async function ubahStatusServis(id){
     updateData.garansi_servis_bulan = 3;
     const d = new Date(); d.setMonth(d.getMonth() + 3); updateData.tgl_garansi_servis_sampai = d.toISOString().slice(0,10);
   }
-  await supabaseClient.from('servis').update(updateData).eq('id', id);
-  flash(`Status menjadi ${nextStatus}`); tarikSemuaData();
+    await supabaseClient.from('servis').update(updateData).eq('id', id);
+  
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('STATUS_SERVIS', `Ubah status ${s.id} menjadi ${nextStatus}`);
+  
+  flash(`Status menjadi ${nextStatus}`); 
+  tarikSemuaData();
 }
 
 async function hapusServis(id){
-  if(!isAdmin() || !confirm('Hapus servis ini?')) return; const s = db.servis.find(x => x.id === id); if(!s) return;
-  for(const p of (s.parts||[])) { const sp = db.sparePart.find(x => x.id === p.part_id); if(sp) await supabaseClient.from('sparepart').update({ stok: sp.stok + p.qty }).eq('id', sp.id); }
-  for(const b of (s.baterai||[])) { const sb = db.stokBaterai.find(x => x.id === b.baterai_id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok + b.qty }).eq('id', sb.id); }
-  await supabaseClient.from('servis').delete().eq('id', id); flash('Dihapus'); tarikSemuaData();
+  if(!isAdmin() || !confirm('Hapus servis ini?')) return; 
+  const s = db.servis.find(x => x.id === id); 
+  if(!s) return;
+  
+  // 1. Kembalikan stok sparepart ke gudang
+  for(const p of (s.parts||[])) { 
+    const sp = db.sparePart.find(x => x.id === p.part_id); 
+    if(sp) await supabaseClient.from('sparepart').update({ stok: sp.stok + p.qty }).eq('id', sp.id); 
+  }
+  
+  // 2. Kembalikan stok baterai ke gudang
+  for(const b of (s.baterai||[])) { 
+    const sb = db.stokBaterai.find(x => x.id === b.baterai_id); 
+    if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok + b.qty }).eq('id', sb.id); 
+  }
+  
+  // 3. Hapus data servis dari database
+  await supabaseClient.from('servis').delete().eq('id', id); 
+  
+  // 4. Catat ke Audit Trail (Siapa yang menghapus)
+  await catatLog('HAPUS_SERVIS', 'Menghapus servis ID: ' + id); 
+  
+  // 5. Tampilkan notifikasi & refresh data
+  flash('Dihapus'); 
+  tarikSemuaData();
 }
 
 // === BATERAI ===
@@ -1105,10 +1144,20 @@ async function simpanBaterai(){
   const batId = genId('BAT');
   
   const data = { id: batId, waktu: nowISO(), customer: nama, telp: document.getElementById('bHp').value.trim(), produk, tipe: sb.tipe, sb_id: sb.id, tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: d.toISOString().slice(0,10), biaya, metode, paid: metode !== 'hutang' };
-  await supabaseClient.from('baterai').insert([data]);
+    await supabaseClient.from('baterai').insert([data]);
+  
   await supabaseClient.from('stok_baterai').update({ stok: sb.stok - 1 }).eq('id', sb.id);
-  if(metode !== 'hutang' && biaya > 0) await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: biaya, keterangan: `Ganti Baterai ${sb.tipe} - ${nama}`, sumber: 'baterai', ref_id: batId }]);
-  flash('Baterai disimpan'); ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); tarikSemuaData();
+  
+  if(metode !== 'hutang' && biaya > 0) {
+    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: biaya, keterangan: `Ganti Baterai ${sb.tipe} - ${nama}`, sumber: 'baterai', ref_id: batId }]);
+  }
+
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('GANTI_BATERAI', `Ganti baterai ${sb.tipe} untuk ${nama}`);
+  
+  flash('Baterai disimpan'); 
+  ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); 
+  tarikSemuaData();
 }
   function cekPoinPelanggan(nama) {
   if(!nama) return;
@@ -1132,23 +1181,41 @@ async function simpanKasManual(){
   const nominal = +document.getElementById('kasNominal').value || 0; const ket = document.getElementById('kasKet').value.trim();
   const metode = document.getElementById('kasMetode').value; const jenis = document.getElementById('kasJenis').value;
   if(nominal <= 0) return flash('Nominal tidak valid', 'err');
-  await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), tgl: document.getElementById('kasTgl').value, jenis, metode, nominal, keterangan: ket, sumber: 'manual' }]);
-  flash('Kas dicatat'); ['kasNominal','kasKet'].forEach(x => document.getElementById(x).value = ''); tarikSemuaData();
+    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), tgl: document.getElementById('kasTgl').value, jenis, metode, nominal, keterangan: ket, sumber: 'manual' }]);
+  
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('KAS_MANUAL', `Input kas ${jenis} - ${ket} (${rp(nominal)})`);
+  
+  flash('Kas dicatat'); 
+  ['kasNominal','kasKet'].forEach(x => document.getElementById(x).value = ''); 
+  tarikSemuaData();
 }
 
 async function tambahBank(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   if (!checkRequired(['bankNama'])) return flash('Nama bank wajib', 'err');
-  await supabaseClient.from('bank').insert([{ id: genId('BNK'), nama: document.getElementById('bankNama').value.trim(), no: document.getElementById('bankNo').value.trim(), saldo_awal: +document.getElementById('bankSaldoAwal').value || 0 }]);
-  flash('Rekening ditambahkan'); ['bankNama','bankNo'].forEach(x => document.getElementById(x).value = ''); tarikSemuaData();
+    await supabaseClient.from('bank').insert([{ id: genId('BNK'), nama: document.getElementById('bankNama').value.trim(), no: document.getElementById('bankNo').value.trim(), saldo_awal: +document.getElementById('bankSaldoAwal').value || 0 }]);
+  
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('TAMBAH_REKENING', 'Menambah rekening bank: ' + document.getElementById('bankNama').value.trim());
+  
+  flash('Rekening ditambahkan'); 
+  ['bankNama','bankNo'].forEach(x => document.getElementById(x).value = ''); 
+  tarikSemuaData();
 }
 
 async function simpanKasKecilKasir() {
   const jenis = document.getElementById('kkJenis').value; const nominal = +document.getElementById('kkNominal').value || 0; const ket = document.getElementById('kkKet').value.trim();
   if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
   if (!ket) return flash('Keterangan wajib diisi', 'err');
-  await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' }]);
-  flash('Kas kecil dicatat'); ['kkNominal','kkKet'].forEach(x => document.getElementById(x).value = ''); tarikSemuaData();
+    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' }]);
+  
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('KAS_KECIL', `Input ${jenis} - ${ket} (${rp(nominal)})`);
+  
+  flash('Kas kecil dicatat'); 
+  ['kkNominal','kkKet'].forEach(x => document.getElementById(x).value = ''); 
+  tarikSemuaData();
 }
 
 // === SETTINGS ===
@@ -1170,17 +1237,31 @@ async function simpanMDR(){
     mdr_transfer: +document.getElementById('setMdrTransfer').value || 0
   };
   await supabaseClient.from('settings').update(data).eq('id','toko'); 
-  flash('Pengaturan MDR disimpan'); tarikSemuaData();
+  
+  // TAMBAHKAN BARIS INI
+  await catatLog('SETTING_MDR', 'Mengubah pengaturan MDR');
+  
+  flash('Pengaturan MDR disimpan'); 
+  tarikSemuaData();
 }
 async function simpanGaransiServis(){ 
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
-  await supabaseClient.from('settings').update({ garansi_servis_bulan: +document.getElementById('setGaransiServisBulan').value || 0 }).eq('id','toko'); flash('Garansi servis disimpan'); 
+  await supabaseClient.from('settings').update({ garansi_servis_bulan: +document.getElementById('setGaransiServisBulan').value || 0 }).eq('id','toko'); 
+  
+  // TAMBAHKAN BARIS INI
+  await catatLog('SETTING_GARANSI', 'Mengubah garansi servis default');
+  
+  flash('Garansi servis disimpan'); 
 }
 async function simpanAturanDiskon(){ 
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
-  await supabaseClient.from('settings').update({ diskon_persen: +document.getElementById('setDiskonPersen').value || 0, diskon_nominal: +document.getElementById('setDiskonNominal').value || 0 }).eq('id','toko'); flash('Aturan diskon disimpan'); 
+  await supabaseClient.from('settings').update({ diskon_persen: +document.getElementById('setDiskonPersen').value || 0, diskon_nominal: +document.getElementById('setDiskonNominal').value || 0 }).eq('id','toko'); 
+  
+  // TAMBAHKAN BARIS INI
+  await catatLog('SETTING_DISKON', 'Mengubah aturan diskon');
+  
+  flash('Aturan diskon disimpan'); 
 }
-
 // === CETAK & E-WARRANTY ===
 function getToko(){ return db.settings || {}; }
 // === FUNGSI LABEL METODE PEMBAYARAN ===
@@ -1452,9 +1533,15 @@ function showCustomerHistory(nama, telp) {
 }
 async function hapusPelanggan(id) {
   if(!isAdmin() || !confirm('Hapus pelanggan ini?')) return;
-  await supabaseClient.from('pelanggan').delete().eq('id', id); flash('Pelanggan dihapus'); tarikSemuaData();
+  
+  await supabaseClient.from('pelanggan').delete().eq('id', id); 
+  
+  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await catatLog('HAPUS_PELANGGAN', 'Menghapus pelanggan ID: ' + id);
+  
+  flash('Pelanggan dihapus'); 
+  tarikSemuaData();
 }
-
    // === FUNGSI LAPORAN WA & AUDIT TRAIL ===
 
 async function catatLog(aksi, detail) {
