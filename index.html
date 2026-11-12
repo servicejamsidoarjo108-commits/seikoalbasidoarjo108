@@ -444,15 +444,32 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     </div>
   </div>
   <div class="card"><h3>Biaya Bank (MDR)</h3>
-    <div class="row">
-      <div><label>QRIS (%)</label><input type="number" id="setMdrQris" value="0.7" step="0.1" min="0" onchange="simpanMDR()"></div>
-      <div><label>EDC Debit (%)</label><input type="number" id="setMdrEdcDebit" value="1" step="0.1" min="0" onchange="simpanMDR()"></div>
-    </div>
-    <div class="row">
-      <div><label>EDC Kredit (%)</label><input type="number" id="setMdrEdcKredit" value="2.5" step="0.1" min="0" onchange="simpanMDR()"></div>
-      <div><label>Transfer (Rp flat)</label><input type="number" id="setMdrTransfer" value="0" min="0" onchange="simpanMDR()"></div>
-    </div>
+  <label style="font-weight:bold; margin-top:10px; color:#0f172a">Kartu Kredit</label>
+  <div class="row">
+    <div><label>BCA Card (%)</label><input type="number" id="setMdrCcBca" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>Visa/Master/JCB/Union (%)</label><input type="number" id="setMdrCcVm" step="0.01" min="0" onchange="simpanMDR()"></div>
   </div>
+  <div class="row">
+    <div><label>Amex (%)</label><input type="number" id="setMdrCcAmex" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div></div>
+  </div>
+
+  <label style="font-weight:bold; margin-top:10px; color:#0f172a">Kartu Debit</label>
+  <div class="row">
+    <div><label>BCA (%)</label><input type="number" id="setMdrDcBca" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>Bank Lain (%)</label><input type="number" id="setMdrDcLain" step="0.01" min="0" onchange="simpanMDR()"></div>
+  </div>
+  <div class="row">
+    <div><label>Maestro (%)</label><input type="number" id="setMdrDcMaestro" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div></div>
+  </div>
+
+  <label style="font-weight:bold; margin-top:10px; color:#0f172a">QRIS & Transfer</label>
+  <div class="row">
+    <div><label>QRIS (di atas Rp100.000) (%)</label><input type="number" id="setMdrQrisBesar" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>Transfer (Rp Flat)</label><input type="number" id="setMdrTransfer" step="1" min="0" onchange="simpanMDR()"></div>
+  </div>
+</div>
   <div class="card"><h3>Aturan Diskon</h3>
     <div class="row"><div><label>Maks. Diskon Tanpa Otorisasi (%)</label><input type="number" id="setDiskonPersen" value="10" min="0" onchange="simpanAturanDiskon()"></div><div><label>Maks. Diskon Tanpa Otorisasi (Rp)</label><input type="number" id="setDiskonNominal" value="20000" min="0" onchange="simpanAturanDiskon()"></div></div>
   </div>
@@ -464,13 +481,13 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <label>S&K Singkat (Struk)</label><textarea id="tkSyaratSingkat" rows="4" style="margin-bottom:10px"></textarea>
     <button class="btn" onclick="simpanToko()">Simpan Identitas</button>
   </div>
-  <div class="card"><h3>Kelola User</h3>
-  <div id="listUsers"></div>
-  <hr style="border:none;border-top:1px solid #e2e8f0;margin:10px 0">
-  <label>Tambah User Baru</label>
-  <div class="row"><div><input id="newUserName" placeholder="Username"></div><div><input type="password" id="newUserPin" placeholder="Password Kuat"></div></div>
-  <div class="row"><div><select id="newUserRole"><option value="admin">Admin</option><option value="kasir">Kasir</option></select></div><div></div></div>
-  <button class="btn" onclick="tambahUser()">+ Tambah User</button>
+  <div class="card">
+  <h3>Kelola User (Mode Cloud)</h3>
+  <p style="font-size:13px;color:#475569;line-height:1.5">
+    Demi keamanan maksimal, penambahan atau penghapusan user (Admin, Kasir, Pemilik) kini dilakukan langsung melalui Dashboard Supabase.<br><br>
+    Buka <b>Authentication -> Users -> Add User</b> di dashboard Supabase Anda.<br>
+    Format Email: <b>namauser@tokoseiko.com</b>
+  </p>
 </div>
 </section>
 
