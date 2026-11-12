@@ -598,8 +598,11 @@ async function login(){
     const emailLogin = user + '@tokoseiko.com';
 
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailLogin, password: pass });
-    if (error) { document.getElementById('loginErr').textContent = 'Username/Password salah.'; return; }
-
+    if (error) { 
+  alert("Error dari Supabase: " + error.message); 
+  document.getElementById('loginErr').textContent = error.message; 
+  return; 
+}
     let role = 'kasir';
     if (user === 'admin') role = 'admin';
     if (user === 'pemilik') role = 'pemilik';
