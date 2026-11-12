@@ -169,10 +169,30 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
       <div><label>Tukar Poin (1 Poin = Rp 100)</label><input type="number" id="tukarPoin" value="0" min="0" oninput="updateTotalKasir()"></div>
       <div><label>Sisa Poin Pelanggan</label><input id="infoPoin" readonly value="0"></div>
     </div>
+    
     <div class="row">
-      <div><label>Metode Pembayaran</label><select id="metodeBayar" onchange="toggleBankKasir();updateTotalKasir()"><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option><option value="edc_debit">EDC Debit</option><option value="edc_kredit">EDC Kredit</option></select></div>
+      <div>
+        <label>Metode Pembayaran</label>
+        <!-- METODE BAYAR BARU (KASIR) -->
+        <select id="metodeBayar" onchange="toggleBankKasir();updateTotalKasir()">
+          <option value="tunai">Tunai</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+          <optgroup label="Kartu Kredit">
+            <option value="edc_cc_bca">BCA Card (1,5%)</option>
+            <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
+            <option value="edc_cc_amex">Amex (3,25%)</option>
+          </optgroup>
+          <optgroup label="Kartu Debit">
+            <option value="edc_dc_bca">BCA (0,15%)</option>
+            <option value="edc_dc_lain">Bank Lain (1%)</option>
+            <option value="edc_dc_maestro">Maestro (2%)</option>
+          </optgroup>
+        </select>
+      </div>
       <div><label>Garansi (hari)</label><input type="number" id="garansiHari" value="180"></div>
     </div>
+
     <div class="row" id="wrapBankKasir" style="display:none"><div><label>Rekening Tujuan / Settlement</label><select id="bankKasir"></select></div><div></div></div>
     <div class="cart-total" id="mdrInfo" style="display:none;color:#dc2626;font-size:14px"><span>Biaya Bank (MDR)</span><span id="mdrValue">-Rp 0</span></div>
     <div class="row"><div><label>Bayar (Rp)</label><input type="number" id="bayar" placeholder="0"></div><div></div></div>
@@ -291,11 +311,35 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   </div>
   <div class="card"><h3>Pembayaran Awal (DP)</h3>
     <div class="row"><div><label>Total Biaya Servis</label><input id="sTotalBiaya" readonly style="font-size:16px;font-weight:700;text-align:right"></div><div><label>DP Awal (Rp)</label><input type="number" id="sDp" value="0" min="0" oninput="hitungTotalServis()"></div></div>
-    <div class="row"><div><label>Metode Bayar DP</label><select id="metodeDp" onchange="toggleBankDp()"><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option><option value="edc_debit">EDC Debit</option><option value="edc_kredit">EDC Kredit</option></select></div><div><label>Sisa Tagihan</label><input id="sSisa" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626"></div></div>
+    
+    <div class="row">
+      <div>
+        <label>Metode Bayar DP</label>
+        <!-- METODE BAYAR BARU (SERVIS DP) -->
+        <select id="metodeDp" onchange="toggleBankDp()">
+          <option value="tunai">Tunai</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+          <optgroup label="Kartu Kredit">
+            <option value="edc_cc_bca">BCA Card (1,5%)</option>
+            <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
+            <option value="edc_cc_amex">Amex (3,25%)</option>
+          </optgroup>
+          <optgroup label="Kartu Debit">
+            <option value="edc_dc_bca">BCA (0,15%)</option>
+            <option value="edc_dc_lain">Bank Lain (1%)</option>
+            <option value="edc_dc_maestro">Maestro (2%)</option>
+          </optgroup>
+        </select>
+      </div>
+      <div><label>Sisa Tagihan</label><input id="sSisa" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626"></div>
+    </div>
+    
     <div class="row" id="wrapBankDp" style="display:none"><div><label>Rekening Tujuan DP</label><select id="bankDp"></select></div><div></div></div>
     <p style="font-size:12px;color:#64748b;margin:6px 0 10px">Jika garansi, customer bayar 0, tapi spare part & baterai tetap keluar stok.</p>
     <button class="btn ok" onclick="simpanServis()">Simpan Servis</button>
   </div>
+</section>
   <div class="card"><h3>Daftar Servis</h3>
     <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
       <button class="btn-sm ghost" onclick="filterServis('')">Semua</button>
@@ -329,18 +373,34 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <div class="row"><div><label>Produk *</label><input id="bProduk" placeholder="Seiko 5"></div><div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div></div>
     <div class="row"><div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div><div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div></div>
     <div class="row"><div><label>Biaya</label><input type="number" id="bBiaya" value="0"></div><div><label>Stok Tersedia</label><input id="bStokInfo" readonly></div></div>
-    <div class="row"><div><label>Metode Bayar</label><select id="metodeBaterai" onchange="toggleBankBaterai()"><option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option><option value="edc_debit">EDC Debit</option><option value="edc_kredit">EDC Kredit</option><option value="hutang">Hutang</option></select></div><div></div></div>
+    
+    <div class="row">
+      <div>
+        <label>Metode Bayar</label>
+        <!-- METODE BAYAR BARU (BATERAI) -->
+        <select id="metodeBaterai" onchange="toggleBankBaterai()">
+          <option value="tunai">Tunai</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+          <optgroup label="Kartu Kredit">
+            <option value="edc_cc_bca">BCA Card (1,5%)</option>
+            <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
+            <option value="edc_cc_amex">Amex (3,25%)</option>
+          </optgroup>
+          <optgroup label="Kartu Debit">
+            <option value="edc_dc_bca">BCA (0,15%)</option>
+            <option value="edc_dc_lain">Bank Lain (1%)</option>
+            <option value="edc_dc_maestro">Maestro (2%)</option>
+          </optgroup>
+          <option value="hutang">Hutang</option>
+        </select>
+      </div>
+      <div></div>
+    </div>
+    
     <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
     <button class="btn" onclick="simpanBaterai()">Simpan & Kurangi Stok</button>
   </div>
-  <div class="card" id="cardTambahBaterai"><h3>Tambah Tipe Baterai</h3>
-    <div class="row"><div><label>Tipe *</label><input id="sbTipe" placeholder="SR626SW"></div><div><label>Min Stok</label><input type="number" id="sbMin" value="5" min="0"></div></div>
-    <div class="row"><div><label>Harga Beli</label><input type="number" id="sbBeli" placeholder="8000"></div><div><label>Harga Jual</label><input type="number" id="sbJual" placeholder="35000"></div></div>
-    <div class="row"><div><label>Stok Awal</label><input type="number" id="sbStok" value="0" min="0"></div><div></div></div>
-    <button class="btn" onclick="tambahStokBaterai()">+ Tambah Tipe</button>
-  </div>
-  <div class="card"><h3>Daftar Stok Baterai</h3><div id="listStokBaterai"></div></div>
-  <div class="card"><h3>Cek Garansi Baterai</h3><input id="bCari" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listBaterai"></div></div>
 </section>
 
 <section id="supplier">
@@ -528,7 +588,11 @@ const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
 const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const genId = (prefix) => prefix + Date.now() + Math.random().toString(36).substring(2,6);
-
+const TOKO_DEFAULT = {
+  nama: 'Toko Seiko Alba Sidoarjo 108', telp: '081331939397', alamat: 'Jl Gajah Mada No 108', footer: 'Terima kasih',
+  syarat: 'PEMBELIAN PRODUK:\n1. Pembeli wajib memeriksa kondisi fisik... (salin teks S&K Anda ke sini)',
+  syaratSingkat: 'S&K PEMBELIAN:\n1. Barang yang telah dibeli... (salin teks singkat Anda ke sini)'
+};
 // === FUNGSI PEMISAH ROLE ===
 function isPemilik() { return sessionStorage.getItem('ta_role') === 'pemilik'; }
 function isAdmin() { const r = sessionStorage.getItem('ta_role'); return r === 'admin' || r === 'pemilik'; }
@@ -1023,7 +1087,18 @@ async function simpanToko(){
 }
 async function simpanMDR(){ 
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
-  await supabaseClient.from('settings').update({ mdr_qris: +document.getElementById('setMdrQris').value, mdr_edc_debit: +document.getElementById('setMdrEdcDebit').value, mdr_edc_kredit: +document.getElementById('setMdrEdcKredit').value, mdr_transfer: +document.getElementById('setMdrTransfer').value }).eq('id','toko'); flash('MDR disimpan'); 
+  const data = {
+    mdr_cc_bca: +document.getElementById('setMdrCcBca').value || 0,
+    mdr_cc_vm: +document.getElementById('setMdrCcVm').value || 0,
+    mdr_cc_amex: +document.getElementById('setMdrCcAmex').value || 0,
+    mdr_dc_bca: +document.getElementById('setMdrDcBca').value || 0,
+    mdr_dc_lain: +document.getElementById('setMdrDcLain').value || 0,
+    mdr_dc_maestro: +document.getElementById('setMdrDcMaestro').value || 0,
+    mdr_qris_besar: +document.getElementById('setMdrQrisBesar').value || 0,
+    mdr_transfer: +document.getElementById('setMdrTransfer').value || 0
+  };
+  await supabaseClient.from('settings').update(data).eq('id','toko'); 
+  flash('Pengaturan MDR disimpan'); tarikSemuaData();
 }
 async function simpanGaransiServis(){ 
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
@@ -1036,8 +1111,24 @@ async function simpanAturanDiskon(){
 
 // === CETAK & E-WARRANTY ===
 function getToko(){ return db.settings || {}; }
-function hitungMDR(total, metode){ if(metode === 'tunai' || metode === 'hutang') return 0; const s = db.settings; if(metode === 'transfer') return +s.mdr_transfer || 0; if(metode==='qris') return Math.round(total * (s.mdr_qris||0)/100); if(metode==='edc_debit') return Math.round(total * (s.mdr_edc_debit||0)/100); if(metode==='edc_kredit') return Math.round(total * (s.mdr_edc_kredit||0)/100); return 0; }
-function cetakHTML(html) { const win = window.open('', '_blank'); if (!win) return alert("Pop-up diblokir!"); win.document.open(); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 800); }
+function hitungMDR(total, metode){
+  if(metode === 'tunai' || metode === 'hutang') return 0;
+  const s = db.settings || {};
+  
+  if(metode === 'transfer') return +s.mdr_transfer || 0;
+  if(metode === 'qris') { return total <= 100000 ? 0 : Math.round(total * (+s.mdr_qris_besar || 0.7) / 100); }
+  
+  if(metode === 'edc_cc_bca') return Math.round(total * (+s.mdr_cc_bca || 1.5) / 100);
+  if(metode === 'edc_cc_vm') return Math.round(total * (+s.mdr_cc_vm || 2) / 100);
+  if(metode === 'edc_cc_amex') return Math.round(total * (+s.mdr_cc_amex || 3.25) / 100);
+  
+  if(metode === 'edc_dc_bca') return Math.round(total * (+s.mdr_dc_bca || 0.15) / 100);
+  if(metode === 'edc_dc_lain') return Math.round(total * (+s.mdr_dc_lain || 1) / 100);
+  if(metode === 'edc_dc_maestro') return Math.round(total * (+s.mdr_dc_maestro || 2) / 100);
+  
+  return 0;
+}
+  function cetakHTML(html) { const win = window.open('', '_blank'); if (!win) return alert("Pop-up diblokir!"); win.document.open(); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 800); }
 function cetakStruk(trxId){
   const t = db.jual.find(x => x.id === trxId); if(!t) return; const toko = getToko();
   const tgl = new Date(t.waktu).toLocaleString('id-ID');
@@ -1286,17 +1377,25 @@ function render(){
   if(document.getElementById('tkTelp')) document.getElementById('tkTelp').value = db.settings.telp || '';
   if(document.getElementById('tkAlamat')) document.getElementById('tkAlamat').value = db.settings.alamat || '';
   if(document.getElementById('tkFooter')) document.getElementById('tkFooter').value = db.settings.footer || '';
-  if(document.getElementById('tkSyarat')) document.getElementById('tkSyarat').value = db.settings.syarat || '';
-  if(document.getElementById('tkSyaratSingkat')) document.getElementById('tkSyaratSingkat').value = db.settings.syarat_singkat || '';
   
-  if(document.getElementById('setGaransiServisBulan')) document.getElementById('setGaransiServisBulan').value = db.settings.garansi_servis_bulan || 3;
-  if(document.getElementById('setMdrQris')) document.getElementById('setMdrQris').value = db.settings.mdr_qris || 0.7;
-  if(document.getElementById('setMdrEdcDebit')) document.getElementById('setMdrEdcDebit').value = db.settings.mdr_edc_debit || 1;
-  if(document.getElementById('setMdrEdcKredit')) document.getElementById('setMdrEdcKredit').value = db.settings.mdr_edc_kredit || 2.5;
-  if(document.getElementById('setMdrTransfer')) document.getElementById('setMdrTransfer').value = db.settings.mdr_transfer || 0;
+  // Gunakan TOKO_DEFAULT sebagai cadangan jika database kosong
+  if(document.getElementById('tkSyarat')) document.getElementById('tkSyarat').value = db.settings.syarat || TOKO_DEFAULT.syarat;
+  if(document.getElementById('tkSyaratSingkat')) document.getElementById('tkSyaratSingkat').value = db.settings.syarat_singkat || TOKO_DEFAULT.syaratSingkat;
   
-  if(document.getElementById('setDiskonPersen')) document.getElementById('setDiskonPersen').value = db.settings.diskon_persen || 10;
-  if(document.getElementById('setDiskonNominal')) document.getElementById('setDiskonNominal').value = db.settings.diskon_nominal || 20000;
+  if(document.getElementById('setGaransiServisBulan')) document.getElementById('setGaransiServisBulan').value = db.settings.garansi_servis_bulan ?? 3;
+  
+  // MDR BARU (Menggunakan ?? agar angka 0 tetap terbaca 0)
+  if(document.getElementById('setMdrCcBca')) document.getElementById('setMdrCcBca').value = db.settings.mdr_cc_bca ?? 1.5;
+  if(document.getElementById('setMdrCcVm')) document.getElementById('setMdrCcVm').value = db.settings.mdr_cc_vm ?? 2;
+  if(document.getElementById('setMdrCcAmex')) document.getElementById('setMdrCcAmex').value = db.settings.mdr_cc_amex ?? 3.25;
+  if(document.getElementById('setMdrDcBca')) document.getElementById('setMdrDcBca').value = db.settings.mdr_dc_bca ?? 0.15;
+  if(document.getElementById('setMdrDcLain')) document.getElementById('setMdrDcLain').value = db.settings.mdr_dc_lain ?? 1;
+  if(document.getElementById('setMdrDcMaestro')) document.getElementById('setMdrDcMaestro').value = db.settings.mdr_dc_maestro ?? 2;
+  if(document.getElementById('setMdrQrisBesar')) document.getElementById('setMdrQrisBesar').value = db.settings.mdr_qris_besar ?? 0.7;
+  if(document.getElementById('setMdrTransfer')) document.getElementById('setMdrTransfer').value = db.settings.mdr_transfer ?? 0;
+  
+  if(document.getElementById('setDiskonPersen')) document.getElementById('setDiskonPersen').value = db.settings.diskon_persen ?? 10;
+  if(document.getElementById('setDiskonNominal')) document.getElementById('setDiskonNominal').value = db.settings.diskon_nominal ?? 20000;
 }
   if(document.getElementById('listAuditGlobal')) renderAuditGlobal();
 }
