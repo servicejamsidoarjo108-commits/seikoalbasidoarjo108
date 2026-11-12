@@ -161,14 +161,26 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
       <div><label>Tipe Diskon</label><select id="tipeDiskon" onchange="updateTotalKasir()"><option value="nominal">Nominal (Rp)</option><option value="persen">Persen (%)</option></select></div>
       <div><label>Nilai Diskon</label><input type="number" id="nilaiDiskon" value="0" min="0" oninput="updateTotalKasir()"></div>
     </div>
-    <div class="row">
-      <div><label>Nama Pembeli</label><input id="custNama" placeholder="Opsional" onblur="cekPoinPelanggan(this.value)"></div>
-      <div><label>No HP</label><input id="custHp" placeholder="Opsional"></div>
-    </div>
-    <div class="row">
-      <div><label>Tukar Poin (1 Poin = Rp 100)</label><input type="number" id="tukarPoin" value="0" min="0" oninput="updateTotalKasir()"></div>
-      <div><label>Sisa Poin Pelanggan</label><input id="infoPoin" readonly value="0"></div>
-    </div>
+   <div class="row">
+  <div>
+    <label>Nama Pembeli</label>
+    <input id="custNama" placeholder="Opsional" onblur="cekPoinPelanggan(this.value)">
+  </div>
+  <div>
+    <label>No HP</label>
+    <input id="custHp" placeholder="Opsional">
+  </div>
+</div>
+<div class="row">
+  <div>
+    <label>Tukar Poin (1 Poin = Rp 100)</label>
+    <input type="number" id="tukarPoin" value="0" min="0" oninput="updateTotalKasir()">
+  </div>
+  <div>
+    <label>Sisa Poin Pelanggan</label>
+    <input id="infoPoin" readonly value="0">
+  </div>
+</div>
     
     <div class="row">
       <div>
@@ -980,14 +992,37 @@ function renderCart(){
 }
 function updateTotalKasir(){
   const subtotal = cart.reduce((s,c) => s + c.harga*c.qty, 0); 
-  const tipe = document.getElementById('tipeDiskon').value; const nilai = +document.getElementById('nilaiDiskon').value || 0; 
-  let potongan = tipe === 'nominal' ? nilai : subtotal * (nilai / 100); if(potongan > subtotal) potongan = subtotal; 
-  const tukarPoin = +document.getElementById('tukarPoin').value || 0; const potonganPoin = tukarPoin * 100;
-  let total = subtotal - potongan - potonganPoin; if(total < 0) total = 0; 
+  const tipe = document.getElementById('tipeDiskon').value; 
+  const nilai = +document.getElementById('nilaiDiskon').value || 0; 
+  
+  let potongan = tipe === 'nominal' ? nilai : subtotal * (nilai / 100); 
+  if(potongan > subtotal) potongan = subtotal; 
+  
+  // HITUNG POTONGAN POIN
+  const tukarPoin = +document.getElementById('tukarPoin').value || 0; 
+  const potonganPoin = tukarPoin * 100;
+  
+  let total = subtotal - potongan - potonganPoin; 
+  if(total < 0) total = 0; // Total tidak boleh minus
+  
   const metode = document.getElementById('metodeBayar').value;
   const mdr = hitungMDR(total, metode);
-  document.getElementById('cartTotal').innerHTML = `<div style="font-size:12px;color:#64748b;text-align:right">Subtotal: ${rp(subtotal)}</div><div style="font-size:12px;color:#dc2626;text-align:right">Diskon: -${rp(potongan)}</div><div style="font-size:12px;color:#f59e0b;text-align:right">Poin: -${rp(potonganPoin)}</div><div style="font-size:16px;font-weight:700;color:#0f172a">Total: ${rp(total)}</div>`;
-  const el = document.getElementById('mdrInfo'); if(el){ if(mdr > 0){ el.style.display = 'flex'; document.getElementById('mdrValue').textContent = '-' + rp(mdr); } else { el.style.display = 'none'; } }
+  
+  document.getElementById('cartTotal').innerHTML = `
+    <div style="font-size:12px;color:#64748b;text-align:right">Subtotal: ${rp(subtotal)}</div>
+    <div style="font-size:12px;color:#dc2626;text-align:right">Diskon: -${rp(potongan)}</div>
+    <div style="font-size:12px;color:#f59e0b;text-align:right">Tukar Poin: -${rp(potonganPoin)}</div>
+    <div style="font-size:16px;font-weight:700;color:#0f172a">Total: ${rp(total)}</div>`;
+    
+  const el = document.getElementById('mdrInfo'); 
+  if(el){ 
+    if(mdr > 0){ 
+      el.style.display = 'flex'; 
+      document.getElementById('mdrValue').textContent = '-' + rp(mdr); 
+    } else { 
+      el.style.display = 'none'; 
+    } 
+  }
 }
 
 async function prosesBayar(){
@@ -1223,12 +1258,27 @@ async function simpanBaterai(){
   ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); 
   tarikSemuaData();
 }
-  function cekPoinPelanggan(nama) {
-  if(!nama) return;
-  const p = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase());
+ function cekPoinPelanggan(nama) {
   const info = document.getElementById('infoPoin');
-  if(p && info) info.value = p.poin || 0;
-  else if(info) info.value = 0;
+  const inputPoin = document.getElementById('tukarPoin');
+  if(!info) return;
+
+  // Cari pelanggan berdasarkan nama ATAU nomor HP
+  const telp = document.getElementById('custHp').value.trim();
+  const p = db.pelanggan.find(x => (nama && x.nama.toLowerCase() === nama.toLowerCase()) || (telp && x.telp === telp));
+  
+  if(p) {
+    info.value = p.poin || 0;
+    // Batasi input tukar poin maksimal sesuai poin yang dimiliki
+    if(inputPoin) inputPoin.max = p.poin || 0;
+  } else {
+    info.value = 0;
+    if(inputPoin) {
+      inputPoin.value = 0;
+      inputPoin.max = 0;
+    }
+  }
+  updateTotalKasir(); // Segarkan total harga
 }
   async function hapusBaterai(id){ 
   if(!isAdmin() || !confirm('Hapus data baterai ini?')) return; 
