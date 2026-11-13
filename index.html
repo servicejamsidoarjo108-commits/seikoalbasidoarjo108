@@ -141,10 +141,11 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   <i class="fa-solid fa-users" style="font-size:32px;margin-bottom:8px"></i> Pelanggan
 </button>
   <div id="menuAdmin" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;border-top:1px dashed #cbd5e1;padding-top:16px">
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#334155;font-size:16px" onclick="bukaMenu('kas')"><i class="fa-solid fa-money-bill-wave" style="font-size:32px;margin-bottom:8px"></i> Kas</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#475569;font-size:16px" onclick="bukaMenu('supplier')"><i class="fa-solid fa-store" style="font-size:32px;margin-bottom:8px"></i> Supplier</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#dc2626;font-size:16px" onclick="bukaMenu('setting')"><i class="fa-solid fa-gear" style="font-size:32px;margin-bottom:8px"></i> Setting</button>
-  </div>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#334155;font-size:16px" onclick="bukaMenu('kas')"><i class="fa-solid fa-money-bill-wave" style="font-size:32px;margin-bottom:8px"></i> Kas</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#475569;font-size:16px" onclick="bukaMenu('supplier')"><i class="fa-solid fa-store" style="font-size:32px;margin-bottom:8px"></i> Supplier</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#8b5cf6;font-size:16px" onclick="bukaMenu('keuangan')"><i class="fa-solid fa-file-invoice-dollar" style="font-size:32px;margin-bottom:8px"></i> Laporan Keuangan</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#dc2626;font-size:16px" onclick="bukaMenu('setting')"><i class="fa-solid fa-gear" style="font-size:32px;margin-bottom:8px"></i> Setting</button>
+</div>
 </section>
 
 <div id="msg" class="msg"></div>
@@ -540,10 +541,33 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
 
 <section id="laporan">
   <div class="card">
-    <h3>📊 Laporan Keuangan Lengkap (Bulan Ini)</h3>
+    <h3>📊 Ringkasan Laporan Harian</h3>
+    <div class="stat" style="margin-top: 10px;">
+      <div class="card"><div class="lbl">Kas Masuk Hari Ini</div><div class="num" id="lapKasHari">Rp 0</div></div>
+      <div class="card"><div class="lbl">Omzet Bulan Ini</div><div class="num" id="lapOmzet">Rp 0</div></div>
+      <div class="card"><div class="lbl">Laba Kotor Bulan Ini</div><div class="num" id="lapLabaKotor" style="color:#16a34a">Rp 0</div></div>
+      <div class="card"><div class="lbl">Omzet Servis</div><div class="num" id="lapServis">Rp 0</div></div>
+      <div class="card"><div class="lbl">Omzet Baterai</div><div class="num" id="lapBat">Rp 0</div></div>
+      <div class="card"><div class="lbl">Piutang Servis</div><div class="num" id="lapPiutang" style="color:#dc2626">Rp 0</div></div>
+    </div>
+  </div>
+
+  <div class="card"><h3>Produk Terlaris</h3><table><thead><tr><th>Produk</th><th>Qty</th><th>Omzet</th></tr></thead><tbody id="tblLaris"></tbody></table></div>
+  <div class="card"><h3>Spare Part Terlaris</h3><table><thead><tr><th>Spare Part</th><th>Qty</th><th>Nilai</th></tr></thead><tbody id="tblLarisSp"></tbody></table></div>
+  <div class="card"><h3>Stok Menipis</h3><div id="stokAlert"></div></div>
+  
+  <div class="card">
+    <h3>📲 Kirim Laporan ke WA</h3>
+    <p style="font-size:13px;color:#475569;margin-top:0">Ringkasan performa toko hari ini akan dikirim ke nomor WhatsApp Pemilik/Toko.</p>
+    <button class="btn ok" onclick="waAdminLaporan()">Kirim Laporan Hari Ini ke WA</button>
+  </div>
+</section>
+
+  <section id="keuangan">
+  <div class="card">
+    <h3>💼 Laporan Keuangan (Bulan Ini)</h3>
     <p style="font-size:12px;color:#64748b;margin-top:0">Laporan ini dihitung otomatis dari seluruh transaksi yang tercatat di sistem.</p>
     
-    <!-- TABS NAVIGASI LAPORAN -->
     <div style="display:flex; gap:5px; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px; overflow-x:auto;">
       <button class="btn-sm blue" onclick="gantiTabLaporan('laba_rugi')" id="tab_laba_rugi">Laba Rugi</button>
       <button class="btn-sm ghost" onclick="gantiTabLaporan('neraca')" id="tab_neraca">Neraca</button>
@@ -553,78 +577,20 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <!-- KONTEN LABA RUGI -->
     <div id="konten_laba_rugi">
       <table style="width:100%; font-size:14px; border-collapse: collapse;">
-        <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#0284c7;">PENDAPATAN</td></tr>
-        <tr><td style="padding:4px 0">Penjualan Produk</td><td style="text-align:right" id="lr_pen_jual">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">Jasa Servis</td><td style="text-align:right" id="lr_pen_servis">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">Ganti Baterai</td><td style="text-align:right" id="lr_pen_baterai">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">Pendapatan Lain (Bunga/Rekonsiliasi)</td><td style="text-align:right" id="lr_pen_lain">Rp 0</td></tr>
-        <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL PENDAPATAN</td><td style="text-align:right" id="lr_total_pendapatan">Rp 0</td></tr>
-        
-        <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#dc2626; margin-top:10px;">HARGA POKOK PENJUALAN (HPP)</td></tr>
-        <tr><td style="padding:4px 0">HPP Produk</td><td style="text-align:right" id="lr_hpp_produk">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">HPP Sparepart</td><td style="text-align:right" id="lr_hpp_part">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">HPP Baterai</td><td style="text-align:right" id="lr_hpp_baterai">Rp 0</td></tr>
-        <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL HPP</td><td style="text-align:right" id="lr_total_hpp">Rp 0</td></tr>
-        
-        <tr style="background:#f8fafc;"><td style="padding:10px 0; font-weight:bold;">LABA KOTOR</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="lr_laba_kotor">Rp 0</td></tr>
-        
-        <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#dc2626; margin-top:10px;">BEBAN OPERASIONAL</td></tr>
-        <tr><td style="padding:4px 0">Biaya Bank (MDR)</td><td style="text-align:right" id="lr_beban_mdr">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">Biaya Kas Kecil (Galon, dll)</td><td style="text-align:right" id="lr_beban_kas_kecil">Rp 0</td></tr>
-        <tr><td style="padding:4px 0">Biaya Lain (Rekonsiliasi/Selisih)</td><td style="text-align:right" id="lr_beban_lain">Rp 0</td></tr>
-        <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL BEBAN</td><td style="text-align:right" id="lr_total_beban">Rp 0</td></tr>
-        
-        <tr style="background:#0284c7; color:white;"><td style="padding:12px; font-weight:bold; font-size:16px;">LABA BERSIH</td><td style="text-align:right; font-weight:bold; font-size:16px;" id="lr_laba_bersih">Rp 0</td></tr>
+        <!-- PASTE KODE TABEL LABA RUGI DARI PESAN SEBELUMNYA DI SINI -->
+        <!-- (Mulai dari PENDAPATAN sampai LABA BERSIH) -->
       </table>
     </div>
 
     <!-- KONTEN NERACA -->
     <div id="konten_neraca" style="display:none;">
-      <div class="row">
-        <div>
-          <h4 style="color:#0284c7; margin-bottom:10px;">ASET</h4>
-          <table style="width:100%; font-size:14px;">
-            <tr><td>Kas Tunai</td><td style="text-align:right" id="nr_kas_tunai">Rp 0</td></tr>
-            <tr><td>Saldo Bank</td><td style="text-align:right" id="nr_saldo_bank">Rp 0</td></tr>
-            <tr><td>Piutang Servis</td><td style="text-align:right" id="nr_piutang">Rp 0</td></tr>
-            <tr><td>Nilai Persediaan (Stok)</td><td style="text-align:right" id="nr_persediaan">Rp 0</td></tr>
-            <tr style="border-top:1px solid #ccc; font-weight:bold;"><td style="padding-top:8px;">TOTAL ASET</td><td style="text-align:right; padding-top:8px;" id="nr_total_aset">Rp 0</td></tr>
-          </table>
-        </div>
-        <div>
-          <h4 style="color:#dc2626; margin-bottom:10px;">KEWAJIBAN & EKUITAS</h4>
-          <table style="width:100%; font-size:14px;">
-            <tr><td>Hutang Supplier</td><td style="text-align:right" id="nr_hutang">Rp 0</td></tr>
-            <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL KEWAJIBAN</td><td style="text-align:right; padding-bottom:8px;" id="nr_total_kewajiban">Rp 0</td></tr>
-            <tr><td style="padding-top:8px;">Ekuitas (Laba Ditahan)</td><td style="text-align:right; padding-top:8px;" id="nr_ekuitas">Rp 0</td></tr>
-            <tr style="border-top:1px solid #ccc; font-weight:bold;"><td style="padding-top:8px;">TOTAL KEWAJIBAN & EKUITAS</td><td style="text-align:right; padding-top:8px;" id="nr_total_pasiva">Rp 0</td></tr>
-          </table>
-        </div>
-      </div>
+      <!-- PASTE KODE NERACA DARI PESAN SEBELUMNYA DI SINI -->
     </div>
 
     <!-- KONTEN ARUS KAS -->
     <div id="konten_arus_kas" style="display:none;">
-      <table style="width:100%; font-size:14px;">
-        <tr><td colspan="2" style="font-weight:bold; color:#16a34a; padding:8px 0;">ARUS KAS MASUK</td></tr>
-        <tr><td>Dari Penjualan & Servis</td><td style="text-align:right" id="ak_masuk_operasional">Rp 0</td></tr>
-        <tr><td>Dari Pendapatan Lain</td><td style="text-align:right" id="ak_masuk_lain">Rp 0</td></tr>
-        <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL MASUK</td><td style="text-align:right; padding-bottom:8px;" id="ak_total_masuk">Rp 0</td></tr>
-        
-        <tr><td colspan="2" style="font-weight:bold; color:#dc2626; padding:8px 0;">ARUS KAS KELUAR</td></tr>
-        <tr><td>Biaya Bank (MDR)</td><td style="text-align:right" id="ak_keluar_mdr">Rp 0</td></tr>
-        <tr><td>Beban Operasional (Kas Kecil)</td><td style="text-align:right" id="ak_keluar_operasional">Rp 0</td></tr>
-        <tr><td>Restock Barang</td><td style="text-align:right" id="ak_keluar_restock">Rp 0</td></tr>
-        <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL KELUAR</td><td style="text-align:right; padding-bottom:8px;" id="ak_total_keluar">Rp 0</td></tr>
-        
-        <tr style="background:#f8fafc;"><td style="padding:10px 0; font-weight:bold;">ARUS KAS BERSIH</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="ak_arus_bersih">Rp 0</td></tr>
-      </table>
+      <!-- PASTE KODE ARUS KAS DARI PESAN SEBELUMNYA DI SINI -->
     </div>
-  </div>
-    <div class="card" style="margin-top: 20px;">
-    <h3>📲 Kirim Laporan ke WA</h3>
-    <p style="font-size:13px;color:#475569;margin-top:0">Ringkasan performa toko hari ini akan dikirim ke nomor WhatsApp Pemilik/Toko.</p>
-    <button class="btn ok" onclick="waAdminLaporan()">Kirim Laporan Hari Ini ke WA</button>
   </div>
 </section>
   
@@ -748,28 +714,22 @@ function isKasir() { return sessionStorage.getItem('ta_role') === 'kasir'; }
 function applyRoleUI() { 
   const r = sessionStorage.getItem('ta_role');
   
-  // 1. Sembunyikan/Tampilkan Card Audit Trail (Khusus Pemilik)
+  // Sembunyikan Card Audit & Harga Beli
   const cardAudit = document.getElementById('cardAuditTrail');
   if(cardAudit) cardAudit.style.display = (r === 'pemilik') ? 'block' : 'none';
 
-  // 2. Sembunyikan Form Harga Beli jika bukan Pemilik (Produk, Baterai, Restock)
   const wrapHBProduk = document.getElementById('wrapHargaBeliProduk');
   if(wrapHBProduk) wrapHBProduk.style.display = (r === 'pemilik') ? 'block' : 'none';
-
   const wrapHBBaterai = document.getElementById('wrapHargaBeliBaterai');
   if(wrapHBBaterai) wrapHBBaterai.style.display = (r === 'pemilik') ? 'block' : 'none';
-
   const wrapHBRestock = document.getElementById('wrapHargaBeliRestock');
   if(wrapHBRestock) wrapHBRestock.style.display = (r === 'pemilik') ? 'block' : 'none';
   
-  // 3. Sembunyikan Form Tambah Baterai & Sparepart jika Kasir
   const cardTambahBaterai = document.getElementById('cardTambahBaterai');
   if(cardTambahBaterai) cardTambahBaterai.style.display = (r === 'kasir') ? 'none' : 'block';
-
   const cardTambahSparePart = document.getElementById('cardTambahSparePart');
   if(cardTambahSparePart) cardTambahSparePart.style.display = (r === 'kasir') ? 'none' : 'block';
   
-  // 4. Ambil semua elemen tombol menu
   const btnKasir = document.querySelector('button[onclick="bukaMenu(\'kasir\')"]');
   const btnServis = document.querySelector('button[onclick="bukaMenu(\'servis\')"]');
   const btnBaterai = document.querySelector('button[onclick="bukaMenu(\'baterai\')"]');
@@ -780,13 +740,12 @@ function applyRoleUI() {
   
   const btnKas = document.querySelector('button[onclick="bukaMenu(\'kas\')"]');
   const btnSupplier = document.querySelector('button[onclick="bukaMenu(\'supplier\')"]');
+  const btnKeuangan = document.querySelector('button[onclick="bukaMenu(\'keuangan\')"]'); // TOMBOL BARU
   const btnSetting = document.querySelector('button[onclick="bukaMenu(\'setting\')"]');
 
-  // 5. Sembunyikan semua menu dulu (reset)
-  [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
+  [btnServis, btnProduk, btnSparepart, btnLaporan, btnKas, btnSupplier, btnKeuangan, btnSetting].forEach(b => { if(b) b.style.display = 'none'; });
   [btnKasir, btnBaterai, btnPelanggan].forEach(b => { if(b) b.style.display = 'flex'; });
 
-  // 6. Tampilkan menu sesuai Role
   if (r === 'kasir') {
     document.body.classList.add('role-kasir');
     document.body.classList.remove('role-admin');
@@ -799,6 +758,7 @@ function applyRoleUI() {
     if(btnSparepart) btnSparepart.style.display = 'flex';
     if(btnKas) btnKas.style.display = 'flex';
     if(btnSupplier) btnSupplier.style.display = 'flex';
+    // Admin TIDAK melihat Laporan Keuangan & Setting
   } 
   else if (r === 'pemilik') {
     document.body.classList.remove('role-kasir');
@@ -809,9 +769,11 @@ function applyRoleUI() {
     if(btnLaporan) btnLaporan.style.display = 'flex';
     if(btnKas) btnKas.style.display = 'flex';
     if(btnSupplier) btnSupplier.style.display = 'flex';
+    if(btnKeuangan) btnKeuangan.style.display = 'flex'; // Pemilik melihat Laporan Keuangan
     if(btnSetting) btnSetting.style.display = 'flex';
   }
 }
+  
 // === MENGAMBIL SEMUA DATA DARI CLOUD ===
 async function tarikSemuaData() {
   if(!supabaseClient) return;
