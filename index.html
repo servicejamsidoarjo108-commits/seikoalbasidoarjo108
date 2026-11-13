@@ -2043,28 +2043,18 @@ function shareStrukDigital(trxId){
 function waServisSelesai(id){
   const s = db.servis.find(x => x.id === id); if(!s || !s.telp) return; 
   const toko = getToko(); const garis = '=========================';
-  const partsText = (s.parts||[]).map(p => `- ${p.nama} (${p.qty}x) : ${rp(p.harga*p.qty)}`).join('\n');
-  const batText = (s.baterai||[]).map(b => `- Baterai ${b.nama} (${b.qty}x) : ${rp(b.harga*b.qty)}`).join('\n');
   
-  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*SERVIS SELESAI*\n${garis}\nPelanggan: ${s.customer}\nBarang: ${s.produk}\nKeluhan: ${s.keluhan||'-'}\n*No:* ${s.id}\n${garis}\n*RINCIAN BIAYA*\n`;
-  text += `Jasa Servis : ${rp(s.jasa||0)}\n`;
-  if(partsText) text += `${partsText}\n`;
-  if(batText) text += `${batText}\n`;
-  text += `${garis}\n*TOTAL: ${rp(s.biaya_pelanggan)}*\n`;
+  // LINK LACAK SERVIS
+  const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}`;
   
-  if(s.paid) text += `Status: *LUNAS*\n`;
-  else if(s.dp > 0) text += `DP Masuk: ${rp(s.dp)}\n*Sisa Tagihan: ${rp(s.sisa)}*\n`;
-  else text += `*Sisa Tagihan: ${rp(s.sisa)}*\n`;
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*UPDATE SERVIS*\n${garis}\nPelanggan: ${s.customer}\nBarang: ${s.produk}\n*No:* ${s.id}\nStatus Saat Ini: *${s.status.toUpperCase()}*\n${garis}\n`;
   
-  if(s.tgl_garansi_servis_sampai) {
-    text += `${garis}\n*GARANSI SERVIS*\nBerlaku s/d: *${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')}* (23:59)\n`;
-    if(s.is_klaim) text += `(Klaim dari nota ${s.parent_id})\n`;
-    text += `${garis}\n`;
-  }
+  text += `🔍 *Pantau status servis Anda secara real-time di sini:*\n${linkLacak}\n${garis}\n`;
   
-  text += `Silakan diambil di toko kami.\n`;
-  if(toko.syarat) text += `\n*SYARAT & KETENTUAN:*\n${toko.syarat}\n`;
-  text += `\n${toko.footer}\n_Simpan pesan ini sebagai bukti servis_`; 
+  if(s.paid) text += `Status Pembayaran: *LUNAS*\n`;
+  else if(s.sisa > 0) text += `Sisa Tagihan: *${rp(s.sisa)}*\n`;
+  
+  text += `\n${toko.footer}`; 
   openWA(s.telp, text);
 }
 function waReminderBaterai(id){
@@ -2074,7 +2064,24 @@ function waReminderBaterai(id){
 function cetakNotaServis(id){
   const s = db.servis.find(x => x.id === id); if(!s) return; const toko = getToko();
   const partsList = [ ...(s.parts||[]).map(p => `- ${p.nama} x${p.qty} = ${rp(p.harga*p.qty)}`), ...(s.baterai||[]).map(b => `- ${b.nama} x${b.qty} = ${rp(b.harga*b.qty)}`) ].join('<br>') || '<i>(tanpa spare part)</i>';
-  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body><div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c">${esc(toko.alamat)}</div><div class="c b">NOTA SERVIS</div><hr><div>No: ${s.id}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr><div>Produk: ${esc(s.produk)}</div><div>Keluhan: ${esc(s.keluhan||'-')}</div><hr><div class="b">Spare Part:</div><div>${partsList}</div><hr><table style="width:100%"><tr><td>Jasa</td><td style="text-align:right">${rp(s.jasa||0)}</td></tr><tr><td>Spare part</td><td style="text-align:right">${rp(s.total_parts||0)}</td></tr><tr><td>Baterai</td><td style="text-align:right">${rp(s.total_baterai||0)}</td></tr><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${rp(s.biaya_pelanggan)}</td></tr></table><hr><div class="c" style="margin-top:4px">Simpan nota ini</div></body></html>`;
+  
+  // Link & QR Code
+  const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(linkLacak)}`;
+  
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body><div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c">${esc(toko.alamat)}</div><div class="c b">NOTA SERVIS</div><hr><div>No: ${s.id}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr><div>Produk: ${esc(s.produk)}</div><div>Keluhan: ${esc(s.keluhan||'-')}</div><hr><div class="b">Spare Part:</div><div>${partsList}</div><hr><table style="width:100%"><tr><td>Jasa</td><td style="text-align:right">${rp(s.jasa||0)}</td></tr><tr><td>Spare part</td><td style="text-align:right">${rp(s.total_parts||0)}</td></tr><tr><td>Baterai</td><td style="text-align:right">${rp(s.total_baterai||0)}</td></tr><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${rp(s.biaya_pelanggan)}</td></tr></table><hr>
+  
+  <!-- QR CODE & LINK LACAK -->
+  <div class="c" style="margin-top: 8px;">
+    <div style="font-size:9px; margin-bottom:2px;">Scan untuk lacak status servis:</div>
+    <img src="${qrCodeUrl}" width="80" height="80" alt="QR Code">
+  </div>
+  <div style="text-align:center; font-size:9px; margin-top:5px;">
+    <b>servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}</b>
+  </div>
+
+  <div class="c" style="margin-top:4px">Simpan nota ini</div></body></html>`;
+  
   cetakHTML(html);
 }
 function cetakKartuGaransiServis(id){
@@ -2085,7 +2092,23 @@ function cetakKartuGaransiServis(id){
 function cetakStrukServis(id){
   const s = db.servis.find(x => x.id === id); if(!s) return; const toko = getToko();
   const partsHTML = [ ...(s.parts||[]).map(p => `<tr><td>${esc(p.nama)} x${p.qty}</td><td style="text-align:right">${(p.qty*p.harga).toLocaleString('id-ID')}</td></tr>`), ...(s.baterai||[]).map(b => `<tr><td>Baterai ${esc(b.nama)} x${b.qty}</td><td style="text-align:right">${(b.qty*b.harga).toLocaleString('id-ID')}</td></tr>`) ].join('') || '<tr><td colspan="2"><i>-</i></td></tr>';
-  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:11px}</style></head><body><div class="c b">${esc(toko.nama)}</div><div class="c b">STRUK SERVIS</div><hr><div>No: ${s.id}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr><div>${esc(s.produk)}</div><hr><table><tr><td>Jasa</td><td style="text-align:right">${(s.jasa||0).toLocaleString('id-ID')}</td></tr>${partsHTML}</table><hr><table><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${(s.biaya_pelanggan||0).toLocaleString('id-ID')}</td></tr><tr><td class="b">SISA</td><td class="b" style="text-align:right">${(s.sisa||0).toLocaleString('id-ID')}</td></tr></table><hr><div class="c">${s.paid ? 'LUNAS' : 'BELUM LUNAS'}<br><br>${esc(toko.footer)}</div></body></html>`;
+  
+  // Link & QR Code
+  const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(linkLacak)}`;
+
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:11px}</style></head><body><div class="c b">${esc(toko.nama)}</div><div class="c b">STRUK SERVIS</div><hr><div>No: ${s.id}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr><div>${esc(s.produk)}</div><hr><table><tr><td>Jasa</td><td style="text-align:right">${(s.jasa||0).toLocaleString('id-ID')}</td></tr>${partsHTML}</table><hr><table><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${(s.biaya_pelanggan||0).toLocaleString('id-ID')}</td></tr><tr><td class="b">SISA</td><td class="b" style="text-align:right">${(s.sisa||0).toLocaleString('id-ID')}</td></tr></table><hr>
+  
+  <!-- QR CODE & LINK LACAK -->
+  <div class="c" style="margin-top: 8px;">
+    <div style="font-size:9px; margin-bottom:2px;">Scan untuk lacak status & garansi:</div>
+    <img src="${qrCodeUrl}" width="80" height="80" alt="QR Code">
+  </div>
+  <div style="text-align:center; font-size:9px; margin-top:5px;">
+    <b>servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}</b>
+  </div>
+
+  <div class="c" style="margin-top:6px">${s.paid ? 'LUNAS' : 'BELUM LUNAS'}<br><br>${esc(toko.footer)}</div></body></html>`;
   cetakHTML(html);
 }
 function bisaKlaimGaransi(s){
