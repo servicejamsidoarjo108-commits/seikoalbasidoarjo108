@@ -918,24 +918,46 @@ async function simpanProduk(){
   const stokInput = +document.getElementById('pStok').value || 0;
   const barcode = document.getElementById('pSerial').value.trim();
 
-  const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
-  if(isPemilik()) data.harga_beli = hargaBeli;
-  if(tempFotoBase64) data.foto = tempFotoBase64;
-
   if(id){
+    // MODE EDIT: Update data berdasarkan ID
+    const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
+    if(isPemilik()) data.harga_beli = hargaBeli;
+    if(tempFotoBase64) data.foto = tempFotoBase64;
+    
     const { error } = await supabaseClient.from('produk').update(data).eq('id', id);
     if(error) return flash(error.message, 'err');
     flash('Produk diperbarui');
   } else {
-    data.id = genId('PRD');
-    const { error } = await supabaseClient.from('produk').insert([data]);
-    if(error) return flash(error.message, 'err');
-    flash('Produk ditambahkan');
+    // MODE TAMBAH BARU: Cek apakah produk sudah ada
+    const existing = db.produk.find(p => p.nama.toLowerCase() === nama.toLowerCase() && (p.merek||'').toLowerCase() === merek.toLowerCase());
+    
+    if (existing) {
+      // Jika produk sudah ada, tambahkan stoknya & hitung HPP rata-rata
+      const totalStok = existing.stok + stokInput;
+      const hppBaru = totalStok > 0 ? Math.round(((existing.stok * (existing.harga_beli||0)) + (stokInput * hargaBeli)) / totalStok) : hargaBeli;
+      
+      const data = { stok: totalStok, harga_jual: hargaJual };
+      if(isPemilik()) data.harga_beli = hppBaru;
+      if(tempFotoBase64) data.foto = tempFotoBase64;
+      
+      await supabaseClient.from('produk').update(data).eq('id', existing.id);
+      flash(`Stok ${nama} berhasil ditambahkan (Total: ${totalStok})`);
+    } else {
+      // Jika produk benar-benar baru
+      const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
+      if(isPemilik()) data.harga_beli = hargaBeli;
+      if(tempFotoBase64) data.foto = tempFotoBase64;
+      data.id = genId('PRD');
+      
+      await supabaseClient.from('produk').insert([data]);
+      flash('Produk baru ditambahkan');
+    }
   }
-  await catatLog('PRODUK', (id ? 'Edit' : 'Tambah') + ' produk: ' + nama);
+  
+  await catatLog('PRODUK', (id ? 'Edit' : 'Tambah/Restock') + ' produk: ' + nama);
   resetFormProduk(); tarikSemuaData();
 }
-
+  
 function resetFormProduk(){ ['pId','pNama','pMerek','pHBeli','pHJual','pStok','pSerial','pFoto'].forEach(x => document.getElementById(x).value = ''); tempFotoBase64 = ''; }
 
 function editProduk(id){
@@ -1081,7 +1103,6 @@ async function prosesBayar(){
       }]);
     }
     
-    // Update Poin Pelanggan
     // Update Poin Pelanggan (Lebih Pintar)
 const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
 if(cNama || cHp) {
@@ -1299,11 +1320,32 @@ async function hapusServis(id){
 // === BATERAI ===
 async function tambahStokBaterai(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
-  const tipe = document.getElementById('sbTipe').value.trim().toUpperCase(); if(!tipe) return flash('Tipe wajib', 'err');
-  const { error } = await supabaseClient.from('stok_baterai').insert([{ id: genId('SB'), tipe, min_stok: +document.getElementById('sbMin').value || 0, harga_beli: +document.getElementById('sbBeli').value || 0, harga_jual: +document.getElementById('sbJual').value || 0, stok: +document.getElementById('sbStok').value || 0 }]);
-  if(error) return flash(error.message, 'err'); flash('Ditambahkan'); ['sbTipe','sbBeli','sbJual'].forEach(id => document.getElementById(id).value = ''); tarikSemuaData();
+  const tipe = document.getElementById('sbTipe').value.trim().toUpperCase(); 
+  if(!tipe) return flash('Tipe wajib', 'err');
+  
+  const stokInput = +document.getElementById('sbStok').value || 0;
+  const sb = db.stokBaterai.find(x => x.tipe.toUpperCase() === tipe);
+  
+  if (sb) {
+    // Jika tipe sudah ada, tambahkan stoknya
+    const stokBaru = (sb.stok || 0) + stokInput;
+    await supabaseClient.from('stok_baterai').update({ stok: stokBaru }).eq('id', sb.id);
+  } else {
+    // Jika tipe baru, buat baris baru
+    await supabaseClient.from('stok_baterai').insert([{ 
+      id: genId('SB'), tipe, min_stok: +document.getElementById('sbMin').value || 0, 
+      harga_beli: +document.getElementById('sbBeli').value || 0, 
+      harga_jual: +document.getElementById('sbJual').value || 0, 
+      stok: stokInput 
+    }]);
+  }
+  
+  flash('Stok baterai berhasil ditambahkan'); 
+  ['sbTipe','sbBeli','sbJual'].forEach(id => document.getElementById(id).value = ''); 
+  document.getElementById('sbStok').value = 0;
+  tarikSemuaData();
 }
-
+  
 async function simpanBaterai(){
   if (!checkRequired(['bNama'])) return flash('Nama Pelanggan wajib diisi', 'err'); 
   if (cartBaterai.length === 0) return flash('Keranjang baterai masih kosong', 'err');
