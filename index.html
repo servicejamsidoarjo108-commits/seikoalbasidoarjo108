@@ -1922,19 +1922,38 @@ async function catatLog(aksi, detail) {
 }
 
 function renderAuditLog() {
-  const el = document.getElementById('listAuditLog'); if(!el) return;
-  const q = (document.getElementById('cariAuditLog').value || '').toLowerCase();
-  const list = (db.auditLog || []).filter(l => !q || (l.user_name||'').toLowerCase().includes(q) || (l.aksi||'').toLowerCase().includes(q));
+  const el = document.getElementById('listAuditLog'); 
+  if(!el) return;
   
-  el.innerHTML = list.length ? list.map(l => `
+  const q = (document.getElementById('cariAuditLog').value || '').toLowerCase();
+  
+  // 1. Ambil data dari riwayat audit (tabel audit_barang)
+  let list = db.auditBarang || [];
+  
+  // 2. Filter berdasarkan pencarian
+  if(q) {
+    list = list.filter(l => (l.nama_produk||'').toLowerCase().includes(q) || (l.catatan||'').toLowerCase().includes(q));
+  }
+  
+  // 3. Filter berdasarkan tombol Kasir/Admin
+  if (filterAuditUser === 'admin') {
+    list = list.filter(l => l.user_name === 'admin' || l.user_name === 'pemilik');
+  } else if (filterAuditUser === 'kasir') {
+    list = list.filter(l => l.user_name === 'kasir');
+  }
+  
+  // 4. Tampilkan (maksimal 50 data terakhir)
+  el.innerHTML = list.length ? list.slice(0, 50).map(l => `
     <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px;">
       <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
         <strong>${new Date(l.waktu).toLocaleString('id-ID')}</strong>
-        <span class="badge ${l.role === 'admin' ? 'danger' : 'proses'}">${esc(l.user_name)} (${l.role})</span>
+        <span class="badge ${l.user_name === 'admin' || l.user_name === 'pemilik' ? 'danger' : 'proses'}">${esc(l.user_name)}</span>
       </div>
-      <span style="color:#0284c7; font-weight:bold;">${esc(l.aksi)}</span>: ${esc(l.detail)}
+      <span style="color:#0284c7; font-weight:bold;">${esc(l.tipe ? l.tipe.toUpperCase() : 'AUDIT')}</span>: 
+      ${esc(l.nama_produk)} (Sistem: ${l.stok_sistem}, Fisik: ${l.stok_fisik}, Selisih: ${l.selisih})
+      <br><small>Catatan: ${esc(l.catatan)}</small>
     </div>
-  `).join('') : '<div class="empty">Belum ada aktivitas.</div>';
+  `).join('') : '<div class="empty">Belum ada riwayat audit.</div>';
 }
 
 function waAdminLaporan(){
@@ -2105,11 +2124,6 @@ setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No H
   return `<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.telp || '-')}</td><td>${rp(totalBelanja)}<br><small style="color:#f59e0b">⭐ ${p.poin || 0} Poin</small></td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="showCustomerHistory('${esc(p.nama)}', '${esc(p.telp)}')">Riwayat</button>${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="window.open('https://wa.me/'+waPhone('${p.telp}'),'_blank')">WA</button>` : ''}${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${p.id}')">Hapus</button>` : ''}</td></tr>`; 
 }).join('') + '</tbody></table>' : '<div class="empty">Belum ada data pelanggan</div>');
 
-  function filterAudit(v){ 
-  filterAuditUser = v; 
-  renderAuditLog(); // Panggil fungsi ini, bukan render()
-}
-  
   // 10. KALKULASI LAPORAN LABA RUGI LENGKAP
   const omzetBulan = db.jual.filter(t => { const d = new Date(t.waktu); return d.getMonth()===bln && d.getFullYear()===thn; }).reduce((s,t) => s + t.total, 0);
   const omzetServis = db.servis.filter(s => s.tgl_selesai && (() => { const d = new Date(s.tgl_selesai); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,t) => s + (t.biaya_pelanggan||0), 0);
