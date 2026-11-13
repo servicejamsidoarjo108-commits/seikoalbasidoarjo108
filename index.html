@@ -163,12 +163,12 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     </div>
    <div class="row">
   <div>
-    <label>Nama Pembeli</label>
-    <input id="custNama" placeholder="Opsional" onblur="cekPoinPelanggan(this.value)">
+        <label>Nama Pembeli</label>
+    <input id="custNama" placeholder="Opsional" onblur="cekPoinPelanggan(this.value)" oninput="cekPoinPelanggan(this.value)">
   </div>
   <div>
     <label>No HP</label>
-    <input id="custHp" placeholder="Opsional">
+    <input id="custHp" placeholder="Opsional" oninput="cekPoinPelanggan(document.getElementById('custNama').value)">
   </div>
 </div>
 <div class="row">
@@ -1077,7 +1077,7 @@ if(cNama || cHp) {
   let query = supabaseClient.from('pelanggan').select('*');
   // Jika ada No HP, cari berdasarkan No HP. Jika tidak, cari berdasarkan Nama.
   if(cHp) query = query.eq('telp', cHp);
-  else query = query.eq('nama', cNama);
+  else query = query.ilike('nama', cNama);
 
   const { data: exPel } = await query.maybeSingle();
   
@@ -1167,7 +1167,7 @@ async function simpanServis(){
     const nominalBayarAwal = sisa <= 0 ? biayaPelanggan : dp;
     
     if(customer && nominalBayarAwal > 0) {
-      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').eq('nama', customer).maybeSingle();
+      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', customer).maybeSingle();
       if(exPel) {
         const poinDidapat = Math.floor(nominalBayarAwal / 10000);
         await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
@@ -1220,7 +1220,7 @@ async function bayarSisaServis(id){
     
     // 5. TAMBAH POIN PELANGGAN
     if(s.customer && nominal > 0) {
-      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').eq('nama', s.customer).maybeSingle();
+      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', s.customer).maybeSingle();
       if(exPel) {
         const poinDidapat = Math.floor(nominal / 10000);
         await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
@@ -1304,21 +1304,35 @@ async function simpanBaterai(){
   const batId = genId('BAT');
   
   const data = { id: batId, waktu: nowISO(), customer: nama, telp: document.getElementById('bHp').value.trim(), produk, tipe: sb.tipe, sb_id: sb.id, tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: d.toISOString().slice(0,10), biaya, metode, paid: metode !== 'hutang' };
+  
+  try {
     await supabaseClient.from('baterai').insert([data]);
-  
-  await supabaseClient.from('stok_baterai').update({ stok: sb.stok - 1 }).eq('id', sb.id);
-  
-  if(metode !== 'hutang' && biaya > 0) {
-    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: biaya, keterangan: `Ganti Baterai ${sb.tipe} - ${nama}`, sumber: 'baterai', ref_id: batId }]);
-  }
+    await supabaseClient.from('stok_baterai').update({ stok: sb.stok - 1 }).eq('id', sb.id);
+    if(metode !== 'hutang' && biaya > 0) {
+      await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: biaya, keterangan: `Ganti Baterai ${sb.tipe} - ${nama}`, sumber: 'baterai', ref_id: batId }]);
+    }
 
-  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
-  await catatLog('GANTI_BATERAI', `Ganti baterai ${sb.tipe} untuk ${nama}`);
-  
-  flash('Baterai disimpan'); 
-  ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); 
-  tarikSemuaData();
+    // === KODE POIN PELANGGAN ===
+    if(nama && metode !== 'hutang' && biaya > 0) {
+      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', nama).maybeSingle();
+      if(exPel) {
+        const poinDidapat = Math.floor(biaya / 10000);
+        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
+      }
+    }
+    // ==========================
+
+    // === AUDIT TRAIL ===
+    await catatLog('GANTI_BATERAI', `Ganti baterai ${sb.tipe} untuk ${nama}`);
+    
+    flash('Baterai disimpan'); 
+    ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); 
+    tarikSemuaData();
+  } catch(e) { 
+    flash('Gagal: ' + e.message, 'err'); 
+  }
 }
+  
  function cekPoinPelanggan(nama) {
   const info = document.getElementById('infoPoin');
   const inputPoin = document.getElementById('tukarPoin');
