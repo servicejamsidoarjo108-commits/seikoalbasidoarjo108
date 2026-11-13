@@ -2180,9 +2180,30 @@ function render(){
   if(document.getElementById('rsItem')) updateRsItem();
 
   // 4. Render Daftar Produk, Part, Baterai
-  setHTML('listProduk', db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th></th></tr></thead><tbody>` + db.produk.map(p => `<tr><td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td><td>${rp(p.harga_jual)}</td><td>${p.stok}</td><td><button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
-  setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr><td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
-  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr><td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
+setHTML('listProduk', db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr></thead><tbody>` + db.produk.map(p => `<tr>
+  <td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td>
+  <td>${rp(p.harga_jual)}</td>
+  <td>${p.stok}</td>
+  <td style="white-space:nowrap">
+    <button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>
+    <button class="btn-sm warn" onclick="cetakBarcode('${p.id}')">Barcode</button>
+    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}
+  </td>
+</tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
+  setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr>
+  <td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td>
+  <td style="white-space:nowrap">
+    <button class="btn-sm blue" onclick="editSparePart('${sp.id}')">Edit</button>
+    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusSparePart('${sp.id}')">Hapus</button>`:''}
+  </td>
+</tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
+  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr>
+  <td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td>
+  <td style="white-space:nowrap">
+    <button class="btn-sm blue" onclick="editStokBaterai('${sb.id}')">Edit</button>
+    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusStokBaterai('${sb.id}')">Hapus</button>`:''}
+  </td>
+</tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   
   // 5. Render Daftar Servis (DENGAN FILTER)
 const srvFiltered = db.servis.filter(s => !filterServisStatus || s.status === filterServisStatus);
@@ -2197,6 +2218,7 @@ setHTML('listServis', srvFiltered.length ? srvFiltered.map(s => {
 }).join('') : '<div class="empty">Tidak ada servis</div>');
 
 if(document.getElementById('hasilCekGaransi')) renderCekGaransi();
+  
   // 6. Render Riwayat Baterai (Lengkap)
   const cariB = (document.getElementById('bCari')?.value || '').toLowerCase(); 
   const listB = db.baterai.filter(b => !cariB || b.customer.toLowerCase().includes(cariB) || (b.telp||'').includes(cariB) || b.produk.toLowerCase().includes(cariB)).sort((a,b) => new Date(a.tgl_expired) - new Date(b.tgl_expired));
@@ -2237,7 +2259,11 @@ if (filterKasJenis === 'masuk' || filterKasJenis === 'keluar') {
 }
 
 // Pastikan baris setHTML ini utuh (hanya 1 baris panjang)
-setHTML('listKas', listKasFiltered.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join('') || '<div class="empty">Tidak ada data</div>');
+setHTML('listKas', listKasFiltered.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px;display:flex;justify-content:space-between;align-items:center;">
+  <div>${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}</div>
+  <div><b style="color:${k.jenis==='masuk'?'green':'red'}; margin-right:10px;">${rp(k.nominal)}</b>
+  ${isAdmin()?`<button class="btn-sm danger" onclick="hapusKas('${k.id}')" style="padding:2px 6px;font-size:10px;">X</button>`:''}</div>
+</div>`).join('') || '<div class="empty">Tidak ada data</div>');
 
 // RENDER DAFTAR BANK (DENGAN SALDO SAAT INI)
 setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo Awal</th><th>Saldo Saat Ini</th><th>Aksi</th></tr></thead><tbody>` + db.bank.map(b => { 
@@ -2262,6 +2288,25 @@ setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek
 // 9. Render Pelanggan (Pastikan tidak menempel dengan kode Kas di atasnya)
 const cariP = (document.getElementById('cariPelanggan')?.value || '').toLowerCase(); 
 const listP = (db.pelanggan || []).filter(p => !cariP || p.nama.toLowerCase().includes(cariP) || (p.telp||'').includes(cariP)); 
+
+  // Render Daftar Supplier
+setHTML('listSupplier', db.supplier.length ? `<table><thead><tr><th>Nama</th><th>Kontak</th><th>Aksi</th></tr></thead><tbody>` + db.supplier.map(s => `<tr>
+  <td><strong>${esc(s.nama)}</strong><br><small>${esc(s.catatan||'')}</small></td>
+  <td>${esc(s.hp||'-')}<br><small>${esc(s.alamat||'')}</small></td>
+  <td style="white-space:nowrap">
+    <button class="btn-sm blue" onclick="editSupplier('${s.id}')">Edit</button>
+    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusSupplier('${s.id}')">Hapus</button>`:''}
+  </td>
+</tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada supplier</div>');
+
+// Render Riwayat Hutang
+const hutang = db.pembelian.filter(p => p.status === 'hutang'); 
+setHTML('listHutang', hutang.length ? `<table><thead><tr><th>ID</th><th>Supplier</th><th>Total</th><th>Aksi</th></tr></thead><tbody>` + hutang.map(p => `<tr>
+  <td>${p.id}<br><small>${new Date(p.waktu).toLocaleDateString('id-ID')}</small></td>
+  <td>${esc(p.supplier_nama)}</td>
+  <td>${rp(p.total)}</td>
+  <td>${isAdmin()?`<button class="btn-sm ok" onclick="lunasiHutang('${p.id}')">Lunas</button>`:''}</td>
+</tr>`).join('') + '</tbody></table>' : '<div class="empty">Tidak ada hutang</div>');
 
 setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No HP</th><th>Total Belanja</th><th></th></tr></thead><tbody>` + listP.map(p => { 
   const trxJual = db.jual.filter(t => t.cust_hp === p.telp).reduce((s,t) => s + t.total, 0); 
@@ -2528,8 +2573,7 @@ async function simpanAuditGlobal() {
 
   function filterKas(v){ filterKasJenis = v; render(); }
   function filterServis(v){ filterServisStatus = v; render(); }
-  function filterAudit(v){ filterAuditUser = v; render(); }
-  function filterAudit(v){ filterAuditUser = v; renderAuditLog(); }  
+  function filterAudit(v){ filterAuditUser = v; render(); }  
  
   async function auditSistem() {
   console.log("🔍 MEMULAI AUDIT SISTEM...");
