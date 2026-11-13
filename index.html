@@ -411,40 +411,50 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
 
 <section id="baterai">
   <!-- CARD 1: CATAT GANTI BATERAI -->
-  <div class="card"><h3>Catat Ganti Baterai</h3>
-    <div class="row"><div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi"></div><div><label>No HP</label><input id="bHp" placeholder="0812..."></div></div>
-    <div class="row"><div><label>Produk *</label><input id="bProduk" placeholder="Seiko 5"></div><div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div></div>
-    <div class="row"><div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div><div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div></div>
-    <div class="row"><div><label>Biaya</label><input type="number" id="bBiaya" value="0"></div><div><label>Stok Tersedia</label><input id="bStokInfo" readonly></div></div>
-    
-    <div class="row">
-      <div>
-        <label>Metode Bayar</label>
-        <select id="metodeBaterai" onchange="toggleBankBaterai()">
-          <option value="tunai">Tunai</option>
-          <option value="transfer">Transfer</option>
-          <option value="qris">QRIS</option>
-          <optgroup label="Kartu Kredit">
-            <option value="edc_cc_bca">BCA Card (1,5%)</option>
-            <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
-            <option value="edc_cc_amex">Amex (3,25%)</option>
-          </optgroup>
-          <optgroup label="Kartu Debit">
-            <option value="edc_dc_bca">BCA (0,15%)</option>
-            <option value="edc_dc_lain">Bank Lain (1%)</option>
-            <option value="edc_dc_maestro">Maestro (2%)</option>
-          </optgroup>
-          <option value="hutang">Hutang</option>
-        </select>
-      </div>
-      <div></div>
-    </div>
-    
-    <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
-    
-    <button class="btn" onclick="simpanBaterai()">Simpan & Kurangi Stok</button>
-  </div> <!-- PERHATIKAN: CARD 1 DITUTUP DI SINI -->
+ <!-- CARD 1: KERANJANG GANTI BATERAI -->
+<div class="card"><h3>Keranjang Ganti Baterai</h3>
+  <div class="row">
+    <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi"></div>
+    <div><label>No HP</label><input id="bHp" placeholder="0812..."></div>
+  </div>
+  
+  <div class="row3">
+    <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5"></div>
+    <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
+    <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiCart()" style="width:100%">+</button></div>
+  </div>
+  
+  <div id="cartBateraiList"><div class="empty">Belum ada baterai di keranjang</div></div>
+  <div class="cart-total"><span>Total Biaya</span><span id="cartBateraiTotal">Rp 0</span></div>
 
+  <div class="row" style="margin-top:10px">
+    <div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div>
+    <div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div>
+  </div>
+  
+  <div class="row">
+    <div>
+      <label>Metode Bayar</label>
+      <select id="metodeBaterai" onchange="toggleBankBaterai()">
+        <option value="tunai">Tunai</option>
+        <option value="transfer">Transfer</option>
+        <option value="qris">QRIS</option>
+        <option value="edc_cc_bca">BCA Card (1,5%)</option>
+        <option value="edc_cc_vm">Visa/Master (2%)</option>
+        <option value="edc_cc_amex">Amex (3,25%)</option>
+        <option value="edc_dc_bca">Debit BCA (0,15%)</option>
+        <option value="edc_dc_lain">Debit Lain (1%)</option>
+        <option value="edc_dc_maestro">Maestro (2%)</option>
+        <option value="hutang">Hutang</option>
+      </select>
+    </div>
+    <div></div>
+  </div>
+  
+  <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
+  
+  <button class="btn ok" onclick="simpanBaterai()">Simpan & Proses Baterai</button>
+</div>
   <!-- CARD 2: FORM TAMBAH TIPE BATERAI -->
   <div class="card" id="cardTambahBaterai"><h3>Tambah Tipe Baterai</h3>
     <div class="row"><div><label>Tipe *</label><input id="sbTipe" placeholder="SR626SW"></div><div><label>Min Stok</label><input type="number" id="sbMin" value="5" min="0"></div></div>
