@@ -340,16 +340,17 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   </div>
   
   <div class="card"><h3>Pakai Spare Part</h3>
-    <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
-    <div id="cartServisList"><div class="empty">Belum ada part</div></div>
-    <div class="cart-total"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
-  </div>
-  
-  <div class="card"><h3>Pakai Baterai (Opsional)</h3>
-    <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
-    <div id="cartBateraiList"><div class="empty">Belum ada baterai</div></div>
-    <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiTotal">Rp 0</span></div>
-  </div>
+  <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
+  <div id="cartServisList"><div class="empty">Belum ada part</div></div>
+  <div class="cart-total"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
+</div>
+
+<div class="card"><h3>Pakai Baterai (Opsional)</h3>
+  <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
+  <!-- BAGIAN INI YANG KITA UBAH -->
+  <div id="cartBateraiServisList"><div class="empty">Belum ada baterai</div></div>
+  <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiServisTotal">Rp 0</span></div>
+</div>
   
   <div class="card"><h3>Pembayaran Awal (DP)</h3>
     <div class="row"><div><label>Total Biaya Servis</label><input id="sTotalBiaya" readonly style="font-size:16px;font-weight:700;text-align:right"></div><div><label>DP Awal (Rp)</label><input type="number" id="sDp" value="0" min="0" oninput="hitungTotalServis()"></div></div>
@@ -1317,7 +1318,7 @@ async function hapusServis(id){
   tarikSemuaData();
 }
 
-// === BATERAI ===
+// === BATERAI (VERSI FINAL & BERSIH) ===
 async function tambahStokBaterai(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('sbTipe').value.trim().toUpperCase(); 
@@ -1327,11 +1328,9 @@ async function tambahStokBaterai(){
   const sb = db.stokBaterai.find(x => x.tipe.toUpperCase() === tipe);
   
   if (sb) {
-    // Jika tipe sudah ada, tambahkan stoknya
     const stokBaru = (sb.stok || 0) + stokInput;
     await supabaseClient.from('stok_baterai').update({ stok: stokBaru }).eq('id', sb.id);
   } else {
-    // Jika tipe baru, buat baris baru
     await supabaseClient.from('stok_baterai').insert([{ 
       id: genId('SB'), tipe, min_stok: +document.getElementById('sbMin').value || 0, 
       harga_beli: +document.getElementById('sbBeli').value || 0, 
@@ -1340,12 +1339,88 @@ async function tambahStokBaterai(){
     }]);
   }
   
+  await catatLog('TAMBAH_BATERAI', 'Menambah stok baterai: ' + tipe);
   flash('Stok baterai berhasil ditambahkan'); 
   ['sbTipe','sbBeli','sbJual'].forEach(id => document.getElementById(id).value = ''); 
   document.getElementById('sbStok').value = 0;
   tarikSemuaData();
 }
+
+function pilihBaterai(){ 
+  const id = document.getElementById('bTipeSel').value; 
+  const sb = db.stokBaterai.find(x => x.id === id); 
   
+  const info = document.getElementById('bStokInfo'); 
+  if(info) {
+    if(!sb) info.value = '-'; 
+    else info.value = `${sb.stok} unit (min ${sb.min_stok})`; 
+  }
+  
+  const biaya = document.getElementById('bBiaya');
+  if(biaya && !biaya.value && sb && sb.harga_jual > 0) {
+    biaya.value = sb.harga_jual; 
+  }
+}
+
+function addBateraiCart(){
+  const produk = document.getElementById('bProduk').value.trim();
+  const sbId = document.getElementById('bTipeSel').value;
+  
+  if(!produk) return alert('Isi Nama Produk / Jam terlebih dahulu!');
+  if(!sbId) return alert('Pilih Tipe Baterai terlebih dahulu!');
+  
+  const sb = db.stokBaterai.find(x => x.id === sbId);
+  if(!sb) return alert('Data baterai tidak ditemukan!');
+  if(sb.stok < 1) return alert('Stok baterai habis!');
+  
+  const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
+  if(existing) {
+    if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
+    existing.qty += 1;
+  } else {
+    cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
+  }
+  
+  document.getElementById('bProduk').value = '';
+  document.getElementById('bTipeSel').value = '';
+  
+  renderBateraiCart();
+  alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
+}
+
+function renderBateraiCart(){
+  const el = document.getElementById('cartBateraiList');
+  const totalEl = document.getElementById('cartBateraiTotal');
+  if(!el) return;
+  
+  if (cartBaterai.length === 0) {
+    el.innerHTML = '<div class="empty">Belum ada baterai di keranjang</div>';
+  } else {
+    let html = '';
+    cartBaterai.forEach((c, i) => {
+      html += `
+        <div style="border-bottom:1px solid #eee;padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
+          <div>
+            <strong>${c.produk}</strong> (${c.tipe}) x${c.qty}<br>
+            <small style="color:#64748b">Harga: ${rp(c.harga)} | Subtotal: ${rp(c.harga * c.qty)}</small>
+          </div>
+          <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">Batal</button>
+        </div>
+      `;
+    });
+    el.innerHTML = html;
+  }
+  
+  if(totalEl) {
+    totalEl.textContent = rp(cartBaterai.reduce((s,c) => s + (c.harga * c.qty), 0));
+  }
+}
+
+function hapusBateraiCart(i){ 
+  cartBaterai.splice(i,1); 
+  renderBateraiCart(); 
+}
+
 async function simpanBaterai(){
   if (!checkRequired(['bNama'])) return flash('Nama Pelanggan wajib diisi', 'err'); 
   if (cartBaterai.length === 0) return flash('Keranjang baterai masih kosong', 'err');
@@ -1362,7 +1437,6 @@ async function simpanBaterai(){
   const mdr = hitungMDR(totalBiaya, metode);
 
   try {
-    // 1. Simpan setiap item baterai ke database
     for (const item of cartBaterai) {
       const batId = genId('BAT');
       const data = { 
@@ -1373,12 +1447,10 @@ async function simpanBaterai(){
       };
       await supabaseClient.from('baterai').insert([data]);
 
-      // Kurangi stok baterai
       const sb = db.stokBaterai.find(x => x.id === item.sbId);
       if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - item.qty }).eq('id', item.sbId);
     }
 
-    // 2. Catat Kas Masuk
     if(metode !== 'hutang' && totalBiaya > 0) {
       await supabaseClient.from('kas').insert([{ 
         id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, 
@@ -1387,7 +1459,6 @@ async function simpanBaterai(){
       }]);
     }
     
-    // 3. Catat MDR (Kas Keluar)
     if(mdr > 0) {
       await supabaseClient.from('kas').insert([{ 
         id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode, nominal: mdr, 
@@ -1395,7 +1466,6 @@ async function simpanBaterai(){
       }]);
     }
 
-    // 4. Tambah Poin Pelanggan
     if(nama && metode !== 'hutang' && totalBiaya > 0) {
       const pel = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase() || x.telp === telp);
       if(pel) {
@@ -1404,10 +1474,8 @@ async function simpanBaterai(){
       }
     }
 
-    // 5. Audit Trail
     await catatLog('GANTI_BATERAI', `Ganti ${cartBaterai.length} baterai untuk ${nama} (Total: ${rp(totalBiaya)})`);
     
-    // 6. Reset Form
     flash('Baterai berhasil diproses'); 
     cartBaterai = []; 
     renderBateraiCart();
@@ -1418,15 +1486,22 @@ async function simpanBaterai(){
     flash('Gagal: ' + e.message, 'err'); 
   }
 }
-  
- function cekPoinPelanggan(nama) {
+
+async function hapusBaterai(id){ 
+  if(!isAdmin() || !confirm('Hapus data baterai ini?')) return; 
+  await supabaseClient.from('baterai').delete().eq('id', id); 
+  await catatLog('HAPUS_BATERAI', 'Menghapus riwayat baterai ID: ' + id); 
+  flash('Dihapus'); 
+  tarikSemuaData(); 
+}
+
+function cekPoinPelanggan(nama) {
   const info = document.getElementById('infoPoin');
   const inputPoin = document.getElementById('tukarPoin');
   const telp = document.getElementById('custHp').value.trim();
   
   if(!info) return;
 
-  // Cari pelanggan berdasarkan NAMA saja, atau HP saja
   let p = null;
   if (nama) p = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase());
   if (!p && telp) p = db.pelanggan.find(x => x.telp === telp);
@@ -1434,7 +1509,6 @@ async function simpanBaterai(){
   if(p) {
     info.value = p.poin || 0;
     if(inputPoin) inputPoin.max = p.poin || 0;
-    // Auto isi No HP jika pelanggan ditemukan berdasarkan nama
     if (nama && !telp && p.telp !== '-') {
       document.getElementById('custHp').value = p.telp;
     }
@@ -1446,47 +1520,6 @@ async function simpanBaterai(){
     }
   }
   updateTotalKasir();
-}
-  async function hapusBaterai(id){ 
-  if(!isAdmin() || !confirm('Hapus data baterai ini?')) return; 
-  await supabaseClient.from('baterai').delete().eq('id', id); 
-  await catatLog('HAPUS_BATERAI', 'Menghapus riwayat baterai ID: ' + id); 
-  flash('Dihapus'); 
-  tarikSemuaData(); 
-}
-
-function addBateraiCart(){
-  const produk = document.getElementById('bProduk').value.trim();
-  const sbId = document.getElementById('bTipeSel').value;
-  
-  if(!produk) return alert('Isi Nama Produk!');
-  if(!sbId) return alert('Pilih Tipe Baterai!');
-  
-  const sb = db.stokBaterai.find(x => x.id === sbId);
-  if(!sb) return alert('Data baterai tidak ditemukan!');
-  
-  cartBaterai.push({ produk: produk, sbId: sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
-  
-  document.getElementById('bProduk').value = '';
-  document.getElementById('bTipeSel').value = '';
-  
-  // === TES DIAGNOSTIK ===
-  const semuaElemen = document.querySelectorAll('#cartBateraiList');
-  alert('Jumlah elemen cartBateraiList di HTML: ' + semuaElemen.length);
-  
-  if (semuaElemen.length > 0) {
-    let htmlBaru = '';
-    for (let i = 0; i < cartBaterai.length; i++) {
-      const c = cartBaterai[i];
-      htmlBaru += '<div style="padding:8px;border-bottom:1px solid #ccc;">' + c.produk + ' (' + c.tipe + ') x' + c.qty + '</div>';
-    }
-    semuaElemen[0].innerHTML = htmlBaru;
-    alert('Isi HTML setelah ditulis: ' + semuaElemen[0].innerHTML.substring(0, 50) + '...');
-  } else {
-    alert('GAGAL: Tidak ada elemen dengan ID cartBateraiList!');
-  }
-  
-  alert('Selesai!');
 }
   
 // === KAS & KEUANGAN ===
