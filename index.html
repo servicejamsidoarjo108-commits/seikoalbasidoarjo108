@@ -1455,7 +1455,9 @@ async function simpanBaterai(){
   tarikSemuaData(); 
 }
 
-  // === FUNGSI KERANJANG BATERAI ===
+// ==========================================
+// FUNGSI KERANJANG BATERAI (VERSI FINAL)
+// ==========================================
 function addBateraiCart(){
   const produk = document.getElementById('bProduk').value.trim();
   const sbId = document.getElementById('bTipeSel').value;
@@ -1467,8 +1469,8 @@ function addBateraiCart(){
   if(!sb) return alert('Data baterai tidak ditemukan!');
   if(sb.stok < 1) return alert('Stok baterai habis!');
   
-  // Cek jika item yang sama sudah ada di keranjang
   const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
+  
   if(existing) {
     if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
     existing.qty += 1;
@@ -1476,17 +1478,17 @@ function addBateraiCart(){
     cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
   }
   
-  // Reset form
   document.getElementById('bProduk').value = '';
   document.getElementById('bTipeSel').value = '';
   
-  renderBateraiCart(); // Panggil fungsi render
+  renderBateraiCart(); // Panggil render
   alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
 }
 
 function renderBateraiCart(){
   const el = document.getElementById('cartBateraiList');
   const totalEl = document.getElementById('cartBateraiTotal');
+  
   if(!el) return;
   
   if (cartBaterai.length === 0) {
@@ -1495,12 +1497,12 @@ function renderBateraiCart(){
     let html = '';
     cartBaterai.forEach((c, i) => {
       html += `
-        <div class="cart-item" style="border-bottom:1px solid #eee;padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
+        <div style="border-bottom:1px solid #eee;padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
           <div>
             <strong>${c.produk}</strong> (${c.tipe}) x${c.qty}<br>
             <small style="color:#64748b">Harga: ${rp(c.harga)} | Subtotal: ${rp(c.harga * c.qty)}</small>
           </div>
-          <button class="btn-sm danger" onclick="hapusBateraiCart(${i})">Batal</button>
+          <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">Batal</button>
         </div>
       `;
     });
