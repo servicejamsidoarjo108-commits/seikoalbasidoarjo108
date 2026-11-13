@@ -2057,37 +2057,35 @@ function renderAuditLog() {
   const el = document.getElementById('listAuditLog'); 
   if(!el) return;
   
-  const q = (document.getElementById('cariAuditLog').value || '').toLowerCase();
+  const q = (document.getElementById('cariAuditLog')?.value || '').toLowerCase();
   
-  // 1. Ambil data dari riwayat audit (tabel audit_barang)
-  let list = db.auditBarang || [];
+  // 1. Ambil dari db.auditLog (Aktivitas)
+  let list = db.auditLog || []; 
   
-  // 2. Filter berdasarkan pencarian
+  // 2. Filter berdasarkan kolom pencarian
   if(q) {
-    list = list.filter(l => (l.nama_produk||'').toLowerCase().includes(q) || (l.catatan||'').toLowerCase().includes(q));
+    list = list.filter(l => (l.user_name||'').toLowerCase().includes(q) || (l.aksi||'').toLowerCase().includes(q));
   }
   
-  // 3. Filter berdasarkan tombol Kasir/Admin
+  // 3. Filter berdasarkan tombol Kasir/Admin (Menggunakan variabel filterAuditUser)
   if (filterAuditUser === 'admin') {
-    list = list.filter(l => l.user_name === 'admin' || l.user_name === 'pemilik');
+    list = list.filter(l => l.role === 'admin' || l.role === 'pemilik');
   } else if (filterAuditUser === 'kasir') {
-    list = list.filter(l => l.user_name === 'kasir');
+    list = list.filter(l => l.role === 'kasir');
   }
   
-  // 4. Tampilkan (maksimal 50 data terakhir)
-  el.innerHTML = list.length ? list.slice(0, 50).map(l => `
+  // 4. Tampilkan
+  el.innerHTML = list.length ? list.map(l => `
     <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px;">
       <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
         <strong>${new Date(l.waktu).toLocaleString('id-ID')}</strong>
-        <span class="badge ${l.user_name === 'admin' || l.user_name === 'pemilik' ? 'danger' : 'proses'}">${esc(l.user_name)}</span>
+        <span class="badge ${l.role === 'admin' || l.role === 'pemilik' ? 'danger' : 'proses'}">${esc(l.user_name)} (${l.role})</span>
       </div>
-      <span style="color:#0284c7; font-weight:bold;">${esc(l.tipe ? l.tipe.toUpperCase() : 'AUDIT')}</span>: 
-      ${esc(l.nama_produk)} (Sistem: ${l.stok_sistem}, Fisik: ${l.stok_fisik}, Selisih: ${l.selisih})
-      <br><small>Catatan: ${esc(l.catatan)}</small>
+      <span style="color:#0284c7; font-weight:bold;">${esc(l.aksi)}</span>: ${esc(l.detail)}
     </div>
-  `).join('') : '<div class="empty">Belum ada riwayat audit.</div>';
+  `).join('') : '<div class="empty">Belum ada aktivitas.</div>';
 }
-
+  
 function waAdminLaporan(){
   const toko = getToko(); 
   if(!toko.telp) return flash('Isi No WA Toko di menu Setting terlebih dahulu', 'err'); 
