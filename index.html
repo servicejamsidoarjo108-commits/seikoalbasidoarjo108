@@ -573,6 +573,11 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
 </section>
 
 <section id="setting">
+  <div class="card">
+  <h3>🛠️ Audit Sistem Otomatis</h3>
+  <p style="font-size:12px;color:#64748b">Klik untuk mengecek apakah semua fungsi dan elemen HTML berjalan normal.</p>
+  <button class="btn blue" onclick="auditSistem()">Jalankan Audit Sistem</button>
+</div>
   <div class="card"><h3>Garansi Servis</h3>
     <div class="row">
       <div><label>Durasi Garansi (bulan)</label><input type="number" id="setGaransiServisBulan" value="3" min="0" onchange="simpanGaransiServis()"></div>
@@ -2383,6 +2388,106 @@ async function simpanAuditGlobal() {
   function filterServis(v){ filterServisStatus = v; render(); }
   function filterAudit(v){ filterAuditUser = v; render(); }
   function filterAudit(v){ filterAuditUser = v; renderAuditLog(); }
+
+  async function auditSistem() {
+  console.log("🔍 MEMULAI AUDIT SISTEM...");
+  let laporan = {
+    fungsiHilang: [],
+    htmlHilang: [],
+    tabelError: []
+  };
+
+  // 1. CEK FUNGSI JAVASCRIPT
+  const fungsiWajib = [
+    'login', 'logout', 'bukaMenu', 'flash', 'render', 'tarikSemuaData', 'catatLog',
+    'simpanProduk', 'hapusProduk', 'editProduk', 'prosesRestock',
+    'addCart', 'hapusCart', 'prosesBayar', 'renderCart',
+    'addPartServis', 'hapusPartServis', 'renderServisCart',
+    'addBateraiServis', 'hapusBateraiServis', 'renderBateraiServisCart',
+    'simpanServis', 'bayarSisaServis', 'ubahStatusServis', 'hapusServis',
+    'addBateraiCart', 'hapusBateraiCart', 'renderBateraiCart', 'simpanBaterai', 'pilihBaterai',
+    'tambahStokBaterai', 'hapusBaterai',
+    'simpanKasManual', 'simpanKasKecilKasir', 'tambahBank',
+    'simpanToko', 'simpanMDR', 'simpanGaransiServis', 'simpanAturanDiskon',
+    'renderAuditGlobal', 'simpanAuditGlobal', 'renderAuditLog', 'filterKas', 'filterServis', 'filterAudit',
+    'waAdminLaporan', 'formatNama', 'cekPoinPelanggan', 'hitungMDR', 'labelMetode'
+  ];
+  
+  fungsiWajib.forEach(f => {
+    if (typeof window[f] !== 'function') laporan.fungsiHilang.push(f);
+  });
+
+  // 2. CEK ELEMEN HTML WAJIB
+  const htmlWajib = [
+    // Menu Utama & Login
+    'loginOverlay', 'loginUser', 'pinInput', 'homeUser', 'menuAdmin',
+    // Kasir
+    'selProduk', 'qty', 'cartList', 'cartTotal', 'metodeBayar', 'bayar', 'custNama', 'infoPoin', 'tukarPoin',
+    // Servis
+    'sNama', 'sProduk', 'sGaransi', 'sJasa', 'selSparePart', 'cartServisList', 'cartServisTotal',
+    'selBateraiServis', 'cartBateraiServisList', 'cartBateraiServisTotal',
+    'sDp', 'metodeDp', 'listServis', 'cariGaransi', 'hasilCekGaransi',
+    // Baterai (Menu Utama)
+    'bNama', 'bProduk', 'bTipeSel', 'cartBateraiList', 'cartBateraiTotal', 'metodeBaterai',
+    'listStokBaterai', 'listBaterai', 'bCari', 'sbTipe', 'sbStok',
+    // Produk
+    'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'listProduk', 'cardFormProduk',
+    // Sparepart
+    'spNama', 'listSparePart',
+    // Supplier
+    'supNama', 'listSupplier', 'listHutang',
+    // Kas
+    'kasTunai', 'kasNonTunai', 'kasTotal', 'listKas', 'listBank', 'kasNominal', 'kasKet',
+    // Pelanggan
+    'listPelanggan', 'cariPelanggan',
+    // Laporan
+    'lapOmzet', 'lapServis', 'lapBat', 'lapLabaKotor', 'lrLabaBersih',
+    // Setting
+    'tkNama', 'tkTelp', 'setMdrCcBca', 'setMdrDcBca', 'listAuditLog',
+    // Audit
+    'listAuditGlobal', 'listAuditBarang', 'auditCatatanMassal'
+  ];
+  
+  htmlWajib.forEach(id => {
+    if (!document.getElementById(id)) laporan.htmlHilang.push(id);
+  });
+
+  // 3. CEK TABEL DATABASE
+  const tabelWajib = [
+    'settings', 'produk', 'sparepart', 'stok_baterai', 'jual', 'jual_items',
+    'servis', 'servis_parts', 'servis_baterai', 'baterai', 'kas',
+    'pelanggan', 'bank', 'supplier', 'pembelian', 'audit_barang', 'audit_log'
+  ];
+  
+  for (const tabel of tabelWajib) {
+    try {
+      const { error } = await supabaseClient.from(tabel).select('id').limit(1);
+      if (error) laporan.tabelError.push(`${tabel}: ${error.message}`);
+    } catch (e) {
+      laporan.tabelError.push(`${tabel}: Gagal akses`);
+    }
+  }
+
+  // 4. CETAK HASIL KE CONSOLE
+  console.log("%c=== HASIL AUDIT SISTEM ===", "color: blue; font-size: 16px; font-weight: bold;");
+  
+  console.log("%c🔴 FUNGSI JAVASCRIPT HILANG:", "color: red; font-weight: bold;");
+  console.log(laporan.fungsiHilang.length ? laporan.fungsiHilang : "✅ Semua fungsi aman.");
+  
+  console.log("%c🟠 ELEMEN HTML HILANG:", "color: orange; font-weight: bold;");
+  console.log(laporan.htmlHilang.length ? laporan.htmlHilang : "✅ Semua elemen HTML aman.");
+  
+  console.log("%c🔵 TABEL DATABASE ERROR:", "color: blue; font-weight: bold;");
+  console.log(laporan.tabelError.length ? laporan.tabelError : "✅ Semua tabel aman.");
+
+  // 5. TAMPILKAN ALERT RINGKASAN KE LAYAR
+  let pesan = "=== AUDIT SISTEM SELESAI ===\n\n";
+  pesan += laporan.fungsiHilang.length ? `❌ ${laporan.fungsiHilang.length} Fungsi Hilang (Cek Console)\n` : "✅ Semua Fungsi OK\n";
+  pesan += laporan.htmlHilang.length ? `❌ ${laporan.htmlHilang.length} Elemen HTML Hilang (Cek Console)\n` : "✅ Semua HTML OK\n";
+  pesan += laporan.tabelError.length ? `❌ ${laporan.tabelError.length} Tabel Database Error\n` : "✅ Semua Tabel OK\n";
+  pesan += "\nTekan F12 -> Console untuk detail lengkap.";
+  alert(pesan);
+}
   
 // === INISIALISASI ===
 if(sessionStorage.getItem('ta_logged') === '1') {
