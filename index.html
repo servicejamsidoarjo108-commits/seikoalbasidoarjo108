@@ -2531,6 +2531,7 @@ async function simpanAuditGlobal() {
   function filterKas(v){ filterKasJenis = v; render(); }
   function filterServis(v){ filterServisStatus = v; render(); }
   function filterAudit(v){ filterAuditUser = v; render(); }
+  function filterAudit(v){ filterAuditUser = v; renderAuditLog(); }  
  
   async function auditSistem() {
   console.log("🔍 MEMULAI AUDIT SISTEM...");
