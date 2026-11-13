@@ -1897,7 +1897,44 @@ function cetakBarcode(id) {
   const p = db.produk.find(x => x.id === id); if(!p) return;
   const barcodeValue = p.barcode || ('PRD' + p.id);
   const win = window.open('', '_blank');
-  win.document.write(`<html><head><title>Print Barcode</title><script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script><style>body{text-align:center;font-family:sans-serif;padding:20px}</style></head><body><h4 style="margin:0;font-size:12px">${p.nama}</h4><p style="margin:2px 0;font-size:10px">Rp ${p.harga_jual.toLocaleString('id-ID')}</p><svg id="barcode"></svg><script>JsBarcode("#barcode", "${barcodeValue}", { format: "CODE128", width: 2, height: 50, displayValue: true }); window.onload = function() { setTimeout(() => { window.print(); window.close(); }, 500); }<\/script></body></html>`);
+  win.document.write(`
+    <html><head><title>Print Barcode</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    <style>
+      /* PENGATURAN UKURAN KERTAS LABEL (Misal 50mm x 30mm) */
+      @page { size: 50mm 30mm; margin: 2mm; }
+      
+      body { 
+        text-align: center; 
+        font-family: sans-serif; 
+        padding: 0; 
+        margin: 0; 
+        display: flex; 
+        flex-direction: column; 
+        align-items: center; 
+        justify-content: center; 
+        height: 100vh; 
+      }
+      h4 { margin: 0; font-size: 10px; white-space: nowrap; overflow: hidden; }
+      p { margin: 2px 0; font-size: 9px; }
+    </style>
+    </head><body>
+      <h4>${p.nama}</h4>
+      <p>Rp ${p.harga_jual.toLocaleString('id-ID')}</p>
+      <svg id="barcode"></svg>
+      <script>
+        JsBarcode("#barcode", "${barcodeValue}", { 
+          format: "CODE128", 
+          width: 1.2, /* Ketebalan garis barcode */
+          height: 35,  /* Tinggi barcode */
+          displayValue: true,
+          fontSize: 10,
+          margin: 0
+        });
+        window.onload = function() { setTimeout(() => { window.print(); window.close(); }, 500); }
+      <\/script>
+    </body></html>
+  `);
   win.document.close();
 }
 async function generateDigitalWarranty(id, tipe) {
