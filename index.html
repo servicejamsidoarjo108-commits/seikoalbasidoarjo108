@@ -2253,14 +2253,12 @@ setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No H
   const hutangTotal = db.pembelian.filter(p => p.status === 'hutang').reduce((s,p) => s + p.total, 0);
 
   if(document.getElementById('lapOmzet')) {
-    document.getElementById('lapOmzet').textContent = rp(totalOmzet);
-    document.getElementById('lapServis').textContent = rp(omzetServis);
-    document.getElementById('lapBat').textContent = rp(omzetBat);
-    document.getElementById('lapLabaKotor').textContent = rp(labaKotor);
-    document.getElementById('lapPiutang').textContent = rp(piutang);
-    document.getElementById('lapHutang').textContent = rp(hutangTotal);
-    document.getElementById('lapBiayaBank').textContent = rp(bebanMdr);
-  }
+  document.getElementById('lapOmzet').textContent = rp(totalOmzet);
+  document.getElementById('lapServis').textContent = rp(omzetServis);
+  document.getElementById('lapBat').textContent = rp(omzetBat);
+  document.getElementById('lapLabaKotor').textContent = rp(labaKotor);
+  document.getElementById('lapPiutang').textContent = rp(piutang);
+}
   
   setVal('lrOmzet', rp(totalOmzet));
   setVal('lrHpp', '-' + rp(totalHpp));
