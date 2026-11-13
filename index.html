@@ -1900,40 +1900,43 @@ function render(){
     }).join('') + `</tbody></table>` : '<div class="empty">Belum ada catatan kas kecil hari ini.</div>');
 
   // 8. Render Statistik Kas & Filter Riwayat Kas
-  const masuk = db.kas.filter(k => k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
-  const keluar = db.kas.filter(k => k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
-  const masukTunai = db.kas.filter(k => k.jenis === 'masuk' && k.metode === 'tunai').reduce((s,k) => s + k.nominal, 0);
-  const keluarTunai = db.kas.filter(k => k.jenis === 'keluar' && k.metode === 'tunai').reduce((s,k) => s + k.nominal, 0);
-  const saldoTunai = masukTunai - keluarTunai;
+const masuk = db.kas.filter(k => k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
+const keluar = db.kas.filter(k => k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+const masukTunai = db.kas.filter(k => k.jenis === 'masuk' && k.metode === 'tunai').reduce((s,k) => s + k.nominal, 0);
+const keluarTunai = db.kas.filter(k => k.jenis === 'keluar' && k.metode === 'tunai').reduce((s,k) => s + k.nominal, 0);
+const saldoTunai = masukTunai - keluarTunai;
+
+if(document.getElementById('kasTunai')) {
+  document.getElementById('kasTunai').textContent = rp(saldoTunai);
+  document.getElementById('kasNonTunai').textContent = rp(masuk - keluar - saldoTunai);
+  document.getElementById('kasTotal').textContent = rp(masuk - keluar);
+}
+
+let listKasFiltered = db.kas;
+if (filterKasJenis === 'masuk' || filterKasJenis === 'keluar') {
+  listKasFiltered = db.kas.filter(k => k.jenis === filterKasJenis);
+} else if (['tunai', 'transfer', 'qris', 'edc_cc_bca', 'edc_cc_vm', 'edc_cc_amex', 'edc_dc_bca', 'edc_dc_lain', 'edc_dc_maestro'].includes(filterKasJenis)) {
+  listKasFiltered = db.kas.filter(k => k.metode === filterKasJenis);
+}
+
+// Pastikan baris setHTML ini utuh (hanya 1 baris panjang)
+setHTML('listKas', listKasFiltered.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join('') || '<div class="empty">Tidak ada data</div>');
+
+// Pastikan bagian listBank ini juga utuh
+setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo</th></tr></thead><tbody>` + db.bank.map(b => `<tr><td><strong>${esc(b.nama)}</strong></td><td>${esc(b.no||'-')}</td><td>${rp(b.saldo_awal)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
+
+// 9. Render Pelanggan (Pastikan tidak menempel dengan kode Kas di atasnya)
+const cariP = (document.getElementById('cariPelanggan')?.value || '').toLowerCase(); 
+const listP = (db.pelanggan || []).filter(p => !cariP || p.nama.toLowerCase().includes(cariP) || (p.telp||'').includes(cariP)); 
+
+setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No HP</th><th>Total Belanja</th><th></th></tr></thead><tbody>` + listP.map(p => { 
+  const trxJual = db.jual.filter(t => t.cust_hp === p.telp).reduce((s,t) => s + t.total, 0); 
+  const trxServis = db.servis.filter(t => t.telp === p.telp).reduce((s,t) => s + (t.biaya_pelanggan||0), 0); 
+  const trxBaterai = db.baterai.filter(t => t.telp === p.telp).reduce((s,t) => s + (t.biaya||0), 0); 
+  const totalBelanja = trxJual + trxServis + trxBaterai; 
+  return `<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.telp || '-')}</td><td>${rp(totalBelanja)}<br><small style="color:#f59e0b">⭐ ${p.poin || 0} Poin</small></td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="showCustomerHistory('${esc(p.nama)}', '${esc(p.telp)}')">Riwayat</button>${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="window.open('https://wa.me/'+waPhone('${p.telp}'),'_blank')">WA</button>` : ''}${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${p.id}')">Hapus</button>` : ''}</td></tr>`; 
+}).join('') + '</tbody></table>' : '<div class="empty">Belum ada data pelanggan</div>');
   
-  if(document.getElementById('kasTunai')) {
-    document.getElementById('kasTunai').textContent = rp(saldoTunai);
-    document.getElementById('kasNonTunai').textContent = rp(masuk - keluar - saldoTunai);
-    document.getElementById('kasTotal').textContent = rp(masuk - keluar);
-  }
-
-  let listKasFiltered = db.kas;
-  if (filterKasJenis === 'masuk' || filterKasJenis === 'keluar') {
-    listKasFiltered = db.kas.filter(k => k.jenis === filterKasJenis);
-  } else if (['tunai', 'transfer', 'qris', 'edc_cc_bca', 'edc_cc_vm', 'edc_cc_amex', 'edc_dc_bca', 'edc_dc_lain', 'edc_dc_maestro'].includes(filterKasJenis)) {
-    listKasFiltered = db.kas.filter(k => k.metode === filterKasJenis);
-  }
-  setHTML('listKas', listKasFiltered.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join(''));
-
-  setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo</th></tr></thead><tbody>` + db.bank.map(b => `<tr><td><strong>${esc(b.nama)}</strong></td><td>${esc(b.no||'-')}</td><td>${rp(b.saldo_awal)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
-
-  // 9. Render Pelanggan, Supplier & Hutang
-  setHTML('listPelanggan', db.pelanggan.length ? `<table><thead><tr><th>Nama</th><th>HP</th><th>Poin</th></tr></thead><tbody>` + db.pelanggan.map(p => `<tr><td>${esc(p.nama)}</td><td>${esc(p.telp)}</td><td>${p.poin}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
-  
-  if(document.getElementById('listSupplier')) {
-    setHTML('listSupplier', db.supplier.length ? `<table><thead><tr><th>Nama</th><th>Kontak</th><th></th></tr></thead><tbody>` + db.supplier.map(s => `<tr><td><strong>${esc(s.nama)}</strong><br><small>${esc(s.catatan||'')}</small></td><td>${esc(s.hp||'-')}<br><small>${esc(s.alamat||'')}</small></td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="editSupplier('${s.id}')">Edit</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusSupplier('${s.id}')">Hapus</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada supplier</div>');
-  }
-
-  const hutang = db.pembelian.filter(p => p.status === 'hutang'); 
-  if(document.getElementById('listHutang')) {
-    setHTML('listHutang', hutang.length ? `<table><thead><tr><th>ID</th><th>Supplier</th><th>Total</th><th></th></tr></thead><tbody>` + hutang.map(p => `<tr><td>${p.id}<br><small>${new Date(p.waktu).toLocaleDateString('id-ID')}</small></td><td>${esc(p.supplier_nama)}</td><td>${rp(p.total)}</td><td>${isAdmin()?`<button class="btn-sm ok" onclick="lunasiHutang('${p.id}')">Lunas</button>`:''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Tidak ada hutang</div>');
-  }
-
   // 10. KALKULASI LAPORAN LABA RUGI LENGKAP
   const omzetBulan = db.jual.filter(t => { const d = new Date(t.waktu); return d.getMonth()===bln && d.getFullYear()===thn; }).reduce((s,t) => s + t.total, 0);
   const omzetServis = db.servis.filter(s => s.tgl_selesai && (() => { const d = new Date(s.tgl_selesai); return d.getMonth()===bln && d.getFullYear()===thn; })()).reduce((s,t) => s + (t.biaya_pelanggan||0), 0);
