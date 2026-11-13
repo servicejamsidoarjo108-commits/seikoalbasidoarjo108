@@ -2197,8 +2197,39 @@ setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No H
     setVal('setDiskonNominal', db.settings.diskon_nominal ?? 20000);
   }
 
+    // A. Render Form Audit Global (Tabel Input)
   if(document.getElementById('listAuditGlobal')) renderAuditGlobal();
+  
+  // B. Render Riwayat Audit Terakhir (Menu Produk)
+  const elListAudit = document.getElementById('listAuditBarang');
+  if(elListAudit && db.auditBarang) {
+    let listAudit = db.auditBarang;
+    
+    // Filter berdasarkan tombol Kasir/Admin
+    if(filterAuditUser === 'admin') listAudit = listAudit.filter(a => a.user_name === 'admin' || a.user_name === 'pemilik');
+    else if(filterAuditUser === 'kasir') listAudit = listAudit.filter(a => a.user_name === 'kasir');
+    
+    elListAudit.innerHTML = listAudit.slice(0, 15).map(a => `
+      <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px 0;">
+        <div style="display:flex; justify-content:space-between;">
+          <b>${new Date(a.waktu).toLocaleDateString('id-ID')}</b>
+          <span class="badge ${a.user_name === 'admin' || a.user_name === 'pemilik' ? 'danger' : 'proses'}">${(a.user_name || 'user').toUpperCase()}</span>
+        </div>
+        ${esc(a.tipe ? a.tipe.toUpperCase() : 'ITEM')} - ${esc(a.nama_produk)}<br>
+        Sistem: ${a.stok_sistem} | Fisik: ${a.stok_fisik} | 
+        <span style="color:${a.selisih < 0 ? '#dc2626' : '#16a34a'};font-weight:bold;">Selisih: ${a.selisih} Qty</span><br>
+        <span style="font-size:11px; color:${a.nilai_selisih < 0 ? '#dc2626' : '#16a34a'};">
+          Nilai: ${a.nilai_selisih < 0 ? '- ' : '+ '}${rp(Math.abs(a.nilai_selisih || 0))} 
+          (HPP: ${rp(a.harga_beli || 0)})
+        </span><br>
+        <small>Ket: ${esc(a.catatan)}</small>
+      </div>
+    `).join('') || '<div class="empty">Belum ada riwayat audit.</div>';
+  }
+  
+  // C. Render Activity Log (Menu Setting)
   if(document.getElementById('listAuditLog')) renderAuditLog();
+}
 }
   function updateRsItem(){ 
   const tipe = document.getElementById('rsTipe').value; 
