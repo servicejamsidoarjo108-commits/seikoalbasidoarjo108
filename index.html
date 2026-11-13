@@ -1456,49 +1456,37 @@ async function simpanBaterai(){
 }
 
 function addBateraiCart(){
-  // 1. Ambil data
   const produk = document.getElementById('bProduk').value.trim();
   const sbId = document.getElementById('bTipeSel').value;
   
-  // 2. Validasi
-  if(!produk) { alert('Isi Nama Produk!'); return; }
-  if(!sbId) { alert('Pilih Tipe Baterai!'); return; }
+  if(!produk) return alert('Isi Nama Produk!');
+  if(!sbId) return alert('Pilih Tipe Baterai!');
   
   const sb = db.stokBaterai.find(x => x.id === sbId);
-  if(!sb) { alert('Data baterai tidak ditemukan!'); return; }
+  if(!sb) return alert('Data baterai tidak ditemukan!');
   
-  // 3. Masukkan ke array
   cartBaterai.push({ produk: produk, sbId: sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
   
-  // 4. Kosongkan form
   document.getElementById('bProduk').value = '';
   document.getElementById('bTipeSel').value = '';
   
-  // 5. PAKSA TAMPILKAN (TANPA FUNGSI LAIN)
-  const container = document.getElementById('cartBateraiList');
-  if (!container) {
-    alert('ERROR: Elemen dengan ID "cartBateraiList" tidak ditemukan di HTML!');
-    return;
-  }
+  // === TES DIAGNOSTIK ===
+  const semuaElemen = document.querySelectorAll('#cartBateraiList');
+  alert('Jumlah elemen cartBateraiList di HTML: ' + semuaElemen.length);
   
-  let htmlBaru = '';
-  for (let i = 0; i < cartBaterai.length; i++) {
-    const c = cartBaterai[i];
-    htmlBaru = htmlBaru + '<div style="padding:8px;border-bottom:1px solid #ccc;">' + c.produk + ' (' + c.tipe + ') x' + c.qty + ' = ' + rp(c.harga * c.qty) + '</div>';
-  }
-  container.innerHTML = htmlBaru;
-  
-  // 6. Update Total
-  const totalEl = document.getElementById('cartBateraiTotal');
-  if (totalEl) {
-    let total = 0;
+  if (semuaElemen.length > 0) {
+    let htmlBaru = '';
     for (let i = 0; i < cartBaterai.length; i++) {
-      total = total + (cartBaterai[i].harga * cartBaterai[i].qty);
+      const c = cartBaterai[i];
+      htmlBaru += '<div style="padding:8px;border-bottom:1px solid #ccc;">' + c.produk + ' (' + c.tipe + ') x' + c.qty + '</div>';
     }
-    totalEl.textContent = rp(total);
+    semuaElemen[0].innerHTML = htmlBaru;
+    alert('Isi HTML setelah ditulis: ' + semuaElemen[0].innerHTML.substring(0, 50) + '...');
+  } else {
+    alert('GAGAL: Tidak ada elemen dengan ID cartBateraiList!');
   }
   
-  alert('Berhasil ditambahkan!');
+  alert('Selesai!');
 }
   
 // === KAS & KEUANGAN ===
