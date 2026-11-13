@@ -1575,6 +1575,61 @@ async function tambahBank(){
   tarikSemuaData();
 }
 
+  async function editBank(id) {
+  if(!isAdmin()) return flash('Akses ditolak', 'err');
+  const b = db.bank.find(x => x.id === id);
+  if(!b) return;
+  
+  const newSaldo = prompt(`Masukkan Saldo Awal baru untuk ${b.nama} (Rp):`, b.saldo_awal);
+  if (newSaldo === null) return;
+  
+  await supabaseClient.from('bank').update({ saldo_awal: +newSaldo || 0 }).eq('id', id);
+  await catatLog('EDIT_BANK', 'Mengubah saldo awal ' + b.nama + ' menjadi ' + rp(newSaldo));
+  flash('Saldo Awal berhasil diperbarui');
+  tarikSemuaData();
+}
+
+async function hapusBank(id) {
+  if(!isAdmin() || !confirm('Hapus rekening bank ini?')) return;
+  await supabaseClient.from('bank').delete().eq('id', id);
+  await catatLog('HAPUS_BANK', 'Menghapus rekening ID: ' + id);
+  flash('Rekening berhasil dihapus');
+  tarikSemuaData();
+}
+
+async function rekonsiliasiBank(id) {
+  if(!isAdmin()) return flash('Akses ditolak', 'err');
+  const b = db.bank.find(x => x.id === id);
+  if(!b) return;
+  
+  const masuk = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
+  const keluar = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+  const saldoSistem = (b.saldo_awal || 0) + masuk - keluar;
+  
+  const inputSaldo = prompt(`REKONSILIASI BANK ${b.nama}\n\nSaldo Sistem: ${rp(saldoSistem)}\n\nMasukkan Saldo Aktual (sesuai m-banking/ATM):`);
+  if (inputSaldo === null) return; 
+  
+  const saldoAktual = +inputSaldo || 0;
+  const selisih = saldoAktual - saldoSistem;
+  
+  if (selisih === 0) return flash('Rekonsiliasi selesai. Saldo sudah sesuai 100%.', 'ok');
+  
+  const alasan = prompt(`Selisih: ${selisih > 0 ? '+' : ''}${rp(selisih)}\n\nMasukkan alasan penyesuaian (contoh: Bunga Bank, Biaya Admin, Koreksi Transfer):`);
+  if (!alasan) return flash('Alasan penyesuaian wajib diisi', 'err');
+  
+  const jenis = selisih > 0 ? 'masuk' : 'keluar';
+  const nominal = Math.abs(selisih);
+  
+  await supabaseClient.from('kas').insert([{
+    id: genId('KAS'), waktu: nowISO(), jenis: jenis, metode: 'transfer', nominal: nominal,
+    keterangan: `Penyesuaian Rekonsiliasi ${b.nama}: ${alasan}`, sumber: 'rekonsiliasi', bank_id: b.id
+  }]);
+  
+  await catatLog('REKONSILIASI_BANK', `${b.nama}: ${jenis} ${rp(nominal)} - ${alasan}`);
+  flash(`Rekonsiliasi berhasil. Saldo disesuaikan ${selisih > 0 ? '+' : ''}${rp(selisih)}`, 'ok');
+  tarikSemuaData();
+}
+
 async function simpanKasKecilKasir() {
   const jenis = document.getElementById('kkJenis').value; const nominal = +document.getElementById('kkNominal').value || 0; const ket = document.getElementById('kkKet').value.trim();
   if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
@@ -2114,9 +2169,26 @@ if (filterKasJenis === 'masuk' || filterKasJenis === 'keluar') {
 // Pastikan baris setHTML ini utuh (hanya 1 baris panjang)
 setHTML('listKas', listKasFiltered.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px">${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}: <b style="color:${k.jenis==='masuk'?'green':'red'}">${rp(k.nominal)}</b></div>`).join('') || '<div class="empty">Tidak ada data</div>');
 
-// Pastikan bagian listBank ini juga utuh
-setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo</th></tr></thead><tbody>` + db.bank.map(b => `<tr><td><strong>${esc(b.nama)}</strong></td><td>${esc(b.no||'-')}</td><td>${rp(b.saldo_awal)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
-
+// RENDER DAFTAR BANK (DENGAN SALDO SAAT INI)
+setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo Awal</th><th>Saldo Saat Ini</th><th>Aksi</th></tr></thead><tbody>` + db.bank.map(b => { 
+  const masuk = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
+  const keluar = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+  const saldoSaatIni = (b.saldo_awal || 0) + masuk - keluar;
+  
+  return `<tr>
+    <td><strong>${esc(b.nama)}</strong></td>
+    <td>${esc(b.no||'-')}</td>
+    <td>${rp(b.saldo_awal)}</td>
+    <td style="font-weight:bold;color:#0284c7">${rp(saldoSaatIni)}</td>
+    <td style="white-space:nowrap">
+      ${isAdmin() ? `
+        <button class="btn-sm warn" onclick="rekonsiliasiBank('${b.id}')" title="Cocokkan saldo dengan m-banking">🔄 Rekonsiliasi</button>
+        <button class="btn-sm blue" onclick="editBank('${b.id}')">Edit</button>
+        <button class="btn-sm danger" onclick="hapusBank('${b.id}')">Hapus</button>
+      ` : ''}
+    </td>
+  </tr>`; 
+}).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
 // 9. Render Pelanggan (Pastikan tidak menempel dengan kode Kas di atasnya)
 const cariP = (document.getElementById('cariPelanggan')?.value || '').toLowerCase(); 
 const listP = (db.pelanggan || []).filter(p => !cariP || p.nama.toLowerCase().includes(cariP) || (p.telp||'').includes(cariP)); 
