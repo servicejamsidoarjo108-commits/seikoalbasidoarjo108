@@ -4,12 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Lacak Servis - Toko Seiko Alba</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
   body { font-family: system-ui, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
   .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
   h2 { text-align: center; color: #0f172a; margin-top: 0; }
-  input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; text-transform: uppercase; }
+  input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
   button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
   #hasil { display: none; margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
   .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
@@ -20,16 +19,18 @@
   .proses { background: #dbeafe; color: #1e40af; }
   .selesai { background: #dcfce7; color: #166534; }
   .diambil { background: #e5e7eb; color: #374151; }
+  .error-box { color: #dc2626; font-size: 12px; text-align: center; margin-top: 10px; display: none; }
 </style>
 </head>
 <body>
 
 <div class="card">
   <h2>⌚ Lacak Servis</h2>
-  <p style="text-align:center; font-size:13px; color:#64748b; margin-bottom:15px;">Masukkan Nomor Servis (Contoh: SRV12345)</p>
+  <p style="text-align:center; font-size:13px; color:#64748b; margin-bottom:15px;">Masukkan Nomor Servis Anda</p>
   
-  <input type="text" id="inputSrv" placeholder="Ketik Nomor Servis">
-  <button onclick="lacak()">Cari Status</button>
+  <input type="text" id="inputSrv" placeholder="Ketik Nomor Servis (Contoh: SRV123)">
+  <button id="btnLacak">Cari Status</button>
+  <div id="errorBox" class="error-box"></div>
   
   <div id="hasil">
     <h3 style="text-align:center; margin-bottom:15px; color:#0284c7;">Status Servis Anda</h3>
@@ -43,61 +44,77 @@
   </div>
 </div>
 
+<!-- LOAD LIBRARY SUPABASE -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
 <script>
-  const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
-  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  // Cek apakah library Supabase berhasil dimuat
+  if (!window.supabase) {
+    document.getElementById('errorBox').style.display = 'block';
+    document.getElementById('errorBox').innerText = 'Gagal memuat library Supabase. Periksa koneksi internet Anda.';
+  } else {
+    const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
+    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  async function lacak() {
-  console.log("Tombol ditekan..."); // Untuk ngecek di F12
-  
-  let id = document.getElementById('inputSrv').value.trim().toUpperCase();
-  if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
-
-  try {
-    // Panggil fungsi RPC
-    const { data, error } = await supabase.rpc('lacak_servis', { srv_id: id });
-
-    if (error) {
-      console.error("Error dari Supabase:", error);
-      throw new Error("Gagal mengambil data: " + error.message);
-    }
-    
-    if (data && data.length > 0) {
-      const s = data[0];
-      document.getElementById('resId').textContent = s.id;
-      document.getElementById('resNama').textContent = s.customer;
-      document.getElementById('resProduk').textContent = s.produk;
-      document.getElementById('resKeluhan').textContent = s.keluhan || '-';
-      
-      const badge = document.getElementById('resStatus');
-      badge.textContent = s.status.toUpperCase();
-      badge.className = 'badge ' + s.status;
-
-      document.getElementById('resSisa').textContent = s.sisa > 0 ? 'Rp ' + s.sisa.toLocaleString('id-ID') : 'LUNAS';
-
-      if (s.tgl_garansi_servis_sampai) {
-        document.getElementById('rowGaransi').style.display = 'flex';
-        document.getElementById('resGaransi').textContent = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID');
-      } else {
-        document.getElementById('rowGaransi').style.display = 'none';
+    async function prosesLacak() {
+      const id = document.getElementById('inputSrv').value.trim();
+      if(!id) {
+        alert('Masukkan nomor servis terlebih dahulu!');
+        return;
       }
 
-      document.getElementById('hasil').style.display = 'block';
-    } else {
-      alert('Nomor Servis tidak ditemukan. Pastikan penulisan sudah benar.');
-      document.getElementById('hasil').style.display = 'none';
+      const btn = document.getElementById('btnLacak');
+      btn.innerText = 'Mencari...';
+      btn.disabled = true;
+
+      try {
+        // Panggil RPC
+        const { data, error } = await supabaseClient.rpc('lacak_servis', { srv_id: id });
+
+        if (error) throw new Error(error.message);
+        
+        if (data && data.length > 0) {
+          const s = data[0];
+          document.getElementById('resId').textContent = s.id;
+          document.getElementById('resNama').textContent = s.customer;
+          document.getElementById('resProduk').textContent = s.produk;
+          document.getElementById('resKeluhan').textContent = s.keluhan || '-';
+          
+          const badge = document.getElementById('resStatus');
+          badge.textContent = s.status.toUpperCase();
+          badge.className = 'badge ' + s.status;
+
+          document.getElementById('resSisa').textContent = s.sisa > 0 ? 'Rp ' + s.sisa.toLocaleString('id-ID') : 'LUNAS';
+
+          if (s.tgl_garansi_servis_sampai) {
+            document.getElementById('rowGaransi').style.display = 'flex';
+            document.getElementById('resGaransi').textContent = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID');
+          } else {
+            document.getElementById('rowGaransi').style.display = 'none';
+          }
+
+          document.getElementById('hasil').style.display = 'block';
+        } else {
+          alert('Nomor Servis tidak ditemukan. Pastikan penulisan sudah benar.');
+          document.getElementById('hasil').style.display = 'none';
+        }
+      } catch (err) {
+        alert('Terjadi kesalahan: ' + err.message);
+      } finally {
+        btn.innerText = 'Cari Status';
+        btn.disabled = false;
+      }
     }
-  } catch (err) {
-    console.error("Error di aplikasi:", err);
-    alert(err.message);
+
+    // Daftarkan event listener ke tombol
+    document.getElementById('btnLacak').addEventListener('click', prosesLacak);
+    
+    // Daftarkan Enter key
+    document.getElementById('inputSrv').addEventListener('keypress', function (e) {
+      if (e.key === 'Enter') prosesLacak();
+    });
   }
-}
-  
-  // Agar bisa tekan Enter
-  document.getElementById('inputSrv').addEventListener('keypress', function (e) {
-    if (e.key === 'Enter') lacak();
-  });
 </script>
 </body>
 </html>
