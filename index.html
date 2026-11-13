@@ -2264,39 +2264,42 @@ function formatNama(str) {
 }
   // === FUNGSI AUDIT STOK GLOBAL ===
 function renderAuditGlobal() {
-  const el = document.getElementById('listAuditGlobal'); if(!el) return;
+  const el = document.getElementById('listAuditGlobal'); 
+  if(!el) return;
+  
   const q = (document.getElementById('cariAudit').value || '').toLowerCase().trim();
   
-  let allItems = [];
-  db.produk.forEach(p => allItems.push({ tipe: 'produk', id: p.id, nama: p.nama, sistem: p.stok }));
-  db.sparePart.forEach(s => allItems.push({ tipe: 'sparepart', id: s.id, nama: s.nama, sistem: s.stok }));
-  db.stokBaterai.forEach(b => allItems.push({ tipe: 'baterai', id: b.id, nama: b.tipe, sistem: b.stok }));
+  // 1. AMBIL DATA DARI RIWAYAT AUDIT (db.auditBarang)
+  let dataAudit = db.auditBarang || [];
   
-  // Filter berdasarkan User (Kasir/Admin)
-  let dataAudit = allItems;
+  // 2. FILTER BERDASARKAN USER (KASIR/ADMIN)
   if (filterAuditUser === 'admin') {
-    dataAudit = allItems.filter(x => (x.user_name === 'admin' || x.user_name === 'pemilik')); // (Opsional: sesuaikan jika ada log audit barang)
+    dataAudit = dataAudit.filter(a => a.user_name === 'admin' || a.user_name === 'pemilik');
   } else if (filterAuditUser === 'kasir') {
-    dataAudit = allItems.filter(x => x.user_name === 'kasir');
+    dataAudit = dataAudit.filter(a => a.user_name === 'kasir');
   }
-
-  const filtered = dataAudit.filter(x => !q || x.nama.toLowerCase().includes(q));
+  
+  // 3. FILTER PENCARIAN
+  const filtered = dataAudit.filter(x => !q || (x.nama_produk||'').toLowerCase().includes(q));
   
   if(filtered.length === 0) { 
-    el.innerHTML = '<div class="empty" style="padding:20px">Barang tidak ditemukan</div>'; 
+    el.innerHTML = '<div class="empty" style="padding:20px">Belum ada riwayat audit atau tidak ditemukan</div>'; 
     return; 
   }
   
-  let html = `<table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:#f8fafc"><tr><th>Tipe</th><th>Nama Barang</th><th>Stok Sistem</th><th style="width:80px">Fisik</th></tr></thead><tbody>`;
-  filtered.forEach(item => {
-    const key = `${item.tipe}_${item.id}`; 
-    const valFisik = tempAuditData[key] !== undefined ? tempAuditData[key] : '';
-    let badge = item.tipe === 'produk' ? '<span class="badge proses" style="font-size:9px">JAM</span>' : (item.tipe === 'sparepart' ? '<span class="badge warn" style="font-size:9px">PART</span>' : '<span class="badge ok" style="font-size:9px">BAT</span>');
-    html += `<tr><td>${badge}</td><td><strong>${esc(item.nama)}</strong></td><td style="text-align:center; font-weight:bold;">${item.sistem}</td><td><input type="number" id="auditFisik_${key}" value="${valFisik}" placeholder="-" oninput="updateAuditGlobal('${key}', this.value)" style="width:100%;padding:6px;text-align:center;font-weight:bold;border:1px solid #cbd5e1;border-radius:4px;"></td></tr>`;
+  // 4. TAMPILKAN RIWAYAT
+  let html = `<table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:#f8fafc"><tr><th>Waktu</th><th>User</th><th>Barang</th><th>Selisih</th><th>Catatan</th></tr></thead><tbody>`;
+  filtered.forEach(a => {
+    html += `<tr>
+      <td>${new Date(a.waktu).toLocaleDateString('id-ID')}</td>
+      <td><span class="badge ${a.user_name === 'admin' ? 'danger' : 'proses'}">${esc(a.user_name)}</span></td>
+      <td>${esc(a.nama_produk)}</td>
+      <td style="color:${a.selisih < 0 ? 'red' : 'green'}; font-weight:bold;">${a.selisih}</td>
+      <td>${esc(a.catatan)}</td>
+    </tr>`;
   });
   el.innerHTML = html + `</tbody></table>`;
 }
-
 function updateAuditGlobal(key, val) { 
   if (val === '') delete tempAuditData[key]; 
   else tempAuditData[key] = +val; 
