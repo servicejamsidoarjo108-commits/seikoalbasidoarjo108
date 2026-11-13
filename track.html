@@ -115,6 +115,14 @@
       if (e.key === 'Enter') prosesLacak();
     });
   }
+  // === FITUR BARU: OTOMATIS CARI JIKA ADA ID DI URL ===
+const urlParams = new URLSearchParams(window.location.search);
+const idDariUrl = urlParams.get('id');
+
+if (idDariUrl) {
+  document.getElementById('inputSrv').value = idDariUrl;
+  prosesLacak(); // Langsung jalankan pencarian
+}
 </script>
 </body>
 </html>
