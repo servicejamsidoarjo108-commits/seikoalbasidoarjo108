@@ -1455,92 +1455,50 @@ async function simpanBaterai(){
   tarikSemuaData(); 
 }
 
-// ==========================================
-// FUNGSI KERANJANG BATERAI (VERSI FINAL)
-// ==========================================
 function addBateraiCart(){
+  // 1. Ambil data
   const produk = document.getElementById('bProduk').value.trim();
   const sbId = document.getElementById('bTipeSel').value;
   
-  if(!produk) return alert('Isi Nama Produk / Jam terlebih dahulu!');
-  if(!sbId) return alert('Pilih Tipe Baterai terlebih dahulu!');
+  // 2. Validasi
+  if(!produk) { alert('Isi Nama Produk!'); return; }
+  if(!sbId) { alert('Pilih Tipe Baterai!'); return; }
   
   const sb = db.stokBaterai.find(x => x.id === sbId);
-  if(!sb) return alert('Data baterai tidak ditemukan!');
-  if(sb.stok < 1) return alert('Stok baterai habis!');
+  if(!sb) { alert('Data baterai tidak ditemukan!'); return; }
   
-  const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
+  // 3. Masukkan ke array
+  cartBaterai.push({ produk: produk, sbId: sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
   
-  if(existing) {
-    if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
-    existing.qty += 1;
-  } else {
-    cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
-  }
-  
+  // 4. Kosongkan form
   document.getElementById('bProduk').value = '';
   document.getElementById('bTipeSel').value = '';
   
-  renderBateraiCart(); // Panggil render
-  alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
-}
-
-function addBateraiCart(){
-  const produk = document.getElementById('bProduk').value.trim();
-  const sbId = document.getElementById('bTipeSel').value;
-  
-  if(!produk) return alert('Isi Nama Produk / Jam terlebih dahulu!');
-  if(!sbId) return alert('Pilih Tipe Baterai terlebih dahulu!');
-  
-  const sb = db.stokBaterai.find(x => x.id === sbId);
-  if(!sb) return alert('Data baterai tidak ditemukan!');
-  if(sb.stok < 1) return alert('Stok baterai habis!');
-  
-  // Tambahkan ke array keranjang
-  const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
-  if(existing) {
-    if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
-    existing.qty += 1;
-  } else {
-    cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
+  // 5. PAKSA TAMPILKAN (TANPA FUNGSI LAIN)
+  const container = document.getElementById('cartBateraiList');
+  if (!container) {
+    alert('ERROR: Elemen dengan ID "cartBateraiList" tidak ditemukan di HTML!');
+    return;
   }
   
-  // Kosongkan form
-  document.getElementById('bProduk').value = '';
-  document.getElementById('bTipeSel').value = '';
-  
-  // ==========================================
-  // PAKSA TAMPILKAN LANGSUNG KE HTML (TANPA FUNGSI RENDER)
-  // ==========================================
-  const el = document.getElementById('cartBateraiList');
-  if (el) {
-    let html = '';
-    for (let i = 0; i < cartBaterai.length; i++) {
-      const c = cartBaterai[i];
-      html += `
-        <div style="border-bottom:1px solid #eee;padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <strong>${c.produk}</strong> (${c.tipe}) x${c.qty}<br>
-            <small style="color:#64748b">Harga: ${rp(c.harga)} | Subtotal: ${rp(c.harga * c.qty)}</small>
-          </div>
-          <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">Batal</button>
-        </div>
-      `;
-    }
-    el.innerHTML = html;
+  let htmlBaru = '';
+  for (let i = 0; i < cartBaterai.length; i++) {
+    const c = cartBaterai[i];
+    htmlBaru = htmlBaru + '<div style="padding:8px;border-bottom:1px solid #ccc;">' + c.produk + ' (' + c.tipe + ') x' + c.qty + ' = ' + rp(c.harga * c.qty) + '</div>';
   }
+  container.innerHTML = htmlBaru;
   
+  // 6. Update Total
   const totalEl = document.getElementById('cartBateraiTotal');
   if (totalEl) {
     let total = 0;
     for (let i = 0; i < cartBaterai.length; i++) {
-      total += cartBaterai[i].harga * cartBaterai[i].qty;
+      total = total + (cartBaterai[i].harga * cartBaterai[i].qty);
     }
     totalEl.textContent = rp(total);
   }
-  // ==========================================
   
-  alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
+  alert('Berhasil ditambahkan!');
 }
   
 // === KAS & KEUANGAN ===
