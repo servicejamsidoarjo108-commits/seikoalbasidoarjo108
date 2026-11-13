@@ -1485,17 +1485,38 @@ function addBateraiCart(){
   alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
 }
 
-function renderBateraiCart(){
-  const el = document.getElementById('cartBateraiList');
-  const totalEl = document.getElementById('cartBateraiTotal');
+function addBateraiCart(){
+  const produk = document.getElementById('bProduk').value.trim();
+  const sbId = document.getElementById('bTipeSel').value;
   
-  if(!el) return;
+  if(!produk) return alert('Isi Nama Produk / Jam terlebih dahulu!');
+  if(!sbId) return alert('Pilih Tipe Baterai terlebih dahulu!');
   
-  if (cartBaterai.length === 0) {
-    el.innerHTML = '<div class="empty">Belum ada baterai di keranjang</div>';
+  const sb = db.stokBaterai.find(x => x.id === sbId);
+  if(!sb) return alert('Data baterai tidak ditemukan!');
+  if(sb.stok < 1) return alert('Stok baterai habis!');
+  
+  // Tambahkan ke array keranjang
+  const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
+  if(existing) {
+    if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
+    existing.qty += 1;
   } else {
+    cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
+  }
+  
+  // Kosongkan form
+  document.getElementById('bProduk').value = '';
+  document.getElementById('bTipeSel').value = '';
+  
+  // ==========================================
+  // PAKSA TAMPILKAN LANGSUNG KE HTML (TANPA FUNGSI RENDER)
+  // ==========================================
+  const el = document.getElementById('cartBateraiList');
+  if (el) {
     let html = '';
-    cartBaterai.forEach((c, i) => {
+    for (let i = 0; i < cartBaterai.length; i++) {
+      const c = cartBaterai[i];
       html += `
         <div style="border-bottom:1px solid #eee;padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
           <div>
@@ -1505,18 +1526,21 @@ function renderBateraiCart(){
           <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">Batal</button>
         </div>
       `;
-    });
+    }
     el.innerHTML = html;
   }
   
-  if(totalEl) {
-    totalEl.textContent = rp(cartBaterai.reduce((s,c) => s + (c.harga * c.qty), 0));
+  const totalEl = document.getElementById('cartBateraiTotal');
+  if (totalEl) {
+    let total = 0;
+    for (let i = 0; i < cartBaterai.length; i++) {
+      total += cartBaterai[i].harga * cartBaterai[i].qty;
+    }
+    totalEl.textContent = rp(total);
   }
-}
-
-function hapusBateraiCart(i){ 
-  cartBaterai.splice(i,1); 
-  renderBateraiCart(); 
+  // ==========================================
+  
+  alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
 }
   
 // === KAS & KEUANGAN ===
