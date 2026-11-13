@@ -539,39 +539,90 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
 </section>
 
 <section id="laporan">
-  <div class="stat">
-    <div class="card">
-  <h3>📊 Laporan Laba Rugi (Bulan Ini)</h3>
-  <table style="width:100%; font-size:14px; border-collapse: collapse;">
-    <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0">Total Omzet (Produk+Servis+Baterai)</td><td style="text-align:right" id="lrOmzet">Rp 0</td></tr>
-    <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0">Total HPP (Modal Barang)</td><td style="text-align:right; color:#dc2626" id="lrHpp">-Rp 0</td></tr>
-    <tr style="border-bottom:2px solid #0f172a; background:#f8fafc;"><td style="padding:10px 0"><b>LABA KOTOR</b></td><td style="text-align:right; font-weight:bold; font-size:15px;" id="lrLabaKotor">Rp 0</td></tr>
+  <div class="card">
+    <h3>📊 Laporan Keuangan Lengkap (Bulan Ini)</h3>
+    <p style="font-size:12px;color:#64748b;margin-top:0">Laporan ini dihitung otomatis dari seluruh transaksi yang tercatat di sistem.</p>
     
-    <tr><td style="padding:8px 0">Beban Kas Kecil (Keluar)</td><td style="text-align:right; color:#dc2626" id="lrBebanKasKecil">-Rp 0</td></tr>
-    <tr><td style="padding:8px 0">Biaya Bank (MDR)</td><td style="text-align:right; color:#dc2626" id="lrBebanMdr">-Rp 0</td></tr>
-    <tr style="border-bottom:1px solid #e2e8f0;"><td style="padding:8px 0">Pendapatan Lain (Kas Kecil Masuk)</td><td style="text-align:right; color:#16a34a" id="lrPendapatanLain">+Rp 0</td></tr>
-    
-    <tr style="background:#0284c7; color:white;"><td style="padding:12px; font-weight:bold; font-size:16px;">LABA BERSIH</td><td style="text-align:right; font-weight:bold; font-size:16px;" id="lrLabaBersih">Rp 0</td></tr>
-  </table>
-</div>
-    <div class="card"><div class="lbl">Kas Masuk Hari Ini</div><div class="num" id="lapKasHari">Rp 0</div></div>
-    <div class="card"><div class="lbl">Omzet Bulan Ini</div><div class="num" id="lapOmzet">Rp 0</div></div>
-    <div class="card"><div class="lbl">Laba Kotor Bulan Ini</div><div class="num" id="lapLabaKotor" style="color:#16a34a">Rp 0</div></div>
-    <div class="card"><div class="lbl">Omzet Servis</div><div class="num" id="lapServis">Rp 0</div></div>
-    <div class="card"><div class="lbl">Omzet Baterai</div><div class="num" id="lapBat">Rp 0</div></div>
-    <div class="card"><div class="lbl">Piutang Servis</div><div class="num" id="lapPiutang" style="color:#dc2626">Rp 0</div></div>
-    <div class="card"><div class="lbl">Hutang Supplier</div><div class="num" id="lapHutang" style="color:#dc2626">Rp 0</div></div>
-    <div class="card"><div class="lbl">Biaya Bank Bln Ini</div><div class="num" id="lapBiayaBank" style="color:#dc2626">Rp 0</div></div>
-  </div>
-  <div class="card"><h3>Produk Terlaris</h3><table><thead><tr><th>Produk</th><th>Qty</th><th>Omzet</th></tr></thead><tbody id="tblLaris"></tbody></table></div>
-  <div class="card"><h3>Spare Part Terlaris</h3><table><thead><tr><th>Spare Part</th><th>Qty</th><th>Nilai</th></tr></thead><tbody id="tblLarisSp"></tbody></table></div>
-  <div class="card"><h3>Stok Menipis</h3><div id="stokAlert"></div></div>
-  <div class="card"><h3>Kirim Laporan ke Admin</h3>
-    <p style="font-size:13px;color:#475569;margin-top:0">Ringkasan hari ini dikirim ke nomor WA toko.</p>
-    <button class="btn ok" onclick="waAdminLaporan()">Kirim Laporan Hari Ini ke WA</button>
+    <!-- TABS NAVIGASI LAPORAN -->
+    <div style="display:flex; gap:5px; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px; overflow-x:auto;">
+      <button class="btn-sm blue" onclick="gantiTabLaporan('laba_rugi')" id="tab_laba_rugi">Laba Rugi</button>
+      <button class="btn-sm ghost" onclick="gantiTabLaporan('neraca')" id="tab_neraca">Neraca</button>
+      <button class="btn-sm ghost" onclick="gantiTabLaporan('arus_kas')" id="tab_arus_kas">Arus Kas</button>
+    </div>
+
+    <!-- KONTEN LABA RUGI -->
+    <div id="konten_laba_rugi">
+      <table style="width:100%; font-size:14px; border-collapse: collapse;">
+        <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#0284c7;">PENDAPATAN</td></tr>
+        <tr><td style="padding:4px 0">Penjualan Produk</td><td style="text-align:right" id="lr_pen_jual">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">Jasa Servis</td><td style="text-align:right" id="lr_pen_servis">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">Ganti Baterai</td><td style="text-align:right" id="lr_pen_baterai">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">Pendapatan Lain (Bunga/Rekonsiliasi)</td><td style="text-align:right" id="lr_pen_lain">Rp 0</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL PENDAPATAN</td><td style="text-align:right" id="lr_total_pendapatan">Rp 0</td></tr>
+        
+        <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#dc2626; margin-top:10px;">HARGA POKOK PENJUALAN (HPP)</td></tr>
+        <tr><td style="padding:4px 0">HPP Produk</td><td style="text-align:right" id="lr_hpp_produk">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">HPP Sparepart</td><td style="text-align:right" id="lr_hpp_part">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">HPP Baterai</td><td style="text-align:right" id="lr_hpp_baterai">Rp 0</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL HPP</td><td style="text-align:right" id="lr_total_hpp">Rp 0</td></tr>
+        
+        <tr style="background:#f8fafc;"><td style="padding:10px 0; font-weight:bold;">LABA KOTOR</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="lr_laba_kotor">Rp 0</td></tr>
+        
+        <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#dc2626; margin-top:10px;">BEBAN OPERASIONAL</td></tr>
+        <tr><td style="padding:4px 0">Biaya Bank (MDR)</td><td style="text-align:right" id="lr_beban_mdr">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">Biaya Kas Kecil (Galon, dll)</td><td style="text-align:right" id="lr_beban_kas_kecil">Rp 0</td></tr>
+        <tr><td style="padding:4px 0">Biaya Lain (Rekonsiliasi/Selisih)</td><td style="text-align:right" id="lr_beban_lain">Rp 0</td></tr>
+        <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL BEBAN</td><td style="text-align:right" id="lr_total_beban">Rp 0</td></tr>
+        
+        <tr style="background:#0284c7; color:white;"><td style="padding:12px; font-weight:bold; font-size:16px;">LABA BERSIH</td><td style="text-align:right; font-weight:bold; font-size:16px;" id="lr_laba_bersih">Rp 0</td></tr>
+      </table>
+    </div>
+
+    <!-- KONTEN NERACA -->
+    <div id="konten_neraca" style="display:none;">
+      <div class="row">
+        <div>
+          <h4 style="color:#0284c7; margin-bottom:10px;">ASET</h4>
+          <table style="width:100%; font-size:14px;">
+            <tr><td>Kas Tunai</td><td style="text-align:right" id="nr_kas_tunai">Rp 0</td></tr>
+            <tr><td>Saldo Bank</td><td style="text-align:right" id="nr_saldo_bank">Rp 0</td></tr>
+            <tr><td>Piutang Servis</td><td style="text-align:right" id="nr_piutang">Rp 0</td></tr>
+            <tr><td>Nilai Persediaan (Stok)</td><td style="text-align:right" id="nr_persediaan">Rp 0</td></tr>
+            <tr style="border-top:1px solid #ccc; font-weight:bold;"><td style="padding-top:8px;">TOTAL ASET</td><td style="text-align:right; padding-top:8px;" id="nr_total_aset">Rp 0</td></tr>
+          </table>
+        </div>
+        <div>
+          <h4 style="color:#dc2626; margin-bottom:10px;">KEWAJIBAN & EKUITAS</h4>
+          <table style="width:100%; font-size:14px;">
+            <tr><td>Hutang Supplier</td><td style="text-align:right" id="nr_hutang">Rp 0</td></tr>
+            <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL KEWAJIBAN</td><td style="text-align:right; padding-bottom:8px;" id="nr_total_kewajiban">Rp 0</td></tr>
+            <tr><td style="padding-top:8px;">Ekuitas (Laba Ditahan)</td><td style="text-align:right; padding-top:8px;" id="nr_ekuitas">Rp 0</td></tr>
+            <tr style="border-top:1px solid #ccc; font-weight:bold;"><td style="padding-top:8px;">TOTAL KEWAJIBAN & EKUITAS</td><td style="text-align:right; padding-top:8px;" id="nr_total_pasiva">Rp 0</td></tr>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- KONTEN ARUS KAS -->
+    <div id="konten_arus_kas" style="display:none;">
+      <table style="width:100%; font-size:14px;">
+        <tr><td colspan="2" style="font-weight:bold; color:#16a34a; padding:8px 0;">ARUS KAS MASUK</td></tr>
+        <tr><td>Dari Penjualan & Servis</td><td style="text-align:right" id="ak_masuk_operasional">Rp 0</td></tr>
+        <tr><td>Dari Pendapatan Lain</td><td style="text-align:right" id="ak_masuk_lain">Rp 0</td></tr>
+        <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL MASUK</td><td style="text-align:right; padding-bottom:8px;" id="ak_total_masuk">Rp 0</td></tr>
+        
+        <tr><td colspan="2" style="font-weight:bold; color:#dc2626; padding:8px 0;">ARUS KAS KELUAR</td></tr>
+        <tr><td>Biaya Bank (MDR)</td><td style="text-align:right" id="ak_keluar_mdr">Rp 0</td></tr>
+        <tr><td>Beban Operasional (Kas Kecil)</td><td style="text-align:right" id="ak_keluar_operasional">Rp 0</td></tr>
+        <tr><td>Restock Barang</td><td style="text-align:right" id="ak_keluar_restock">Rp 0</td></tr>
+        <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL KELUAR</td><td style="text-align:right; padding-bottom:8px;" id="ak_total_keluar">Rp 0</td></tr>
+        
+        <tr style="background:#f8fafc;"><td style="padding:10px 0; font-weight:bold;">ARUS KAS BERSIH</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="ak_arus_bersih">Rp 0</td></tr>
+      </table>
+    </div>
   </div>
 </section>
-
+  
 <section id="setting">
   <div class="card">
   <h3>🛠️ Audit Sistem Otomatis</h3>
@@ -2306,6 +2357,8 @@ setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No H
   
   // C. Render Activity Log (Menu Setting)
   if(document.getElementById('listAuditLog')) renderAuditLog();
+  // Panggil kalkulasi laporan keuangan lengkap
+  if(document.getElementById('lr_laba_bersih')) hitungLaporanKeuangan();
 }
   
   function updateRsItem(){ 
@@ -2459,8 +2512,7 @@ async function simpanAuditGlobal() {
   function filterKas(v){ filterKasJenis = v; render(); }
   function filterServis(v){ filterServisStatus = v; render(); }
   function filterAudit(v){ filterAuditUser = v; render(); }
-  function filterAudit(v){ filterAuditUser = v; renderAuditLog(); }
-
+ 
   async function auditSistem() {
   console.log("🔍 MEMULAI AUDIT SISTEM...");
   let laporan = {
@@ -2559,6 +2611,107 @@ async function simpanAuditGlobal() {
   pesan += laporan.tabelError.length ? `❌ ${laporan.tabelError.length} Tabel Database Error\n` : "✅ Semua Tabel OK\n";
   pesan += "\nTekan F12 -> Console untuk detail lengkap.";
   alert(pesan);
+}
+
+  function gantiTabLaporan(tab) {
+  ['laba_rugi', 'neraca', 'arus_kas'].forEach(t => {
+    document.getElementById('konten_' + t).style.display = (t === tab) ? 'block' : 'none';
+    document.getElementById('tab_' + t).className = (t === tab) ? 'btn-sm blue' : 'btn-sm ghost';
+  });
+}
+
+function hitungLaporanKeuangan() {
+  const bln = new Date().getMonth(), thn = new Date().getFullYear();
+  const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.textContent = rp(val); };
+
+  // Filter data bulan ini
+  const jualBln = db.jual.filter(t => { const d = new Date(t.waktu); return d.getMonth()===bln && d.getFullYear()===thn; });
+  const servisBln = db.servis.filter(s => s.tgl_selesai && (() => { const d = new Date(s.tgl_selesai); return d.getMonth()===bln && d.getFullYear()===thn; })());
+  const batBln = db.baterai.filter(b => { const d = new Date(b.tgl_ganti); return d.getMonth()===bln && d.getFullYear()===thn; });
+  const kasBln = db.kas.filter(k => { const d = new Date(k.waktu); return d.getMonth()===bln && d.getFullYear()===thn; });
+
+  // --- 1. LABA RUGI ---
+  const penJual = jualBln.reduce((s,t) => s + t.total, 0);
+  const penServis = servisBln.reduce((s,t) => s + (t.biaya_pelanggan||0), 0);
+  const penBat = batBln.reduce((s,b) => s + (b.biaya||0), 0);
+  const penLain = kasBln.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0) 
+                 + kasBln.filter(k => k.sumber === 'rekonsiliasi' && k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
+  
+  let hppJual = 0;
+  jualBln.forEach(t => t.items.forEach(i => { const p = db.produk.find(x => x.id === i.produk_id); if(p) hppJual += (p.harga_beli || 0) * i.qty; }));
+  let hppServis = 0;
+  servisBln.forEach(s => {
+    (s.parts||[]).forEach(p => { const sp = db.sparePart.find(x => x.id === p.part_id); if(sp) hppServis += (sp.harga_beli||0)*p.qty; });
+    (s.baterai||[]).forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.baterai_id); if(sb) hppServis += (sb.harga_beli||0)*b.qty; });
+  });
+  let hppBat = 0;
+  batBln.forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.sb_id); if(sb) hppBat += (sb.harga_beli || 0); });
+
+  const bebanMdr = kasBln.filter(k => k.sumber === 'mdr').reduce((s,k) => s + (k.nominal||0), 0);
+  const bebanKasKecil = kasBln.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+  const bebanLain = kasBln.filter(k => k.sumber === 'rekonsiliasi' && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+
+  const totalPendapatan = penJual + penServis + penBat + penLain;
+  const totalHpp = hppJual + hppServis + hppBat;
+  const labaKotor = totalPendapatan - totalHpp;
+  const totalBeban = bebanMdr + bebanKasKecil + bebanLain;
+  const labaBersih = labaKotor - totalBeban;
+
+  setVal('lr_pen_jual', penJual); setVal('lr_pen_servis', penServis); setVal('lr_pen_baterai', penBat); setVal('lr_pen_lain', penLain);
+  setVal('lr_total_pendapatan', totalPendapatan);
+  setVal('lr_hpp_produk', hppJual); setVal('lr_hpp_part', hppServis); setVal('lr_hpp_baterai', hppBat);
+  setVal('lr_total_hpp', totalHpp); setVal('lr_laba_kotor', labaKotor);
+  setVal('lr_beban_mdr', bebanMdr); setVal('lr_beban_kas_kecil', bebanKasKecil); setVal('lr_beban_lain', bebanLain);
+  setVal('lr_total_beban', totalBeban); setVal('lr_laba_bersih', labaBersih);
+
+  // --- 2. NERACA ---
+  // Aset
+  const kasTunai = db.kas.filter(k => k.jenis === 'masuk' && k.metode === 'tunai').reduce((s,k) => s + k.nominal, 0) 
+                 - db.kas.filter(k => k.jenis === 'keluar' && k.metode === 'tunai').reduce((s,k) => s + k.nominal, 0);
+  
+  let saldoBank = 0;
+  db.bank.forEach(b => {
+    const masuk = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'masuk').reduce((s,k) => s + k.nominal, 0);
+    const keluar = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+    saldoBank += (b.saldo_awal || 0) + masuk - keluar;
+  });
+
+  const piutang = db.servis.filter(s => !s.paid && s.sisa > 0).reduce((s,t) => s + t.sisa, 0);
+  
+  let nilaiPersediaan = 0;
+  db.produk.forEach(p => nilaiPersediaan += (p.stok * (p.harga_beli || 0)));
+  db.sparePart.forEach(sp => nilaiPersediaan += (sp.stok * (sp.harga_beli || 0)));
+  db.stokBaterai.forEach(sb => nilaiPersediaan += (sb.stok * (sb.harga_beli || 0)));
+
+  const totalAset = kasTunai + saldoBank + piutang + nilaiPersediaan;
+
+  // Kewajiban
+  const hutang = db.pembelian.filter(p => p.status === 'hutang').reduce((s,p) => s + p.total, 0);
+  const totalKewajiban = hutang;
+  
+  // Ekuitas (Asumsi: Laba Bersih masuk ke Ekuitas. Di sistem nyata, Ekuitas = Modal Awal + Laba Bersih)
+  // Karena kita belum track "Modal Awal" secara khusus, kita anggap Aset = Kewajiban + Ekuitas.
+  const ekuitas = totalAset - totalKewajiban;
+
+  setVal('nr_kas_tunai', kasTunai); setVal('nr_saldo_bank', saldoBank); setVal('nr_piutang', piutang); setVal('nr_persediaan', nilaiPersediaan);
+  setVal('nr_total_aset', totalAset);
+  setVal('nr_hutang', hutang); setVal('nr_total_kewajiban', totalKewajiban);
+  setVal('nr_ekuitas', ekuitas); setVal('nr_total_pasiva', totalKewajiban + ekuitas);
+
+  // --- 3. ARUS KAS ---
+  const akMasukOps = penJual + penServis + penBat; // Uang riil yang masuk
+  const akMasukLain = penLain;
+  const akKeluarMdr = bebanMdr;
+  const akKeluarOps = bebanKasKecil;
+  const akKeluarRestock = kasBln.filter(k => k.sumber === 'pembelian' && k.jenis === 'keluar').reduce((s,k) => s + k.nominal, 0);
+
+  const totalMasuk = akMasukOps + akMasukLain;
+  const totalKeluar = akKeluarMdr + akKeluarOps + akKeluarRestock;
+  const arusBersih = totalMasuk - totalKeluar;
+
+  setVal('ak_masuk_operasional', akMasukOps); setVal('ak_masuk_lain', akMasukLain); setVal('ak_total_masuk', totalMasuk);
+  setVal('ak_keluar_mdr', akKeluarMdr); setVal('ak_keluar_operasional', akKeluarOps); setVal('ak_keluar_restock', akKeluarRestock);
+  setVal('ak_total_keluar', totalKeluar); setVal('ak_arus_bersih', arusBersih);
 }
   
 // === INISIALISASI ===
