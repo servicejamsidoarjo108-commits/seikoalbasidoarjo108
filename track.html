@@ -19,6 +19,7 @@
   .proses { background: #dbeafe; color: #1e40af; }
   .selesai { background: #dcfce7; color: #166534; }
   .diambil { background: #e5e7eb; color: #374151; }
+  .total-box { background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #0284c7; }
   .error-box { color: #dc2626; font-size: 12px; text-align: center; margin-top: 10px; display: none; }
 </style>
 </head>
@@ -39,16 +40,26 @@
     <div class="row"><span class="label">Barang</span><span class="value" id="resProduk">-</span></div>
     <div class="row"><span class="label">Keluhan</span><span class="value" id="resKeluhan">-</span></div>
     <div class="row"><span class="label">Status</span><span class="value"><span id="resStatus" class="badge">-</span></span></div>
-    <div class="row"><span class="label">Sisa Biaya</span><span class="value" id="resSisa">-</span></div>
-    <div class="row" id="rowGaransi" style="display:none;"><span class="label">Garansi S/d</span><span class="value" id="resGaransi">-</span></div>
+    
+    <!-- RINCIAN BIAYA -->
+    <div class="total-box">
+      <div class="row"><span class="label">Jasa Servis</span><span class="value" id="resJasa">Rp 0</span></div>
+      <div class="row"><span class="label">Spare Part</span><span class="value" id="resParts">Rp 0</span></div>
+      <div class="row"><span class="label">Baterai</span><span class="value" id="resBaterai">Rp 0</span></div>
+      <hr style="border:none;border-top:1px dashed #cbd5e1;margin:8px 0">
+      <div class="row"><span class="label" style="font-weight:bold;color:#0f172a;">TOTAL BIAYA</span><span class="value" id="resTotal" style="color:#0284c7; font-size:16px;">Rp 0</span></div>
+      <div class="row"><span class="label" style="color:#dc2626;">Sisa Tagihan</span><span class="value" id="resSisa" style="color:#dc2626;">Rp 0</span></div>
+    </div>
+
+    <div class="row" id="rowGaransi" style="display:none; margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:10px;">
+      <span class="label">Garansi S/d</span><span class="value" id="resGaransi">-</span>
+    </div>
   </div>
 </div>
 
-<!-- LOAD LIBRARY SUPABASE -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
-  // Cek apakah library Supabase berhasil dimuat
   if (!window.supabase) {
     document.getElementById('errorBox').style.display = 'block';
     document.getElementById('errorBox').innerText = 'Gagal memuat library Supabase. Periksa koneksi internet Anda.';
@@ -59,19 +70,14 @@
 
     async function prosesLacak() {
       const id = document.getElementById('inputSrv').value.trim();
-      if(!id) {
-        alert('Masukkan nomor servis terlebih dahulu!');
-        return;
-      }
+      if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
 
       const btn = document.getElementById('btnLacak');
       btn.innerText = 'Mencari...';
       btn.disabled = true;
 
       try {
-        // Panggil RPC
         const { data, error } = await supabaseClient.rpc('lacak_servis', { srv_id: id });
-
         if (error) throw new Error(error.message);
         
         if (data && data.length > 0) {
@@ -85,7 +91,18 @@
           badge.textContent = s.status.toUpperCase();
           badge.className = 'badge ' + s.status;
 
-          document.getElementById('resSisa').textContent = s.sisa > 0 ? 'Rp ' + s.sisa.toLocaleString('id-ID') : 'LUNAS';
+          // Rincian Biaya
+          document.getElementById('resJasa').textContent = 'Rp ' + (s.jasa || 0).toLocaleString('id-ID');
+          document.getElementById('resParts').textContent = 'Rp ' + (s.total_parts || 0).toLocaleString('id-ID');
+          document.getElementById('resBaterai').textContent = 'Rp ' + (s.total_baterai || 0).toLocaleString('id-ID');
+          document.getElementById('resTotal').textContent = 'Rp ' + (s.biaya_pelanggan || 0).toLocaleString('id-ID');
+          
+          if (s.sisa > 0) {
+            document.getElementById('resSisa').textContent = 'Rp ' + s.sisa.toLocaleString('id-ID');
+          } else {
+            document.getElementById('resSisa').textContent = 'LUNAS';
+            document.getElementById('resSisa').style.color = '#16a34a'; // Hijau jika lunas
+          }
 
           if (s.tgl_garansi_servis_sampai) {
             document.getElementById('rowGaransi').style.display = 'flex';
@@ -107,22 +124,19 @@
       }
     }
 
-    // Daftarkan event listener ke tombol
     document.getElementById('btnLacak').addEventListener('click', prosesLacak);
-    
-    // Daftarkan Enter key
     document.getElementById('inputSrv').addEventListener('keypress', function (e) {
       if (e.key === 'Enter') prosesLacak();
     });
-  }
-  // === FITUR BARU: OTOMATIS CARI JIKA ADA ID DI URL ===
-const urlParams = new URLSearchParams(window.location.search);
-const idDariUrl = urlParams.get('id');
 
-if (idDariUrl) {
-  document.getElementById('inputSrv').value = idDariUrl;
-  prosesLacak(); // Langsung jalankan pencarian
-}
+    // Otomatis cari jika ada parameter ?id= di URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const idDariUrl = urlParams.get('id');
+    if (idDariUrl) {
+      document.getElementById('inputSrv').value = idDariUrl;
+      prosesLacak();
+    }
+  }
 </script>
 </body>
 </html>
