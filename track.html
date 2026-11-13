@@ -2,96 +2,96 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <title>Lacak Servis - Toko Seiko Alba</title>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
-  body { font-family: system-ui, -apple-system, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; color: #1f2937; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-  .card { background: #fff; border-radius: 16px; padding: 24px; box-shadow: 0 10px 25px rgba(0,0,0,0.05); max-width: 400px; width: 100%; text-align: center; }
-  .logo { font-size: 24px; font-weight: bold; color: #0f172a; margin-bottom: 5px; }
-  .subtitle { font-size: 13px; color: #64748b; margin-bottom: 25px; }
-  .status-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 20px; }
-  .status-badge { display: inline-block; padding: 6px 16px; border-radius: 20px; font-weight: bold; font-size: 14px; margin-bottom: 15px; text-transform: uppercase; }
+  body { font-family: system-ui, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
+  .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+  h2 { text-align: center; color: #0f172a; margin-top: 0; }
+  input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; text-transform: uppercase; }
+  button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+  #hasil { display: none; margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
+  .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+  .label { color: #64748b; }
+  .value { font-weight: bold; color: #0f172a; text-align: right; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
   .antri { background: #fef3c7; color: #92400e; }
   .proses { background: #dbeafe; color: #1e40af; }
   .selesai { background: #dcfce7; color: #166534; }
   .diambil { background: #e5e7eb; color: #374151; }
-  .detail { text-align: left; font-size: 14px; margin-bottom: 8px; border-bottom: 1px dashed #e2e8f0; padding-bottom: 8px; }
-  .detail span { font-weight: bold; float: right; }
-  .error { color: #dc2626; font-weight: bold; padding: 20px; }
-  .loading { color: #0284c7; font-weight: bold; padding: 20px; }
-  .btn-wa { display: block; background: #16a34a; color: white; text-decoration: none; padding: 12px; border-radius: 8px; font-weight: bold; margin-top: 20px; }
 </style>
 </head>
 <body>
 
 <div class="card">
-  <div class="logo">⌚ Toko Seiko Alba</div>
-  <div class="subtitle">Portal Lacak Status Servis</div>
+  <h2>⌚ Lacak Servis</h2>
+  <p style="text-align:center; font-size:13px; color:#64748b; margin-bottom:15px;">Masukkan Nomor Servis (Contoh: SRV12345)</p>
   
-  <div id="content">
-    <div class="loading">Memuat data servis...</div>
+  <input type="text" id="inputSrv" placeholder="Ketik Nomor Servis">
+  <button onclick="lacak()">Cari Status</button>
+  
+  <div id="hasil">
+    <h3 style="text-align:center; margin-bottom:15px; color:#0284c7;">Status Servis Anda</h3>
+    <div class="row"><span class="label">No. Servis</span><span class="value" id="resId">-</span></div>
+    <div class="row"><span class="label">Nama</span><span class="value" id="resNama">-</span></div>
+    <div class="row"><span class="label">Barang</span><span class="value" id="resProduk">-</span></div>
+    <div class="row"><span class="label">Keluhan</span><span class="value" id="resKeluhan">-</span></div>
+    <div class="row"><span class="label">Status</span><span class="value"><span id="resStatus" class="badge">-</span></span></div>
+    <div class="row"><span class="label">Sisa Biaya</span><span class="value" id="resSisa">-</span></div>
+    <div class="row" id="rowGaransi" style="display:none;"><span class="label">Garansi S/d</span><span class="value" id="resGaransi">-</span></div>
   </div>
 </div>
 
 <script>
   const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd'; // Ganti dengan kunci Anda
-  const supabaseClient = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
+  const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-  const urlParams = new URLSearchParams(window.location.search);
-  const srvId = urlParams.get('id');
-
-  const formatRp = (angka) => 'Rp ' + (parseInt(angka) || 0).toLocaleString('id-ID');
-  const formatTgl = (iso) => new Date(iso).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
-
-  async function cekStatus() {
-    const content = document.getElementById('content');
-    if (!srvId) {
-      content.innerHTML = '<div class="error">ID Servis tidak ditemukan di URL.</div>';
-      return;
-    }
+  async function lacak() {
+    let id = document.getElementById('inputSrv').value.trim().toUpperCase();
+    if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
 
     try {
-      // Panggil fungsi RPC aman yang kita buat di Supabase
-      const { data, error } = await supabaseClient.rpc('get_public_servis', { srv_id: srvId });
+      // Memanggil fungsi RPC yang sudah kita buat di Supabase
+      const { data, error } = await supabase.rpc('lacak_servis', { srv_id: id });
 
       if (error) throw error;
-      if (!data) {
-        content.innerHTML = '<div class="error">Data servis tidak ditemukan. Pastikan QR Code valid.</div>';
-        return;
-      }
-
-      let statusClass = data.status.toLowerCase();
-      let infoTambahan = '';
       
-      if (data.status === 'selesai') {
-        infoTambahan = `<div style="font-size:12px; color:#16a34a; margin-top:10px;">Jam Anda sudah selesai diservis dan siap diambil.</div>`;
-      } else if (data.sisa_tagihan && parseInt(data.sisa_tagihan) > 0) {
-        infoTambahan = `<div style="font-size:12px; color:#dc2626; margin-top:10px;">Sisa tagihan: <b>${formatRp(data.sisa_tagihan)}</b></div>`;
+      if (data && data.length > 0) {
+        const s = data[0];
+        document.getElementById('resId').textContent = s.id;
+        document.getElementById('resNama').textContent = s.customer;
+        document.getElementById('resProduk').textContent = s.produk;
+        document.getElementById('resKeluhan').textContent = s.keluhan || '-';
+        
+        const badge = document.getElementById('resStatus');
+        badge.textContent = s.status.toUpperCase();
+        badge.className = 'badge ' + s.status;
+
+        document.getElementById('resSisa').textContent = s.sisa > 0 ? 'Rp ' + s.sisa.toLocaleString('id-ID') : 'LUNAS';
+
+        if (s.tgl_garansi_servis_sampai) {
+          document.getElementById('rowGaransi').style.display = 'flex';
+          document.getElementById('resGaransi').textContent = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID');
+        } else {
+          document.getElementById('rowGaransi').style.display = 'none';
+        }
+
+        document.getElementById('hasil').style.display = 'block';
+      } else {
+        alert('Nomor Servis tidak ditemukan. Pastikan penulisan sudah benar.');
+        document.getElementById('hasil').style.display = 'none';
       }
-
-      content.innerHTML = `
-        <div class="status-box">
-          <div class="status-badge ${statusClass}">${data.status}</div>
-          <div class="detail">No. Servis <span>${data.id}</span></div>
-          <div class="detail">Nama <span>${data.customer}</span></div>
-          <div class="detail">Barang <span>${data.produk}</span></div>
-          <div class="detail">Keluhan <span>${data.keluhan || '-'}</span></div>
-          <div class="detail" style="border:none;">Tgl Masuk <span>${formatTgl(data.tgl_masuk)}</span></div>
-          ${infoTambahan}
-        </div>
-        <p style="font-size:12px; color:#64748b;">Halaman ini diperbarui secara otomatis. Silakan refresh jika ada perubahan status.</p>
-        <a href="https://wa.me/6281331939397?text=Halo%20Toko%20Seiko%20Alba,%20saya%20ingin%20menanyakan%20servis%20dengan%20ID%20${data.id}" class="btn-wa">💬 Hubungi Toko via WA</a>
-      `;
-
     } catch (err) {
-      console.error(err);
-      content.innerHTML = '<div class="error">Terjadi kesalahan sistem. Silakan hubungi toko.</div>';
+      alert('Terjadi kesalahan sistem: ' + err.message);
     }
   }
-
-  cekStatus();
+  
+  // Agar bisa tekan Enter
+  document.getElementById('inputSrv').addEventListener('keypress', function (e) {
+    if (e.key === 'Enter') lacak();
+  });
 </script>
 </body>
 </html>
