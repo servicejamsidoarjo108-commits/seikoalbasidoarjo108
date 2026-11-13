@@ -1296,10 +1296,16 @@ async function tambahStokBaterai(){
 
 async function simpanBaterai(){
   if (!checkRequired(['bNama', 'bProduk', 'bTipeSel'])) return flash('Lengkapi kolom', 'err'); 
-  const nama = formatNama(document.getElementById('bNama').value); const produk = document.getElementById('bProduk').value.trim();
-  const sb = db.stokBaterai.find(x => x.id === document.getElementById('bTipeSel').value); if(!sb || sb.stok < 1) return flash('Stok habis', 'err');
+  
+  // GUNAKAN formatNama DI SINI
+  const nama = formatNama(document.getElementById('bNama').value); 
+  const produk = document.getElementById('bProduk').value.trim();
+  const sb = db.stokBaterai.find(x => x.id === document.getElementById('bTipeSel').value); 
+  if(!sb || sb.stok < 1) return flash('Stok habis', 'err');
+  
   const metode = document.getElementById('metodeBaterai').value;
-  const garansi = +document.getElementById('bGaransi').value || 0; const biaya = +document.getElementById('bBiaya').value || 0;
+  const garansi = +document.getElementById('bGaransi').value || 0; 
+  const biaya = +document.getElementById('bBiaya').value || 0;
   const tglGanti = document.getElementById('bTgl').value || new Date().toISOString().slice(0,10);
   const d = new Date(tglGanti); d.setMonth(d.getMonth() + garansi);
   const batId = genId('BAT');
@@ -1309,23 +1315,21 @@ async function simpanBaterai(){
   try {
     await supabaseClient.from('baterai').insert([data]);
     await supabaseClient.from('stok_baterai').update({ stok: sb.stok - 1 }).eq('id', sb.id);
+    
     if(metode !== 'hutang' && biaya > 0) {
       await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: biaya, keterangan: `Ganti Baterai ${sb.tipe} - ${nama}`, sumber: 'baterai', ref_id: batId }]);
     }
 
-    // === KODE POIN PELANGGAN ===
+    // KODE POIN PELANGGAN
     if(nama && metode !== 'hutang' && biaya > 0) {
-      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', nama).maybeSingle();
-      if(exPel) {
+      const pel = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase() || x.telp === document.getElementById('bHp').value.trim());
+      if(pel) {
         const poinDidapat = Math.floor(biaya / 10000);
-        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
+        await supabaseClient.from('pelanggan').update({ poin: (pel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', pel.id);
       }
     }
-    // ==========================
 
-    // === AUDIT TRAIL ===
     await catatLog('GANTI_BATERAI', `Ganti baterai ${sb.tipe} untuk ${nama}`);
-    
     flash('Baterai disimpan'); 
     ['bNama','bHp','bProduk','bBiaya'].forEach(id => document.getElementById(id).value = ''); 
     tarikSemuaData();
