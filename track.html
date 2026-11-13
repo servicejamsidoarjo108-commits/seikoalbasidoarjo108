@@ -49,44 +49,50 @@
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async function lacak() {
-    let id = document.getElementById('inputSrv').value.trim();
-    if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
+  console.log("Tombol ditekan..."); // Untuk ngecek di F12
+  
+  let id = document.getElementById('inputSrv').value.trim().toUpperCase();
+  if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
 
-    try {
-      // Memanggil fungsi RPC yang sudah kita buat di Supabase
-      const { data, error } = await supabase.rpc('lacak_servis', { srv_id: id });
+  try {
+    // Panggil fungsi RPC
+    const { data, error } = await supabase.rpc('lacak_servis', { srv_id: id });
 
-      if (error) throw error;
-      
-      if (data && data.length > 0) {
-        const s = data[0];
-        document.getElementById('resId').textContent = s.id;
-        document.getElementById('resNama').textContent = s.customer;
-        document.getElementById('resProduk').textContent = s.produk;
-        document.getElementById('resKeluhan').textContent = s.keluhan || '-';
-        
-        const badge = document.getElementById('resStatus');
-        badge.textContent = s.status.toUpperCase();
-        badge.className = 'badge ' + s.status;
-
-        document.getElementById('resSisa').textContent = s.sisa > 0 ? 'Rp ' + s.sisa.toLocaleString('id-ID') : 'LUNAS';
-
-        if (s.tgl_garansi_servis_sampai) {
-          document.getElementById('rowGaransi').style.display = 'flex';
-          document.getElementById('resGaransi').textContent = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID');
-        } else {
-          document.getElementById('rowGaransi').style.display = 'none';
-        }
-
-        document.getElementById('hasil').style.display = 'block';
-      } else {
-        alert('Nomor Servis tidak ditemukan. Pastikan penulisan sudah benar.');
-        document.getElementById('hasil').style.display = 'none';
-      }
-    } catch (err) {
-      alert('Terjadi kesalahan sistem: ' + err.message);
+    if (error) {
+      console.error("Error dari Supabase:", error);
+      throw new Error("Gagal mengambil data: " + error.message);
     }
+    
+    if (data && data.length > 0) {
+      const s = data[0];
+      document.getElementById('resId').textContent = s.id;
+      document.getElementById('resNama').textContent = s.customer;
+      document.getElementById('resProduk').textContent = s.produk;
+      document.getElementById('resKeluhan').textContent = s.keluhan || '-';
+      
+      const badge = document.getElementById('resStatus');
+      badge.textContent = s.status.toUpperCase();
+      badge.className = 'badge ' + s.status;
+
+      document.getElementById('resSisa').textContent = s.sisa > 0 ? 'Rp ' + s.sisa.toLocaleString('id-ID') : 'LUNAS';
+
+      if (s.tgl_garansi_servis_sampai) {
+        document.getElementById('rowGaransi').style.display = 'flex';
+        document.getElementById('resGaransi').textContent = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID');
+      } else {
+        document.getElementById('rowGaransi').style.display = 'none';
+      }
+
+      document.getElementById('hasil').style.display = 'block';
+    } else {
+      alert('Nomor Servis tidak ditemukan. Pastikan penulisan sudah benar.');
+      document.getElementById('hasil').style.display = 'none';
+    }
+  } catch (err) {
+    console.error("Error di aplikasi:", err);
+    alert(err.message);
   }
+}
   
   // Agar bisa tekan Enter
   document.getElementById('inputSrv').addEventListener('keypress', function (e) {
