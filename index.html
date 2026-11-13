@@ -1223,34 +1223,73 @@ function hapusPartServis(i){ cartServis.splice(i,1); renderServisCart(); hitungT
 function renderServisCart(){ document.getElementById('cartServisList').innerHTML = cartServis.length ? cartServis.map((c,i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga*c.qty)}</small></div><button class="btn-sm danger" onclick="hapusPartServis(${i})">Batal</button></div>`).join('') : '<div class="empty">Belum ada part</div>'; document.getElementById('cartServisTotal').textContent = rp(cartServis.reduce((s,c) => s + c.harga*c.qty, 0)); }
 
 function addBateraiServis(){
-  const id = document.getElementById('selBateraiServis').value; const qty = +document.getElementById('qtyBaterai').value; const sb = db.stokBaterai.find(x => x.id === id);
-  if(!sb || qty < 1) return flash('Data tidak valid', 'err'); const existing = cartBaterai.find(c => c.id === id);
+  const id = document.getElementById('selBateraiServis').value; 
+  const qty = +document.getElementById('qtyBaterai').value; 
+  const sb = db.stokBaterai.find(x => x.id === id);
+  
+  if(!sb || qty < 1) return flash('Data tidak valid', 'err'); 
+  const existing = cartBateraiServis.find(c => c.id === id);
+  
   if((existing?.qty || 0) + qty > sb.stok) return flash('Stok tidak cukup', 'err');
-  if(existing) existing.qty += qty; else cartBaterai.push({ id: sb.id, nama: sb.tipe, harga: sb.harga_jual, qty });
-  document.getElementById('qtyBaterai').value = 1; renderBateraiServisCart(); hitungTotalServis();
+  
+  if(existing) {
+    existing.qty += qty; 
+  } else {
+    cartBateraiServis.push({ id: sb.id, nama: sb.tipe, harga: sb.harga_jual, qty }); 
+  }
+  
+  document.getElementById('qtyBaterai').value = 1; 
+  renderBateraiServisCart(); 
+  hitungTotalServis();
 }
-function hapusBateraiServis(i){ cartBaterai.splice(i,1); renderBateraiServisCart(); hitungTotalServis(); }
-function renderBateraiServisCart(){ document.getElementById('cartBateraiList').innerHTML = cartBaterai.length ? cartBaterai.map((c,i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga*c.qty)}</small></div><button class="btn-sm danger" onclick="hapusBateraiServis(${i})">Batal</button></div>`).join('') : '<div class="empty">Belum ada baterai</div>'; document.getElementById('cartBateraiTotal').textContent = rp(cartBaterai.reduce((s,c) => s + c.harga*c.qty, 0)); }
-
+function hapusBateraiServis(i){ 
+  cartBateraiServis.splice(i,1); 
+  renderBateraiServisCart(); 
+  hitungTotalServis(); 
+}
+function renderBateraiServisCart(){ 
+  const el = document.getElementById('cartBateraiServisList');
+  const totalEl = document.getElementById('cartBateraiServisTotal');
+  
+  if(el) {
+    el.innerHTML = cartBateraiServis.length ? cartBateraiServis.map((c,i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga*c.qty)}</small></div><button class="btn-sm danger" onclick="hapusBateraiServis(${i})">Batal</button></div>`).join('') : '<div class="empty">Belum ada baterai</div>';
+  }
+  
+  if(totalEl) {
+    totalEl.textContent = rp(cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0));
+  }
+}
 function hitungTotalServis(){
-  const isKlaim = !!document.getElementById('sParentId').value; const garansi = document.getElementById('sGaransi').value; 
+  const isKlaim = !!document.getElementById('sParentId').value; 
+  const garansi = document.getElementById('sGaransi').value; 
   const jasa = isKlaim ? 0 : (+document.getElementById('sJasa').value || 0);
-  const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); const totalBaterai = cartBaterai.reduce((s,c) => s + c.harga*c.qty, 0);
+  
+  const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); 
+  const totalBaterai = cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0); // Menggunakan cartBateraiServis
+  
   let totalBiaya = isKlaim ? (totalParts + totalBaterai) : (garansi === 'garansi' ? 0 : (jasa + totalParts + totalBaterai));
   const dp = +document.getElementById('sDp').value || 0;
+  
   document.getElementById('sTotalBiaya').value = isKlaim ? `Rp ${totalBiaya.toLocaleString('id-ID')} (Klaim)` : (garansi === 'garansi' ? `Rp 0 (garansi)` : rp(totalBiaya));
   document.getElementById('sSisa').value = rp(Math.max(0, totalBiaya - dp));
 }
-
 async function simpanServis(){
   if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi kolom', 'err'); 
-  const customer = formatNama(document.getElementById('sNama').value); const produk = document.getElementById('sProduk').value.trim();
-  const garansi = document.getElementById('sGaransi').value; const parentId = document.getElementById('sParentId').value; const isKlaim = !!parentId; 
+  const customer = formatNama(document.getElementById('sNama').value); 
+  const produk = document.getElementById('sProduk').value.trim();
+  const garansi = document.getElementById('sGaransi').value; 
+  const parentId = document.getElementById('sParentId').value; 
+  const isKlaim = !!parentId; 
   const jasa = isKlaim ? 0 : (+document.getElementById('sJasa').value || 0);
-  const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); const totalBaterai = cartBaterai.reduce((s,c) => s + c.harga*c.qty, 0);
+  
+  // PERBAIKAN 1: Gunakan cartBateraiServis
+  const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); 
+  const totalBaterai = cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0);
+  
   const totalKeseluruhan = jasa + totalParts + totalBaterai; 
   let biayaPelanggan = isKlaim ? (totalParts + totalBaterai) : (garansi === 'garansi' ? 0 : totalKeseluruhan);
-  const dp = Math.min(biayaPelanggan, +document.getElementById('sDp').value || 0); const sisa = biayaPelanggan - dp;
+  const dp = Math.min(biayaPelanggan, +document.getElementById('sDp').value || 0); 
+  const sisa = biayaPelanggan - dp;
   
   const srvId = genId('SRV');
   const data = { 
@@ -1262,38 +1301,32 @@ async function simpanServis(){
 
   try {
     await supabaseClient.from('servis').insert([data]);
+    
+    // Simpan Sparepart
     if(cartServis.length) {
       await supabaseClient.from('servis_parts').insert(cartServis.map(c => ({ servis_id: srvId, part_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
       for(const c of cartServis){ const sp = db.sparePart.find(x => x.id === c.id); if(sp) await supabaseClient.from('sparepart').update({ stok: sp.stok - c.qty }).eq('id', c.id); }
     }
-    if(cartBaterai.length) {
-      await supabaseClient.from('servis_baterai').insert(cartBaterai.map(c => ({ servis_id: srvId, baterai_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
-      for(const c of cartBaterai){ const sb = db.stokBaterai.find(x => x.id === c.id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); }
+    
+    // Simpan Baterai
+    if(cartBateraiServis.length) {
+      await supabaseClient.from('servis_baterai').insert(cartBateraiServis.map(c => ({ servis_id: srvId, baterai_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
+      for(const c of cartBateraiServis){ const sb = db.stokBaterai.find(x => x.id === c.id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); }
     }
-
-    // === BAGIAN YANG DIUBAH (KAS & MDR DP) ===
+    
+    // Kas & MDR DP
     const metodeDp = document.getElementById('metodeDp').value;
     if(dp > 0) {
-      // 1. Catat Kas Masuk (Uang DP)
-      await supabaseClient.from('kas').insert([{ 
-        id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: metodeDp, 
-        nominal: dp, keterangan: `DP Servis ${srvId}`, sumber: 'servis', ref_id: srvId 
-      }]);
+      await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: metodeDp, nominal: dp, keterangan: `DP Servis ${srvId}`, sumber: 'servis', ref_id: srvId }]);
       
-      // 2. Hitung dan Catat MDR DP ke Kas Keluar
       const mdrDp = hitungMDR(dp, metodeDp);
       if(mdrDp > 0) {
-        await supabaseClient.from('kas').insert([{ 
-          id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: metodeDp, 
-          nominal: mdrDp, keterangan: `MDR ${labelMetode(metodeDp)} DP ${srvId}`, sumber: 'mdr', ref_id: srvId 
-        }]);
+        await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: metodeDp, nominal: mdrDp, keterangan: `MDR ${labelMetode(metodeDp)} DP ${srvId}`, sumber: 'mdr', ref_id: srvId }]);
       }
     }
-    // ===========================================
     
-    // === TAMBAHKAN KODE OPSIONAL POIN DI SINI ===
+    // Poin Pelanggan
     const nominalBayarAwal = sisa <= 0 ? biayaPelanggan : dp;
-    
     if(customer && nominalBayarAwal > 0) {
       const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', customer).maybeSingle();
       if(exPel) {
@@ -1301,14 +1334,29 @@ async function simpanServis(){
         await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
       }
     }
-    // ===========================================
 
     await catatLog('SERVIS', 'Input Servis ID: ' + srvId + ' (' + customer + ')');
-    flash(`Servis ${srvId} dibuat`); batalKlaimGaransi(); cartServis = []; cartBaterai = []; 
+    
+    flash(`Servis ${srvId} dibuat`); 
+    cetakNotaServis(srvId); // Otomatis cetak nota
+    
+    batalKlaimGaransi(); 
+    cartServis = []; 
+    
+    // PERBAIKAN 2: Reset cartBateraiServis
+    cartBateraiServis = []; 
+    
     ['sNama','sHp','sProduk','sKeluhan','sCatatan'].forEach(x => document.getElementById(x).value = ''); 
-    document.getElementById('sJasa').value = 0; document.getElementById('sDp').value = 0; 
-    renderServisCart(); renderBateraiServisCart(); hitungTotalServis(); tarikSemuaData();
-  } catch(e) { flash('Gagal: ' + e.message, 'err'); }
+    document.getElementById('sJasa').value = 0; 
+    document.getElementById('sDp').value = 0; 
+    
+    renderServisCart(); 
+    renderBateraiServisCart(); 
+    hitungTotalServis(); 
+    tarikSemuaData();
+  } catch(e) { 
+    flash('Gagal: ' + e.message, 'err'); 
+  }
 }
 async function bayarSisaServis(id){
   const s = db.servis.find(x => x.id === id); if(!s || s.sisa <= 0) return; 
