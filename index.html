@@ -1937,6 +1937,63 @@ function cetakBarcode(id) {
   `);
   win.document.close();
 }
+
+  function toggleAllProduk(source) {
+  let checkboxes = document.querySelectorAll('.chk-barcode');
+  checkboxes.forEach(cb => cb.checked = source.checked);
+}
+
+function cetakBarcodeMassal() {
+  let selectedIds = [];
+  document.querySelectorAll('.chk-barcode:checked').forEach(cb => selectedIds.push(cb.value));
+  
+  if(selectedIds.length === 0) return alert('Pilih minimal 1 produk dengan mencentang kotaknya!');
+  
+  let htmlContent = '';
+  selectedIds.forEach(id => {
+    const p = db.produk.find(x => x.id === id);
+    if(!p) return;
+    const barcodeValue = p.barcode || ('PRD' + p.id);
+    
+    // Desain per Label (Ukuran 50mm x 30mm)
+    htmlContent += `
+      <div class="label-box">
+        <div style="font-size:10px;font-weight:bold;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;width:100%;text-align:center;">${p.nama}</div>
+        <div style="font-size:9px;margin-bottom:2px;">Rp ${p.harga_jual.toLocaleString('id-ID')}</div>
+        <svg class="barcode-svg" data-value="${barcodeValue}"></svg>
+      </div>
+    `;
+  });
+
+  const win = window.open('', '_blank');
+  win.document.write(`
+    <html><head><title>Cetak Barcode Massal</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    <style>
+      @page { size: A4; margin: 5mm; }
+      body { margin: 0; padding: 0; display: flex; flex-wrap: wrap; align-content: flex-start; gap: 2mm; }
+      .label-box { 
+        width: 50mm; height: 30mm; 
+        border: 1px dashed #ccc; /* Garis putus-putus untuk panduan potong */
+        display: flex; flex-direction: column; align-items: center; justify-content: center;
+        page-break-inside: avoid; box-sizing: border-box; padding: 2mm;
+      }
+    </style>
+    </head><body>
+      ${htmlContent}
+      <script>
+        document.querySelectorAll('.barcode-svg').forEach(svg => {
+          JsBarcode(svg, svg.getAttribute('data-value'), { 
+            format: "CODE128", width: 1.2, height: 35, displayValue: true, fontSize: 10, margin: 0 
+          });
+        });
+        window.onload = function() { setTimeout(() => { window.print(); window.close(); }, 500); }
+      <\/script>
+    </body></html>
+  `);
+  win.document.close();
+}
+  
 async function generateDigitalWarranty(id, tipe) {
   let data, toko = getToko(), expiryDate, title, customer, productName, serviceId, startDate;
   if(tipe === 'servis') {
@@ -2217,16 +2274,25 @@ function render(){
   if(document.getElementById('rsItem')) updateRsItem();
 
   // 4. Render Daftar Produk, Part, Baterai
-setHTML('listProduk', db.produk.length ? `<table><thead><tr><th>Produk</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr></thead><tbody>` + db.produk.map(p => `<tr>
-  <td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td>
-  <td>${rp(p.harga_jual)}</td>
-  <td>${p.stok}</td>
-  <td style="white-space:nowrap">
-    <button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>
-    <button class="btn-sm warn" onclick="cetakBarcode('${p.id}')">Barcode</button>
-    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}
-  </td>
-</tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
+// 4. Render Daftar Produk
+setHTML('listProduk', db.produk.length ? `
+  <div style="margin-bottom:10px;">
+    <button class="btn-sm ok" onclick="cetakBarcodeMassal()" style="padding:8px 12px; font-weight:bold;">🖨️ Cetak Barcode Terpilih</button>
+  </div>
+  <table><thead><tr>
+    <th style="width:30px;"><input type="checkbox" id="checkAllProduk" onclick="toggleAllProduk(this)"></th>
+    <th>Produk</th><th>Harga</th><th>Stok</th><th>Aksi</th>
+  </tr></thead><tbody>` + db.produk.map(p => `<tr>
+    <td><input type="checkbox" class="chk-barcode" value="${p.id}"></td>
+    <td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek||'')}</small></td>
+    <td>${rp(p.harga_jual)}</td>
+    <td>${p.stok}</td>
+    <td style="white-space:nowrap">
+      <button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>
+      <button class="btn-sm warn" onclick="cetakBarcode('${p.id}')">Barcode</button>
+      ${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}
+    </td>
+  </tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
   setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr>
   <td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td>
   <td style="white-space:nowrap">
