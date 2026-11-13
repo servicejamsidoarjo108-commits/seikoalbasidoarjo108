@@ -1043,7 +1043,8 @@ async function prosesBayar(){
   const trxHeader = {
     id: trxId, waktu: nowISO(), subtotal, diskon: potongan, total, bayar: metode === 'tunai' ? bayar : total, 
     kembali: metode === 'tunai' ? (bayar - total) : 0, metode,
-    cust_nama: document.getElementById('custNama').value.trim(), cust_hp: document.getElementById('custHp').value.trim(),
+     cust_nama: formatNama(document.getElementById('custNama').value),
+    cust_hp: document.getElementById('custHp').value.trim(),
     garansi_hari: +document.getElementById('garansiHari').value || 0, poin_dipakai: tukarPoin, poin_didapat: Math.floor(total / 10000)
   };
   const trxItems = cart.map(c => ({ jual_id: trxId, produk_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty }));
@@ -1134,7 +1135,7 @@ function hitungTotalServis(){
 
 async function simpanServis(){
   if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi kolom', 'err'); 
-  const customer = document.getElementById('sNama').value.trim(); const produk = document.getElementById('sProduk').value.trim();
+  const customer = formatNama(document.getElementById('sNama').value); const produk = document.getElementById('sProduk').value.trim();
   const garansi = document.getElementById('sGaransi').value; const parentId = document.getElementById('sParentId').value; const isKlaim = !!parentId; 
   const jasa = isKlaim ? 0 : (+document.getElementById('sJasa').value || 0);
   const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); const totalBaterai = cartBaterai.reduce((s,c) => s + c.harga*c.qty, 0);
@@ -1295,7 +1296,7 @@ async function tambahStokBaterai(){
 
 async function simpanBaterai(){
   if (!checkRequired(['bNama', 'bProduk', 'bTipeSel'])) return flash('Lengkapi kolom', 'err'); 
-  const nama = document.getElementById('bNama').value.trim(); const produk = document.getElementById('bProduk').value.trim();
+  const nama = formatNama(document.getElementById('bNama').value); const produk = document.getElementById('bProduk').value.trim();
   const sb = db.stokBaterai.find(x => x.id === document.getElementById('bTipeSel').value); if(!sb || sb.stok < 1) return flash('Stok habis', 'err');
   const metode = document.getElementById('metodeBaterai').value;
   const garansi = +document.getElementById('bGaransi').value || 0; const biaya = +document.getElementById('bBiaya').value || 0;
@@ -2080,6 +2081,13 @@ async function hapusSupplier(id){
   await catatLog('HAPUS_SUPPLIER', 'Hapus supplier ID: ' + id);
   flash('Dihapus'); render(); 
 }
+
+  // Fungsi untuk merapikan nama menjadi Title Case (misal: "efendi" -> "Efendi")
+function formatNama(str) {
+  if (!str) return '';
+  return str.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+}
+  
 // === INISIALISASI ===
 if(sessionStorage.getItem('ta_logged') === '1') {
   document.getElementById('loginOverlay').classList.add('hidden');
