@@ -2104,6 +2104,11 @@ setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No H
   const totalBelanja = trxJual + trxServis + trxBaterai; 
   return `<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.telp || '-')}</td><td>${rp(totalBelanja)}<br><small style="color:#f59e0b">⭐ ${p.poin || 0} Poin</small></td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="showCustomerHistory('${esc(p.nama)}', '${esc(p.telp)}')">Riwayat</button>${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="window.open('https://wa.me/'+waPhone('${p.telp}'),'_blank')">WA</button>` : ''}${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${p.id}')">Hapus</button>` : ''}</td></tr>`; 
 }).join('') + '</tbody></table>' : '<div class="empty">Belum ada data pelanggan</div>');
+
+  function filterAudit(v){ 
+  filterAuditUser = v; 
+  renderAuditLog(); // Panggil fungsi ini, bukan render()
+}
   
   // 10. KALKULASI LAPORAN LABA RUGI LENGKAP
   const omzetBulan = db.jual.filter(t => { const d = new Date(t.waktu); return d.getMonth()===bln && d.getFullYear()===thn; }).reduce((s,t) => s + t.total, 0);
