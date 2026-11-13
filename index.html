@@ -1193,10 +1193,28 @@ async function simpanServis(){
       await supabaseClient.from('servis_baterai').insert(cartBaterai.map(c => ({ servis_id: srvId, baterai_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
       for(const c of cartBaterai){ const sb = db.stokBaterai.find(x => x.id === c.id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); }
     }
-    if(dp > 0) await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: document.getElementById('metodeDp').value, nominal: dp, keterangan: `DP Servis ${srvId}`, sumber: 'servis', ref_id: srvId }]);
+
+    // === BAGIAN YANG DIUBAH (KAS & MDR DP) ===
+    const metodeDp = document.getElementById('metodeDp').value;
+    if(dp > 0) {
+      // 1. Catat Kas Masuk (Uang DP)
+      await supabaseClient.from('kas').insert([{ 
+        id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: metodeDp, 
+        nominal: dp, keterangan: `DP Servis ${srvId}`, sumber: 'servis', ref_id: srvId 
+      }]);
+      
+      // 2. Hitung dan Catat MDR DP ke Kas Keluar
+      const mdrDp = hitungMDR(dp, metodeDp);
+      if(mdrDp > 0) {
+        await supabaseClient.from('kas').insert([{ 
+          id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: metodeDp, 
+          nominal: mdrDp, keterangan: `MDR ${labelMetode(metodeDp)} DP ${srvId}`, sumber: 'mdr', ref_id: srvId 
+        }]);
+      }
+    }
+    // ===========================================
     
     // === TAMBAHKAN KODE OPSIONAL POIN DI SINI ===
-    // Hitung nominal yang dibayar saat ini (Jika Lunas, pakai biayaPelanggan. Jika DP, pakai DP)
     const nominalBayarAwal = sisa <= 0 ? biayaPelanggan : dp;
     
     if(customer && nominalBayarAwal > 0) {
@@ -2242,6 +2260,8 @@ function formatNama(str) {
   if (!str) return '';
   return str.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
 }
+
+  function filterKas(v){ filterKasJenis = v; render(); }
   
 // === INISIALISASI ===
 if(sessionStorage.getItem('ta_logged') === '1') {
