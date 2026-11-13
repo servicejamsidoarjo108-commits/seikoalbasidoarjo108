@@ -1071,12 +1071,22 @@ async function prosesBayar(){
     }
     
     // Update Poin Pelanggan
-    const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
-    if(cNama || cHp) {
-      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').eq('nama', cNama).eq('telp', cHp).maybeSingle();
-      if(exPel) await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) - tukarPoin + trxHeader.poin_didapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
-      else await supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: cNama || 'Tanpa Nama', telp: cHp || '-', poin: trxHeader.poin_didapat, terakhir_transaksi: nowISO() }]);
-    }
+    // Update Poin Pelanggan (Lebih Pintar)
+const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
+if(cNama || cHp) {
+  let query = supabaseClient.from('pelanggan').select('*');
+  // Jika ada No HP, cari berdasarkan No HP. Jika tidak, cari berdasarkan Nama.
+  if(cHp) query = query.eq('telp', cHp);
+  else query = query.eq('nama', cNama);
+
+  const { data: exPel } = await query.maybeSingle();
+  
+  if(exPel) {
+    await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) - tukarPoin + trxHeader.poin_didapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
+  } else {
+    await supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: cNama || 'Tanpa Nama', telp: cHp || '-', poin: trxHeader.poin_didapat, terakhir_transaksi: nowISO() }]);
+  }
+}
 
     // Catat Audit Trail
     await catatLog('TRANSAKSI', 'Penjualan ' + rp(total) + ' via ' + labelMetode(metode) + ' (MDR: ' + rp(mdr) + ')');
@@ -1161,41 +1171,79 @@ async function simpanServis(){
 
 async function bayarSisaServis(id){
   const s = db.servis.find(x => x.id === id); if(!s || s.sisa <= 0) return; 
-  const metode = prompt(`Sisa: ${rp(s.sisa)}\nKetik metode:\n1=Tunai\n2=Transfer\n3=QRIS`, '1'); if(metode === null) return;
-  const m = { '1': 'tunai', '2': 'transfer', '3': 'qris' }[metode] || 'tunai';
-  const input = prompt(`Nominal bayar:`, s.sisa); if(input === null) return; const bayar = +input || 0; if(bayar <= 0) return;
-  const nominal = Math.min(bayar, s.sisa); const sisaBaru = s.sisa - nominal;
+  
+  // Tambah pilihan metode pembayaran
+  const metode = prompt(`Sisa: ${rp(s.sisa)}\nKetik metode:\n1=Tunai\n2=Transfer\n3=QRIS\n4=BCA Card\n5=Visa/Master\n6=Amex\n7=Debit BCA\n8=Debit Lain\n9=Maestro`, '1'); 
+  if(metode === null) return;
+  
+  const metodeMap = { 
+    '1': 'tunai', '2': 'transfer', '3': 'qris', 
+    '4': 'edc_cc_bca', '5': 'edc_cc_vm', '6': 'edc_cc_amex',
+    '7': 'edc_dc_bca', '8': 'edc_dc_lain', '9': 'edc_dc_maestro'
+  };
+  const m = metodeMap[metode] || 'tunai';
+  
+  const input = prompt(`Nominal bayar:`, s.sisa); if(input === null) return; 
+  const bayar = +input || 0; if(bayar <= 0) return;
+  
+  const nominal = Math.min(bayar, s.sisa); 
+  const sisaBaru = s.sisa - nominal;
   const isPaid = sisaBaru <= 0;
   
+  // 1. Hitung MDR
+  const mdr = hitungMDR(nominal, m);
+  
+  try {
+    // 2. Update status servis
     await supabaseClient.from('servis').update({ sisa: sisaBaru, paid: isPaid, status: isPaid ? 'diambil' : s.status }).eq('id', id);
-  
-  await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: m, nominal, keterangan: `Pelunasan Servis ${s.id}`, sumber: 'servis', ref_id: s.id }]);
-  
-  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
-  await catatLog('PELUNASAN_SERVIS', `Pelunasan ${s.id} sebesar ${rp(nominal)} via ${labelMetode(m)}`);
-  
-  flash(isPaid ? 'LUNAS' : `Sisa ${rp(sisaBaru)}`); 
-  tarikSemuaData();
+    
+    // 3. Catat Kas Masuk (Pelunasan)
+    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: m, nominal, keterangan: `Pelunasan Servis ${s.id}`, sumber: 'servis', ref_id: s.id }]);
+    
+    // 4. Catat Kas Keluar (MDR) jika ada
+    if(mdr > 0) {
+      await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: m, nominal: mdr, keterangan: `MDR ${labelMetode(m)} - ${s.id}`, sumber: 'mdr', ref_id: s.id }]);
+    }
+    
+    // 5. TAMBAH POIN PELANGGAN
+    if(s.customer && nominal > 0) {
+      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').eq('nama', s.customer).maybeSingle();
+      if(exPel) {
+        const poinDidapat = Math.floor(nominal / 10000);
+        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
+      }
+    }
+    
+    await catatLog('PELUNASAN_SERVIS', `Pelunasan ${s.id} sebesar ${rp(nominal)} via ${labelMetode(m)}`);
+    flash(isPaid ? 'LUNAS' : `Sisa ${rp(sisaBaru)}`); 
+    tarikSemuaData();
+  } catch(e) {
+    flash('Gagal melunasi: ' + e.message, 'err');
+  }
 }
-
 async function ubahStatusServis(id){
-  const s = db.servis.find(x => x.id === id); if(!s) return; const flow = ['antri','proses','selesai','diambil'];
+  const s = db.servis.find(x => x.id === id); if(!s) return; 
+  
+  // CEGAH MUNDUR: Jika sudah diambil, hentikan proses
+  if (s.status === 'diambil') {
+    return flash('Servis sudah diambil, status tidak bisa diubah kembali.', 'err');
+  }
+  
+  const flow = ['antri','proses','selesai','diambil'];
   const nextStatus = flow[(flow.indexOf(s.status) + 1) % flow.length];
+  
   let updateData = { status: nextStatus };
   if(nextStatus === 'selesai' && !s.tgl_selesai) {
     updateData.tgl_selesai = nowISO();
     updateData.garansi_servis_bulan = 3;
     const d = new Date(); d.setMonth(d.getMonth() + 3); updateData.tgl_garansi_servis_sampai = d.toISOString().slice(0,10);
   }
-    await supabaseClient.from('servis').update(updateData).eq('id', id);
   
-  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
+  await supabaseClient.from('servis').update(updateData).eq('id', id);
   await catatLog('STATUS_SERVIS', `Ubah status ${s.id} menjadi ${nextStatus}`);
-  
   flash(`Status menjadi ${nextStatus}`); 
   tarikSemuaData();
 }
-
 async function hapusServis(id){
   if(!isAdmin() || !confirm('Hapus servis ini?')) return; 
   const s = db.servis.find(x => x.id === id); 
