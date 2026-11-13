@@ -2563,34 +2563,36 @@ async function simpanAuditGlobal() {
 
   // 2. CEK ELEMEN HTML WAJIB
   const htmlWajib = [
-    // Menu Utama & Login
-    'loginOverlay', 'loginUser', 'pinInput', 'homeUser', 'menuAdmin',
-    // Kasir
-    'selProduk', 'qty', 'cartList', 'cartTotal', 'metodeBayar', 'bayar', 'custNama', 'infoPoin', 'tukarPoin',
-    // Servis
-    'sNama', 'sProduk', 'sGaransi', 'sJasa', 'selSparePart', 'cartServisList', 'cartServisTotal',
-    'selBateraiServis', 'cartBateraiServisList', 'cartBateraiServisTotal',
-    'sDp', 'metodeDp', 'listServis', 'cariGaransi', 'hasilCekGaransi',
-    // Baterai (Menu Utama)
-    'bNama', 'bProduk', 'bTipeSel', 'cartBateraiList', 'cartBateraiTotal', 'metodeBaterai',
-    'listStokBaterai', 'listBaterai', 'bCari', 'sbTipe', 'sbStok',
-    // Produk
-    'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'listProduk', 'cardFormProduk',
-    // Sparepart
-    'spNama', 'listSparePart',
-    // Supplier
-    'supNama', 'listSupplier', 'listHutang',
-    // Kas
-    'kasTunai', 'kasNonTunai', 'kasTotal', 'listKas', 'listBank', 'kasNominal', 'kasKet',
-    // Pelanggan
-    'listPelanggan', 'cariPelanggan',
-    // Laporan
-    'lapOmzet', 'lapServis', 'lapBat', 'lapLabaKotor', 'lrLabaBersih',
-    // Setting
-    'tkNama', 'tkTelp', 'setMdrCcBca', 'setMdrDcBca', 'listAuditLog',
-    // Audit
-    'listAuditGlobal', 'listAuditBarang', 'auditCatatanMassal'
-  ];
+  // Menu Utama & Login
+  'loginOverlay', 'loginUser', 'pinInput', 'homeUser', 'menuAdmin',
+  // Kasir
+  'selProduk', 'qty', 'cartList', 'cartTotal', 'metodeBayar', 'bayar', 'custNama', 'infoPoin', 'tukarPoin',
+  // Servis
+  'sNama', 'sProduk', 'sGaransi', 'sJasa', 'selSparePart', 'cartServisList', 'cartServisTotal',
+  'selBateraiServis', 'cartBateraiServisList', 'cartBateraiServisTotal',
+  'sDp', 'metodeDp', 'listServis', 'cariGaransi', 'hasilCekGaransi',
+  // Baterai (Menu Utama)
+  'bNama', 'bProduk', 'bTipeSel', 'cartBateraiList', 'cartBateraiTotal', 'metodeBaterai',
+  'listStokBaterai', 'listBaterai', 'bCari', 'sbTipe', 'sbStok',
+  // Produk
+  'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'listProduk', 'cardFormProduk',
+  // Sparepart
+  'spNama', 'listSparePart',
+  // Supplier
+  'supNama', 'listSupplier', 'listHutang',
+  // Kas
+  'kasTunai', 'kasNonTunai', 'kasTotal', 'listKas', 'listBank', 'kasNominal', 'kasKet',
+  // Pelanggan
+  'listPelanggan', 'cariPelanggan',
+  // Laporan Harian
+  'lapOmzet', 'lapServis', 'lapBat', 'lapLabaKotor', 
+  // Laporan Keuangan (BARU)
+  'lr_laba_bersih', 'lr_total_pendapatan', 'nr_total_aset', 'ak_arus_bersih',
+  // Setting
+  'tkNama', 'tkTelp', 'setMdrCcBca', 'setMdrDcBca', 'listAuditLog',
+  // Audit
+  'listAuditGlobal', 'listAuditBarang', 'auditCatatanMassal'
+];
   
   htmlWajib.forEach(id => {
     if (!document.getElementById(id)) laporan.htmlHilang.push(id);
