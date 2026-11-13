@@ -49,7 +49,7 @@
   const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
   async function lacak() {
-    let id = document.getElementById('inputSrv').value.trim().toUpperCase();
+    let id = document.getElementById('inputSrv').value.trim();
     if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
 
     try {
