@@ -212,17 +212,19 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   <div class="row">
     <div>
       <label>Produk</label>
-      <div style="display:flex; gap:6px;">
+      <!-- TAMBAHKAN align-items: center; DI SINI -->
+      <div style="display:flex; gap:6px; align-items: center;">
         <select id="selProduk" style="flex:1;"></select>
         <!-- TOMBOL SCAN KASIR -->
-        <button class="btn blue" onclick="scanBarcode('', 'kasir')" style="width:auto; padding:0 15px; font-size:18px;" title="Scan Barcode">📷</button>
+        <button class="btn blue" onclick="scanBarcode('', 'kasir')" style="width:auto; height:42px; padding:0 15px; font-size:18px; display:flex; align-items:center; justify-content:center;" title="Scan Barcode">📷</button>
       </div>
     </div>
     <div><label>Qty</label><input type="number" id="qty" value="1" min="1"></div>
   </div>
-  <button class="btn" onclick="addCart()">+ Tambah Manual</button>
+  <button class="btn" onclick="addCart()" style="margin-top:10px;">+ Tambah Manual</button>
 </div>
-  <div class="card"><h3>Keranjang</h3><div id="cartList"><div class="empty">Belum ada item</div></div><div class="cart-total"><span>Total</span><span id="cartTotal">Rp 0</span></div></div>
+
+<div class="card"><h3>Keranjang</h3><div id="cartList"><div class="empty">Belum ada item</div></div><div class="cart-total"><span>Total</span><span id="cartTotal">Rp 0</span></div></div>
   <div class="card"><h3>Pembayaran</h3>
     <div class="row">
       <div><label>Tipe Diskon</label><select id="tipeDiskon" onchange="updateTotalKasir()"><option value="nominal">Nominal (Rp)</option><option value="persen">Persen (%)</option></select></div>
@@ -2606,7 +2608,8 @@ document.getElementById('pFoto')?.addEventListener('change', async function(e) {
   } else { 
     tempFotoBase64 = ''; 
   } 
-});async function scanFotoAI() {
+});
+  async function scanFotoAI() {
   const fileInput = document.getElementById('pFoto');
   if (!fileInput.files || fileInput.files.length === 0) return flash('Pilih foto produk terlebih dahulu', 'err');
   const loading = document.getElementById('loadingAI'); loading.style.display = 'flex'; flash('Memproses gambar dengan AI...', 'ok');
