@@ -337,16 +337,16 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" placeholder="Budi"></div><div><label>No HP</label><input id="sHp" placeholder="0812..."></div></div>
     <div class="row"><div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div><div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div></div>
     <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
-    <label>Kondisi Fisik Saat Diterima (Centang jika ada)</label>
-<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; background:#f8fafc; padding:10px; border-radius:8px; font-size:12px;">
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Kaca Baret" style="width:auto; margin:0;"> Kaca Baret</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Kaca Retak" style="width:auto; margin:0;"> Kaca Retak</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Case Lecet" style="width:auto; margin:0;"> Case Lecet</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Dial Noda" style="width:auto; margin:0;"> Dial Noda</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Jarum Lepas" style="width:auto; margin:0;"> Jarum Lepas</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Crown Patah" style="width:auto; margin:0;"> Crown Patah</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Tanpa Strap" style="width:auto; margin:0;"> Tanpa Strap</label>
-  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Mesin Mati" style="width:auto; margin:0;"> Mesin Mati</label>
+    <label>Kondisi Fisik Saat Diterima (Klik jika ada)</label>
+<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; padding:12px; border-radius:12px; border: 1px dashed var(--border);">
+  <input type="checkbox" id="k1" class="chk-kondisi pill-checkbox" value="Kaca Baret"><label for="k1" class="pill-label">Kaca Baret</label>
+  <input type="checkbox" id="k2" class="chk-kondisi pill-checkbox" value="Kaca Retak"><label for="k2" class="pill-label">Kaca Retak</label>
+  <input type="checkbox" id="k3" class="chk-kondisi pill-checkbox" value="Case Lecet"><label for="k3" class="pill-label">Case Lecet</label>
+  <input type="checkbox" id="k4" class="chk-kondisi pill-checkbox" value="Dial Noda"><label for="k4" class="pill-label">Dial Noda</label>
+  <input type="checkbox" id="k5" class="chk-kondisi pill-checkbox" value="Jarum Lepas"><label for="k5" class="pill-label">Jarum Lepas</label>
+  <input type="checkbox" id="k6" class="chk-kondisi pill-checkbox" value="Crown Patah"><label for="k6" class="pill-label">Crown Patah</label>
+  <input type="checkbox" id="k7" class="chk-kondisi pill-checkbox" value="Tanpa Strap"><label for="k7" class="pill-label">Tanpa Strap</label>
+  <input type="checkbox" id="k8" class="chk-kondisi pill-checkbox" value="Mesin Mati"><label for="k8" class="pill-label">Mesin Mati</label>
 </div>
 <label>Catatan Kondisi Lainnya</label>
 <input id="sKondisiLain" placeholder="Contoh: Ada goresan di belakang, bau parfum" style="margin-bottom:10px">
@@ -396,7 +396,6 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     
     <div class="row" id="wrapBankDp" style="display:none"><div><label>Rekening Tujuan DP</label><select id="bankDp"></select></div><div></div></div>
     <p style="font-size:12px;color:#64748b;margin:6px 0 10px">Jika garansi, customer bayar 0, tapi spare part & baterai tetap keluar stok.</p>
-    <button class="btn ok" onclick="simpanServis()">Simpan Servis</button>
   </div>
 
   <!-- DAFTAR SERVIS & CEK GARANSI HARUS DI DALAM SINI -->
@@ -425,6 +424,14 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <button class="btn" onclick="tambahSparePart()">+ Tambah Spare Part</button>
   </div>
   <div class="card"><h3>Daftar Stok Spare Part</h3><input id="cariSp" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listSparePart"></div></div>
+    <!-- STICKY BOTTOM BAR -->
+  <div class="sticky-bottom-bar">
+    <div>
+      <div class="total-text">Total Biaya Servis</div>
+      <div class="total-amount" id="sTotalBiayaDisplay">Rp 0</div>
+    </div>
+    <button class="btn ok btn-simpan" onclick="simpanServis()">💾 Simpan</button>
+  </div>
 </section>
 
 <section id="baterai">
@@ -1302,10 +1309,16 @@ function hitungTotalServis(){
     labelTotal = rp(totalBiaya);
   }
 
-  const dp = +document.getElementById('sDp').value || 0;
+    const dp = +document.getElementById('sDp').value || 0;
   document.getElementById('sTotalBiaya').value = labelTotal;
   document.getElementById('sSisa').value = rp(Math.max(0, totalBiaya - dp));
-}
+
+  // TAMBAHKAN DI SINI
+  const displayTotal = document.getElementById('sTotalBiayaDisplay');
+  if(displayTotal) {
+    displayTotal.innerText = document.getElementById('sTotalBiaya').value;
+  }
+} // <--- Penutup fungsi
   
 async function simpanServis(){
   if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi kolom', 'err'); 
