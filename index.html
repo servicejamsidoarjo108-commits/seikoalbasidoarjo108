@@ -1643,12 +1643,38 @@ async function simpanBaterai(){
   }
 }
 
-async function hapusBaterai(id){ 
-  if(!isAdmin() || !confirm('Hapus data baterai ini?')) return; 
-  await supabaseClient.from('baterai').delete().eq('id', id); 
-  await catatLog('HAPUS_BATERAI', 'Menghapus riwayat baterai ID: ' + id); 
-  flash('Dihapus'); 
-  tarikSemuaData(); 
+async function hapusBaterai(id){
+  if(!isPemilik() || !confirm('Hapus data riwayat baterai ini?')) return;
+  await supabaseClient.from('baterai').delete().eq('id', id);
+  await catatLog('HAPUS_BATERAI', 'Menghapus riwayat baterai ID: ' + id);
+  flash('Dihapus');
+  tarikSemuaData();
+}
+
+// === TARUH DI SINI ===
+async function editStokBaterai(id) {
+  if(!isAdmin()) return flash('Akses ditolak', 'err');
+  const sb = db.stokBaterai.find(x => x.id === id); 
+  if(!sb) return;
+  
+  const min = prompt('Min Stok:', sb.min_stok); if(min === null) return;
+  const beli = prompt('Harga Beli:', sb.harga_beli); if(beli === null) return;
+  const jual = prompt('Harga Jual:', sb.harga_jual); if(jual === null) return;
+  
+  await supabaseClient.from('stok_baterai').update({ min_stok: +min || 0, harga_beli: +beli || 0, harga_jual: +jual || 0 }).eq('id', id);
+  await catatLog('EDIT_BATERAI', 'Mengubah data baterai: ' + sb.tipe);
+  flash('Data baterai diperbarui'); 
+  tarikSemuaData();
+}
+
+async function hapusStokBaterai(id) {
+  if(!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus', 'err');
+  if(!confirm('Hapus tipe baterai ini?')) return;
+  
+  await supabaseClient.from('stok_baterai').delete().eq('id', id);
+  await catatLog('HAPUS_BATERAI', 'Menghapus tipe baterai ID: ' + id);
+  flash('Tipe baterai dihapus'); 
+  tarikSemuaData();
 }
 
 function cekPoinPelanggan(nama) {
