@@ -2835,11 +2835,7 @@ setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No H
   const elListAudit = document.getElementById('listAuditBarang');
   if(elListAudit && db.auditBarang) {
     let listAudit = db.auditBarang;
-    
-    // Filter berdasarkan tombol Kasir/Admin
-    if(filterAuditUser === 'admin') listAudit = listAudit.filter(a => a.user_name === 'admin' || a.user_name === 'pemilik');
-    else if(filterAuditUser === 'kasir') listAudit = listAudit.filter(a => a.user_name === 'kasir');
-    
+      
     elListAudit.innerHTML = listAudit.slice(0, 15).map(a => `
       <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px 0;">
         <div style="display:flex; justify-content:space-between;">
