@@ -1518,11 +1518,12 @@ function pilihBaterai(){
   
   if(info) info.value = `${sb.stok} unit (min ${sb.min_stok})`; 
   
-  // --- TAMBAHKAN BARIS INI UNTUK MENGEKSEKUSI KLAIM ---
+  // === BAGIAN PALING PENTING (YANG TADI HILANG) ===
   const namaPelanggan = document.getElementById('bNama').value.trim();
   if(namaPelanggan) {
     cekKlaimBaterai(namaPelanggan);
   }
+  // ================================================
 }
   
 function addBateraiCart(){
