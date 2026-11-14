@@ -415,10 +415,14 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   <!-- CARD 1: CATAT GANTI BATERAI -->
  <!-- CARD 1: KERANJANG GANTI BATERAI -->
 <div class="card"><h3>Keranjang Ganti Baterai</h3>
+  
   <div class="row">
-    <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi"></div>
+    <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi" onblur="cekKlaimBaterai(this.value)"></div>
     <div><label>No HP</label><input id="bHp" placeholder="0812..."></div>
   </div>
+
+  <!-- KOTAK INFO KLAIM DILETAKKAN DI SINI (DI LUAR ROW) -->
+  <div id="infoKlaimBaterai" style="display:none; padding:10px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:10px;"></div>
   
   <div class="row3">
     <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5"></div>
@@ -428,7 +432,7 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   
   <div id="cartBateraiList"><div class="empty">Belum ada baterai di keranjang</div></div>
   <div class="cart-total"><span>Total Biaya</span><span id="cartBateraiTotal">Rp 0</span></div>
-
+  
   <div class="row" style="margin-top:10px">
     <div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div>
     <div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div>
@@ -746,6 +750,7 @@ let filterServisStatus = '', filterKasJenis = '';
 let tempFotoBase64 = '';
 let tempAuditData = {};
 let filterAuditUser = '';
+let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' }; 
 
 const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
@@ -1529,12 +1534,20 @@ function addBateraiCart(){
   if(sb.stok < 1) return alert('Stok baterai habis!');
   
   const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
-  if(existing) {
-    if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
-    existing.qty += 1;
-  } else {
-    cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: sb.harga_jual || 0, qty: 1 });
-  }
+ if(existing) {
+  if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
+  existing.qty += 1;
+} else {
+  // HARGA DISESUAIKAN DENGAN STATUS KLAIM
+  const hargaFinal = (sb.harga_jual || 0) * statusKlaimAktif.multiplier;
+  
+  cartBaterai.push({ 
+    produk, sbId, tipe: sb.tipe, 
+    harga: hargaFinal, 
+    qty: 1, 
+    jenisKlaim: statusKlaimAktif.tipe 
+  });
+}
   
   document.getElementById('bProduk').value = '';
   document.getElementById('bTipeSel').value = '';
@@ -1588,18 +1601,32 @@ async function simpanBaterai(){
   const d = new Date(tglGanti); d.setMonth(d.getMonth() + garansi);
   const tglExpired = d.toISOString().slice(0,10);
   
-  const totalBiaya = cartBaterai.reduce((s,c) => s + c.harga*c.qty, 0);
-  const mdr = hitungMDR(totalBiaya, metode);
+  const totalBiaya = cartBaterai.reduce((s,c) => s + (c.harga * c.qty), 0);
+const totalHargaNormal = cartBaterai.reduce((s,c) => {
+  const sb = db.stokBaterai.find(x => x.id === c.sbId);
+  return s + ((sb ? sb.harga_jual : 0) * c.qty);
+}, 0);
 
+// Jika ada potongan (Klaim), Minta PIN
+if (totalBiaya < totalHargaNormal) {
+  const pin = prompt(`🔒 OTORISASI KLAIM\n\nHarga Normal: ${rp(totalHargaNormal)}\nDibayar: ${rp(totalBiaya)}\n\nKasir tidak bisa memberi harga klaim tanpa persetujuan.\nMasukkan PIN Admin/Pemilik:`);
+  if (pin === null) return flash('Dibatalkan', 'err');
+  
+  const isValid = getUsers().some(u => (u.role === 'admin' || u.role === 'pemilik') && u.pin === pin);
+  if (!isValid) return flash('PIN Salah!', 'err');
+  
+  await catatLog('OTORISASI_KLAIM', `Admin menyetujui klaim baterai ${nama}. Biaya: ${rp(totalBiaya)}`);
+}
   try {
     for (const item of cartBaterai) {
       const batId = genId('BAT');
       const data = { 
-        id: batId, waktu: nowISO(), customer: nama, telp: telp, 
-        produk: item.produk, tipe: item.tipe, sb_id: item.sbId, 
-        tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: tglExpired, 
-        biaya: item.harga * item.qty, metode: metode, paid: metode !== 'hutang' 
-      };
+  id: batId, waktu: nowISO(), customer: nama, telp: telp, 
+  produk: item.produk, tipe: item.tipe, sb_id: item.sbId, 
+  tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: tglExpired, 
+  biaya: item.harga * item.qty, metode: metode, paid: metode !== 'hutang',
+  jenis_klaim: item.jenisKlaim // <--- TAMBAHKAN BARIS INI
+};
       await supabaseClient.from('baterai').insert([data]);
 
       const sb = db.stokBaterai.find(x => x.id === item.sbId);
@@ -3098,6 +3125,14 @@ async function hapusSparePart(id){
   await catatLog('HAPUS_SPAREPART', 'Menghapus sparepart ID: ' + id);
   flash('Sparepart dihapus'); 
   tarikSemuaData();
+}
+
+  function getUsers(){
+  try { 
+    const saved = JSON.parse(localStorage.getItem('ta_users') || 'null'); 
+    if(saved && Array.isArray(saved) && saved.length > 0) return saved; 
+  } catch(e) {}
+  return [{ user: 'admin', pin: 'Admin123!', role: 'admin' }]; // PIN default
 }
   
 // === INISIALISASI ===
