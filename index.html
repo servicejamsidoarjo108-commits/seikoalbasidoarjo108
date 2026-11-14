@@ -1394,9 +1394,12 @@ function hitungTotalServis(){
   }
 } // <--- Penutup fungsi
   
-async function simpanServis(){
-  if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi kolom', 'err'); 
+// FUNGSI 1: MASUKKAN KE LIST KERANJANG
+function tambahKeKeranjangServis() {
+  if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi Nama dan Produk', 'err'); 
+  
   const customer = formatNama(document.getElementById('sNama').value);
+  const telp = document.getElementById('sHp').value.trim();
   
   let listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => cb.value);
   const kondisiLain = document.getElementById('sKondisiLain')?.value.trim();
@@ -1404,6 +1407,8 @@ async function simpanServis(){
   const kondisiFisik = listKondisi.length > 0 ? listKondisi.join(', ') : '-';
   
   const produk = document.getElementById('sProduk').value.trim();
+  const keluhan = document.getElementById('sKeluhan').value.trim();
+  const catatan = document.getElementById('sCatatan').value.trim();
   const garansi = document.getElementById('sGaransi').value; 
   const parentId = document.getElementById('sParentId').value; 
   const isKlaim = !!parentId; 
@@ -1411,85 +1416,235 @@ async function simpanServis(){
   
   const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); 
   const totalBaterai = cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0);
-  
   const totalKeseluruhan = jasa + totalParts + totalBaterai; 
   let biayaPelanggan = isKlaim ? (totalParts + totalBaterai) : (garansi === 'garansi' ? (totalParts + totalBaterai) : totalKeseluruhan);
-  const dp = Math.min(biayaPelanggan, +document.getElementById('sDp').value || 0); 
-  const sisa = biayaPelanggan - dp;
   
-  // JIKA BELUM ADA GROUP ID, BUAT BARU
-  if (!currentGroupId) {
-    currentGroupId = genId('GRP');
+  // Masukkan ke Array
+  cartServisGabungan.push({
+    customer, telp, produk, keluhan, catatan, kondisiFisik, garansi, isKlaim, parentId,
+    jasa, totalParts, totalBaterai, biayaPelanggan,
+    parts: [...cartServis], baterai: [...cartBateraiServis]
+  });
+
+  renderKeranjangServis();
+
+  // Reset Form (TAPI Nama & HP TETAP ADA)
+  document.getElementById('sProduk').value = '';
+  document.getElementById('sKeluhan').value = '';
+  document.getElementById('sCatatan').value = '';
+  document.getElementById('sJasa').value = 0;
+  document.getElementById('sGaransi').value = 'garansi';
+  document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
+  if(document.getElementById('sKondisiLain')) document.getElementById('sKondisiLain').value = '';
+  
+  cartServis = []; cartBateraiServis = [];
+  renderServisCart(); renderBateraiServisCart(); hitungTotalServis();
+  
+  window.scrollTo(0, 0);
+  flash('Jam berhasil ditambahkan ke list');
+}
+
+// FUNGSI 2: TAMPILKAN LIST DI LAYAR
+function renderKeranjangServis() {
+  const card = document.getElementById('cardKeranjangServis');
+  const cardBayar = document.getElementById('cardPembayaranServis');
+  const list = document.getElementById('listKeranjangServis');
+  
+  if (cartServisGabungan.length === 0) {
+    card.style.display = 'none';
+    cardBayar.style.display = 'none';
+    document.getElementById('sTotalBiayaDisplay').innerText = 'Rp 0';
+    return;
   }
 
-  const srvId = genId('SRV');
-  const data = { 
-    id: srvId, group_id: currentGroupId, waktu: nowISO(), customer, telp: document.getElementById('sHp').value.trim(), 
-    produk, keluhan: document.getElementById('sKeluhan').value.trim(), catatan: document.getElementById('sCatatan').value.trim(), 
-    garansi: isKlaim ? 'luar' : garansi, jasa, total_parts: totalParts, total_baterai: totalBaterai, 
-    biaya_pelanggan: biayaPelanggan, dp, sisa, paid: sisa <= 0, status: 'antri', is_klaim: isKlaim, parent_id: parentId || null,
-    kondisi_fisik: kondisiFisik
-  };
+  card.style.display = 'block';
+  cardBayar.style.display = 'block';
 
+  let html = '';
+  cartServisGabungan.forEach((item, index) => {
+    html += `
+      <div class="item-servis-cart">
+        <div class="info">
+          <strong>${index + 1}. ${item.produk}</strong><br>
+          Keluhan: ${item.keluhan || '-'} | Biaya: ${rp(item.biayaPelanggan)}
+        </div>
+        <button class="btn-sm danger" onclick="hapusItemKeranjangServis(${index})">X</button>
+      </div>
+    `;
+  });
+  list.innerHTML = html;
+  updateTotalGroupServis();
+}
+
+// FUNGSI 3: HITUNG TOTAL DP GABUNGAN
+function updateTotalGroupServis() {
+  const grandTotal = cartServisGabungan.reduce((s, item) => s + item.biayaPelanggan, 0);
+  const dpGroup = +document.getElementById('sDpGroup').value || 0;
+  const sisaGroup = Math.max(0, grandTotal - dpGroup);
+
+  document.getElementById('sTotalBiayaGroup').value = rp(grandTotal);
+  document.getElementById('sSisaGroup').value = rp(sisaGroup);
+  document.getElementById('sTotalBiayaDisplay').innerText = rp(grandTotal);
+}
+
+// FUNGSI 4: HAPUS ITEM DARI LIST
+function hapusItemKeranjangServis(index) {
+  cartServisGabungan.splice(index, 1);
+  renderKeranjangServis();
+}
+
+// FUNGSI 5: BATAL / KOSONGKAN LIST
+function batalKeranjangServis() {
+  if(!confirm('Kosongkan semua list servis?')) return;
+  cartServisGabungan = [];
+  document.getElementById('sDpGroup').value = 0;
+  renderKeranjangServis();
+}
+
+// FUNGSI 6: SIMPAN SEMUA KE DATABASE & CETAK
+async function simpanSemuaServis() {
+  if (cartServisGabungan.length === 0) return flash('List kosong. Klik "Tambah Jam Ini ke List".', 'err');
+  
+  const btn = document.querySelector('.sticky-bottom-bar .btn-simpan');
+  btn.innerHTML = 'Memproses...';
+  btn.disabled = true;
+
+  const groupId = genId('GRP');
+  const dpGroup = +document.getElementById('sDpGroup').value || 0;
+  const metodeDp = document.getElementById('metodeDpGroup').value;
+  const grandTotal = cartServisGabungan.reduce((s, item) => s + item.biayaPelanggan, 0);
+  
   try {
-    await supabaseClient.from('servis').insert([data]);
-    
-    if(cartServis.length) {
-      await supabaseClient.from('servis_parts').insert(cartServis.map(c => ({ servis_id: srvId, part_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
-      for(const c of cartServis){ const sp = db.sparePart.find(x => x.id === c.id); if(sp) await supabaseClient.from('sparepart').update({ stok: sp.stok - c.qty }).eq('id', c.id); }
-    }
-    
-    if(cartBateraiServis.length) {
-      await supabaseClient.from('servis_baterai').insert(cartBateraiServis.map(c => ({ servis_id: srvId, baterai_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
-      for(const c of cartBateraiServis){ const sb = db.stokBaterai.find(x => x.id === c.id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); }
-    }
-    
-    // ... (Biarkan kode pencatatan KAS, MDR, dan Poin Pelanggan ASLI Anda di sini) ...
-    // (Salin dari kode lama Anda, tidak perlu diubah)
+    let sisaDpGroup = dpGroup; 
 
-    await catatLog('SERVIS', 'Input Servis ID: ' + srvId + ' (' + customer + ')');
-    
-    data.parts = [...cartServis];
-    data.baterai = [...cartBateraiServis];
-    db.servis.unshift(data); 
-
-    flash(`Servis ${srvId} dibuat`); 
-
-    // --- LOGIKA NOTA GABUNGAN ---
-    // Tanya Kasir apakah ada jam lain
-    const tambahLagi = confirm(`✅ Servis ${produk} berhasil disimpan.\n\nApakah pelanggan (${customer}) membawa jam lain?`);
-    
-    if (tambahLagi) {
-      // JIKA IYA: Bersihkan form, TAPI biarkan Nama & HP & currentGroupId
-      document.getElementById('sProduk').value = '';
-      document.getElementById('sKeluhan').value = '';
-      document.getElementById('sCatatan').value = '';
-      document.getElementById('sJasa').value = 0;
-      document.getElementById('sDp').value = 0;
-      document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
-      if(document.getElementById('sKondisiLain')) document.getElementById('sKondisiLain').value = '';
-      cartServis = []; cartBateraiServis = [];
-      renderServisCart(); renderBateraiServisCart(); hitungTotalServis();
-      window.scrollTo(0, 0);
-      flash('Silakan input jam berikutnya');
-    } else {
-      // JIKA SELESAI: Cetak Nota Gabungan & Reset Semua
-      batalKlaimGaransi(); 
-      cartServis = []; cartBateraiServis = [];
-      ['sNama','sHp','sProduk','sKeluhan','sCatatan'].forEach(x => document.getElementById(x).value = ''); 
-      document.getElementById('sJasa').value = 0; document.getElementById('sDp').value = 0;
-      document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
-      renderServisCart(); renderBateraiServisCart(); hitungTotalServis(); 
+    for (let i = 0; i < cartServisGabungan.length; i++) {
+      const item = cartServisGabungan[i];
+      const srvId = genId('SRV');
       
-      // Panggil fungsi cetak gabungan
-      cetakNotaGabunganServis(currentGroupId); 
-      currentGroupId = ''; // Reset Group ID untuk pelanggan selanjutnya
+      const dpUntukJamIni = Math.min(item.biayaPelanggan, sisaDpGroup);
+      sisaDpGroup -= dpUntukJamIni;
+      const sisaJamIni = item.biayaPelanggan - dpUntukJamIni;
+
+      const data = { 
+        id: srvId, group_id: groupId, waktu: nowISO(), 
+        customer: item.customer, telp: item.telp, produk: item.produk, 
+        keluhan: item.keluhan, catatan: item.catatan, kondisi_fisik: item.kondisiFisik,
+        garansi: item.isKlaim ? 'luar' : item.garansi, jasa: item.jasa, 
+        total_parts: item.totalParts, total_baterai: item.totalBaterai, 
+        biaya_pelanggan: item.biayaPelanggan, 
+        dp: dpUntukJamIni, sisa: sisaJamIni, 
+        paid: sisaJamIni <= 0, status: 'antri', is_klaim: item.isKlaim, parent_id: item.parentId || null
+      };
+
+      await supabaseClient.from('servis').insert([data]);
+      
+      if(item.parts.length > 0) {
+        await supabaseClient.from('servis_parts').insert(item.parts.map(c => ({ servis_id: srvId, part_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
+        for(const c of item.parts) { 
+          const sp = db.sparePart.find(x => x.id === c.id); 
+          if(sp) await supabaseClient.from('sparepart').update({ stok: sp.stok - c.qty }).eq('id', c.id); 
+        }
+      }
+      
+      if(item.baterai.length > 0) {
+        await supabaseClient.from('servis_baterai').insert(item.baterai.map(c => ({ servis_id: srvId, baterai_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty })));
+        for(const c of item.baterai) { 
+          const sb = db.stokBaterai.find(x => x.id === c.id); 
+          if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); 
+        }
+      }
     }
+
+    // Catat DP Gabungan ke Kas
+    if(dpGroup > 0) {
+      await supabaseClient.from('kas').insert([{ 
+        id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: metodeDp, 
+        nominal: dpGroup, keterangan: `DP Servis (${cartServisGabungan.length} Jam) - ${cartServisGabungan[0].customer}`, 
+        sumber: 'servis', ref_id: groupId 
+      }]);
+      const mdr = hitungMDR(dpGroup, metodeDp);
+      if(mdr > 0) {
+        await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: metodeDp, nominal: mdr, keterangan: `MDR DP ${groupId}`, sumber: 'mdr', ref_id: groupId }]);
+      }
+    }
+
+    // Tambah Poin Pelanggan
+    const namaPelanggan = cartServisGabungan[0].customer;
+    if(namaPelanggan && grandTotal > 0) {
+      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', namaPelanggan).maybeSingle();
+      if(exPel) {
+        const poinDidapat = Math.floor(grandTotal / 10000);
+        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
+      }
+    }
+
+    await catatLog('SERVIS_GABUNGAN', `Menyimpan ${cartServisGabungan.length} servis untuk ${namaPelanggan} (Total: ${rp(grandTotal)})`);
     
+    flash('Semua servis berhasil disimpan!');
+    
+    // Cetak Nota Gabungan
+    cetakNotaGabunganServisByData(cartServisGabungan, groupId);
+
+    // Bersihkan Form
+    batalKeranjangServis();
+    ['sNama','sHp'].forEach(x => document.getElementById(x).value = ''); 
     tarikSemuaData();
+
   } catch(e) { 
     flash('Gagal: ' + e.message, 'err'); 
+  } finally {
+    btn.innerHTML = '💾 Simpan Servis';
+    btn.disabled = false;
   }
+}
+
+// FUNGSI 7: CETAK NOTA GABUNGAN (DARI DATA KERANJANG)
+function cetakNotaGabunganServisByData(listData, groupId) {
+  const toko = getToko();
+  const customer = listData[0].customer;
+  const telp = listData[0].telp;
+  const totalBiaya = listData.reduce((s, x) => s + x.biayaPelanggan, 0);
+  const totalSisa = listData.reduce((s, x) => s + (x.biayaPelanggan - Math.min(x.biayaPelanggan, +document.getElementById('sDpGroup').value || 0)), 0); // Estimasi sisa
+  
+  const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?group_id=${groupId}`;
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(linkLacak)}`;
+
+  let itemsHTML = '';
+  listData.forEach((s, idx) => {
+    itemsHTML += `
+      <div style="margin-bottom:6px; font-size:10px; border-bottom:1px dotted #ccc; padding-bottom:4px;">
+        <b>${idx + 1}. ${s.produk}</b><br>
+        Keluhan: ${s.keluhan || '-'}<br>
+        Biaya: Rp ${(s.biayaPelanggan||0).toLocaleString('id-ID')}
+      </div>
+    `;
+  });
+
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+  <div class="c b">NOTA SERVIS GABUNGAN</div><hr>
+  <div>Pelanggan: ${esc(customer)}</div>
+  <div>No HP: ${esc(telp)}</div>
+  <div>Tgl: ${new Date().toLocaleString('id-ID')}</div><hr>
+  
+  <div class="b">Daftar Barang (${listData.length} item):</div>
+  ${itemsHTML}
+  <hr>
+  
+  <table style="width:100%">
+    <tr><td class="b">TOTAL BIAYA</td><td class="b" style="text-align:right">Rp ${totalBiaya.toLocaleString('id-ID')}</td></tr>
+    <tr><td class="b">SISA TAGIHAN</td><td class="b" style="text-align:right">Rp ${totalSisa.toLocaleString('id-ID')}</td></tr>
+  </table>
+  <hr>
+  
+  <div class="c" style="margin-top: 8px;">
+    <div style="font-size:9px;">Scan untuk lacak status servis:</div>
+    <img src="${qrCodeUrl}" width="80" height="80">
+  </div>
+  <div class="c" style="font-size:9px; margin-top:4px;">${linkLacak}</div>
+  <div class="c" style="margin-top:6px">Simpan nota ini</div></body></html>`;
+  
+  cetakHTML(html);
 }
   
 async function bayarSisaServis(id){
