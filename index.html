@@ -2412,14 +2412,19 @@ setHTML('listProduk', db.produk.length ? `
       ${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}
     </td>
   </tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
-  setHTML('listSparePart', db.sparePart.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.sparePart.map(sp => `<tr>
-  <td>${esc(sp.nama)}</td><td>${sp.stok}</td><td>${rp(sp.harga_jual)}</td>
+  // Render Daftar Spare Part (Dengan Pencarian & Role)
+const cariSp = (document.getElementById('cariSp')?.value || '').toLowerCase(); 
+const listSpFiltered = db.sparePart.filter(sp => !cariSp || sp.nama.toLowerCase().includes(cariSp) || sp.kategori.toLowerCase().includes(cariSp));
+
+setHTML('listSparePart', listSpFiltered.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + listSpFiltered.map(sp => `<tr>
+  <td><strong>${esc(sp.nama)}</strong><br><small style="color:#64748b">${esc(sp.kategori)}</small></td>
+  <td style="color:${sp.stok <= sp.min_stok ? '#dc2626' : 'inherit'}; font-weight:${sp.stok <= sp.min_stok ? '700' : '400'};">${sp.stok}</td>
+  <td>${rp(sp.harga_jual)}${isPemilik()?`<br><small style="color:#64748b">beli ${rp(sp.harga_beli)}</small>`:''}</td>
   <td style="white-space:nowrap">
-    <button class="btn-sm blue" onclick="editSparePart('${sp.id}')">Edit</button>
-    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusSparePart('${sp.id}')">Hapus</button>`:''}
+    ${isAdmin()?`<button class="btn-sm blue" onclick="editSparePart('${sp.id}')">Edit</button>`:''}
+    ${isPemilik()?`<button class="btn-sm danger" onclick="hapusSparePart('${sp.id}')">Hapus</button>`:''}
   </td>
-</tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
-  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr>
+</tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada sparepart</div>');  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr>
   <td>${sb.tipe}</td>
   <td>${sb.stok}</td>
   <td>${rp(sb.harga_jual)}</td>
