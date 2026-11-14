@@ -209,9 +209,19 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 
 <section id="kasir">
   <div class="card"><h3>Tambah ke Keranjang</h3>
-    <div class="row"><div><label>Produk</label><select id="selProduk"></select></div><div><label>Qty</label><input type="number" id="qty" value="1" min="1"></div></div>
-    <button class="btn" onclick="addCart()">+ Tambah</button>
+  <div class="row">
+    <div>
+      <label>Produk</label>
+      <div style="display:flex; gap:6px;">
+        <select id="selProduk" style="flex:1;"></select>
+        <!-- TOMBOL SCAN KASIR -->
+        <button class="btn blue" onclick="scanBarcode('', 'kasir')" style="width:auto; padding:0 15px; font-size:18px;" title="Scan Barcode">📷</button>
+      </div>
+    </div>
+    <div><label>Qty</label><input type="number" id="qty" value="1" min="1"></div>
   </div>
+  <button class="btn" onclick="addCart()">+ Tambah Manual</button>
+</div>
   <div class="card"><h3>Keranjang</h3><div id="cartList"><div class="empty">Belum ada item</div></div><div class="cart-total"><span>Total</span><span id="cartTotal">Rp 0</span></div></div>
   <div class="card"><h3>Pembayaran</h3>
     <div class="row">
@@ -2501,40 +2511,78 @@ async function simpanAuditGlobal() {
 
 let scanStream = null, scanTarget = null, scanInterval = null;
 // 1. FUNGSI SCAN KAMERA (VERSI BARU DENGAN BEEP)
-async function scanBarcode(targetId){
+let scanStream = null, scanTarget = null, scanInterval = null, scanMode = 'input';
+
+async function scanBarcode(targetId, mode = 'input'){
   scanTarget = targetId;
-  if(!('BarcodeDetector' in window)) return alert('Browser tidak mendukung scan kamera. Gunakan Google Chrome di Android.');
+  scanMode = mode;
+  
+  if(!('BarcodeDetector' in window)) return alert('Browser tidak mendukung scan kamera. Gunakan Chrome Android.');
+  
   try {
     scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }});
     const video = document.getElementById('scanVideo'); 
     video.srcObject = scanStream; 
     await video.play();
     
-    document.getElementById('scanArea').style.display = 'flex'; // Pakai flex agar di tengah
+    document.getElementById('scanArea').style.display = 'flex';
     
     const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','qr_code','upc_a','upc_e'] });
+    
     scanInterval = setInterval(async () => {
       try { 
         const codes = await detector.detect(video); 
-        if(codes.length){ 
-          playBeep(); // BUNYIKAN SUARA BEEP
-          document.getElementById(scanTarget).value = codes[0].rawValue; 
+        if(codes.length > 0){ 
+          playBeep(); 
+          const barcodeValue = codes[0].rawValue;
           stopScan(); 
-          flash('Barcode: ' + codes[0].rawValue); 
+          
+          if (scanMode === 'kasir') {
+            prosesBarcodeKasir(barcodeValue); // Jalankan fungsi masuk keranjang
+          } else {
+            document.getElementById(scanTarget).value = barcodeValue; 
+            flash('Barcode: ' + barcodeValue); 
+          }
         } 
       } catch(e){}
     }, 500);
   } catch(e){ alert('Tidak bisa akses kamera: ' + e.message); }
 }
 
+function prosesBarcodeKasir(barcode) {
+  // 1. Cari produk berdasarkan barcode
+  const p = db.produk.find(x => x.barcode === barcode);
+  
+  // 2. Jika tidak ditemukan
+  if (!p) {
+    return flash(`❌ Produk dengan barcode [${barcode}] tidak terdaftar!`, 'err');
+  }
+  
+  // 3. Jika stok habis
+  if (p.stok < 1) {
+    return flash(`❌ Stok ${p.nama} habis!`, 'err');
+  }
+
+  // 4. Cek apakah barang sudah ada di keranjang
+  const existing = cart.find(c => c.id === p.id);
+  if (existing) {
+    if (existing.qty + 1 > p.stok) return flash('Stok tidak mencukupi!', 'err');
+    existing.qty += 1;
+  } else {
+    cart.push({ id: p.id, nama: p.nama, harga: p.harga_jual, qty: 1 });
+  }
+  
+  // 5. Tampilkan notifikasi & update keranjang
+  renderCart();
+  flash(`✅ ${p.nama} dimasukkan ke keranjang`);
+}
+  
 function stopScan(){ 
   if(scanInterval) clearInterval(scanInterval); 
   if(scanStream) scanStream.getTracks().forEach(t => t.stop()); 
   document.getElementById('scanArea').style.display = 'none'; 
-  scanStream = null; 
-  scanInterval = null; 
+  scanStream = null; scanInterval = null; 
 }
-
 // 2. FUNGSI FOTO (JANGAN DIHAPUS!)
 function resizeImage(file) {
   return new Promise((resolve) => {
