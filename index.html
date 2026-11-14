@@ -994,7 +994,7 @@ async function login(){
     sessionStorage.setItem('ta_logged', '1'); 
     sessionStorage.setItem('ta_user', user); 
     sessionStorage.setItem('ta_role', role);
-    await catatLog('LOGIN', 'Berhasil masuk sistem');
+    
     
     const btn = document.querySelector('#loginOverlay button');
     btn.textContent = 'Memuat Data...';
@@ -1003,6 +1003,7 @@ async function login(){
     try {
       await tarikSemuaData();
       setupRealtime();
+      await catatLog('LOGIN', 'Berhasil masuk sistem');
     } catch (err) {
       console.error("Gagal load data awal:", err);
     } finally {
