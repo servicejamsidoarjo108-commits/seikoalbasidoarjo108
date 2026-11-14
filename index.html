@@ -1980,6 +1980,28 @@ async function simpanKasKecilKasir() {
   tarikSemuaData();
 }
 
+  async function hapusKas(id) {
+  // Cek apakah yang login adalah Admin atau Pemilik
+  if (!isAdmin()) return flash('Akses ditolak. Hanya Admin/Pemilik yang bisa menghapus.', 'err');
+  
+  if (!confirm('⚠️ Yakin ingin menghapus riwayat kas ini?\n\nTindakan ini akan menghapus data secara permanen dan mempengaruhi total saldo.')) return;
+
+  try {
+    // Hapus dari database Supabase
+    const { error } = await supabaseClient.from('kas').delete().eq('id', id);
+    
+    if (error) throw error;
+
+    // Catat ke Audit Trail bahwa ada data yang dihapus
+    await catatLog('HAPUS_KAS', 'Menghapus transaksi kas ID: ' + id);
+    
+    flash('Transaksi kas berhasil dihapus');
+    tarikSemuaData(); // Refresh data ke layar
+  } catch (err) {
+    flash('Gagal menghapus: ' + err.message, 'err');
+  }
+}
+
 // === SETTINGS ===
 async function simpanToko(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
@@ -2718,13 +2740,15 @@ setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek
     <td>${esc(b.no||'-')}</td>
     <td>${rp(b.saldo_awal)}</td>
     <td style="font-weight:bold;color:#0284c7">${rp(saldoSaatIni)}</td>
-    <td style="white-space:nowrap">
-      ${isAdmin() ? `
-        <button class="btn-sm warn" onclick="rekonsiliasiBank('${b.id}')" title="Cocokkan saldo dengan m-banking">🔄 Rekonsiliasi</button>
-        <button class="btn-sm blue" onclick="editBank('${b.id}')">Edit</button>
-        <button class="btn-sm danger" onclick="hapusBank('${b.id}')">Hapus</button>
-      ` : ''}
-    </td>
+    <td>
+  <div style="display:flex; flex-wrap:wrap; gap:5px;">
+    ${isAdmin() ? `
+      <button class="btn-sm warn" onclick="rekonsiliasiBank('${b.id}')" style="font-size:11px;">🔄 Rekon</button>
+      <button class="btn-sm blue" onclick="editBank('${b.id}')" style="font-size:11px;">Edit</button>
+      <button class="btn-sm danger" onclick="hapusBank('${b.id}')" style="font-size:11px;">Hapus</button>
+    ` : ''}
+  </div>
+</td>
   </tr>`; 
 }).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
 // 9. Render Pelanggan (Pastikan tidak menempel dengan kode Kas di atasnya)
