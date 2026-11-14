@@ -890,6 +890,71 @@ let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
 let currentGroupId = ''; // Untuk menyimpan ID Nota Gabungan
 let cartServisGabungan = [];
 
+// 1. Fungsi Suara Beep
+function playBeep() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(800, ctx.currentTime); 
+    gain.gain.setValueAtTime(0.1, ctx.currentTime); 
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.1); 
+  } catch (e) { console.log("Audio error:", e); }
+}
+
+// 2. Fungsi Scan Kamera
+let scanStream = null, scanTarget = null, scanInterval = null;
+
+async function scanBarcode(targetId){
+  scanTarget = targetId;
+  
+  // Cek dukungan browser
+  if(!('BarcodeDetector' in window)) {
+    return alert('Browser HP Anda (terutama iPhone/Safari) belum mendukung fitur scan kamera ini secara langsung. Silakan gunakan Google Chrome di Android, atau ketik barcode secara manual.');
+  }
+  
+  try {
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }});
+    const video = document.getElementById('scanVideo'); 
+    video.srcObject = scanStream; 
+    await video.play();
+    
+    // TAMPILKAN KAMERA (Gunakan 'flex' bukan 'block' agar ke tengah)
+    document.getElementById('scanArea').style.display = 'flex';
+    
+    const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','qr_code','upc_a','upc_e'] });
+    
+    scanInterval = setInterval(async () => {
+      try { 
+        const codes = await detector.detect(video); 
+        if(codes.length > 0){ 
+          playBeep(); // Mainkan suara Beep
+          document.getElementById(scanTarget).value = codes[0].rawValue; 
+          stopScan(); 
+          flash('Barcode terdeteksi: ' + codes[0].rawValue); 
+        } 
+      } catch(e){}
+    }, 500);
+  } catch(e){ 
+    alert('Tidak bisa akses kamera: Pastikan Anda mengizinkan akses kamera di browser HP Anda.\n\n' + e.message); 
+  }
+}
+
+// 3. Fungsi Tutup Kamera
+function stopScan(){ 
+  if(scanInterval) clearInterval(scanInterval); 
+  if(scanStream) scanStream.getTracks().forEach(t => t.stop()); 
+  document.getElementById('scanArea').style.display = 'none'; 
+  scanStream = null; 
+  scanInterval = null; 
+}
+  
 const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
 const esc = s => String(s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
