@@ -452,7 +452,16 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <input id="cariGaransi" placeholder="Cari nama / no HP / no servis / produk..." oninput="renderCekGaransi()" style="margin-bottom:10px">
     <div id="hasilCekGaransi"><div class="empty">Ketik untuk mencari garansi</div></div>
   </div>
+    <!-- STICKY BOTTOM BAR -->
+  <div class="sticky-bottom-bar">
+    <div>
+      <div class="total-text">Total Biaya Servis</div>
+      <div class="total-amount" id="sTotalBiayaDisplay">Rp 0</div>
+    </div>
+    <button class="btn ok btn-simpan" onclick="simpanServis()">💾 Simpan</button>
+  </div>
 </section>
+  
 <section id="sparepart">
   <div class="card" id="cardTambahSparePart">
     <h3>Tambah Spare Part</h3>
@@ -462,14 +471,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <button class="btn" onclick="tambahSparePart()">+ Tambah Spare Part</button>
   </div>
   <div class="card"><h3>Daftar Stok Spare Part</h3><input id="cariSp" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listSparePart"></div></div>
-    <!-- STICKY BOTTOM BAR -->
-  <div class="sticky-bottom-bar">
-    <div>
-      <div class="total-text">Total Biaya Servis</div>
-      <div class="total-amount" id="sTotalBiayaDisplay">Rp 0</div>
-    </div>
-    <button class="btn ok btn-simpan" onclick="simpanServis()">💾 Simpan</button>
-  </div>
+  
 </section>
 
 <section id="baterai">
