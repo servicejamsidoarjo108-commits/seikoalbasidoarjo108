@@ -447,7 +447,6 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
         <option value="edc_dc_bca">Debit BCA (0,15%)</option>
         <option value="edc_dc_lain">Debit Lain (1%)</option>
         <option value="edc_dc_maestro">Maestro (2%)</option>
-        <option value="hutang">Hutang</option>
       </select>
     </div>
     <div></div>
@@ -2447,15 +2446,25 @@ setHTML('listServis', srvFiltered.length ? srvFiltered.map(s => {
 
 if(document.getElementById('hasilCekGaransi')) renderCekGaransi();
   
-  // 6. Render Riwayat Baterai (Lengkap)
-  const cariB = (document.getElementById('bCari')?.value || '').toLowerCase(); 
-  const listB = db.baterai.filter(b => !cariB || b.customer.toLowerCase().includes(cariB) || (b.telp||'').includes(cariB) || b.produk.toLowerCase().includes(cariB)).sort((a,b) => new Date(a.tgl_expired) - new Date(b.tgl_expired));
-  setHTML('listBaterai', listB.length ? listB.map(b => { 
-    const end = new Date(b.tgl_expired + 'T23:59:59'); const sisa = Math.ceil((end - new Date()) / 86400000);
-    let cls = 'ok', label = 'AKTIF'; if(sisa < 0) { cls = 'danger'; label = 'EXPIRED'; } else if(sisa <= 30) { cls = 'warn'; label = 'HAMPIR HABIS'; }
-    return `<div class="bat-item ${cls}"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${esc(b.customer)}</strong><span class="badge ${cls}">${label}${sisa>=0?' ('+sisa+' hr)':''}</span></div><div style="font-size:12px;color:#475569;margin-top:2px">Barang: ${esc(b.produk)} - Baterai: ${b.tipe}<br>Tgl: ${new Date(b.tgl_ganti).toLocaleDateString('id-ID')} s/d ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}<br>Biaya: ${rp(b.biaya)} ${b.metode==='hutang'?'<span class="badge warn">HUTANG</span>':''} ${b.telp?'- Telp: '+esc(b.telp):''}</div><div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">${b.telp?`<button class="btn-sm ok" onclick="waReminderBaterai('${b.id}')">WA</button>`:''}<button class="btn-sm blue" onclick="cetakKartuBaterai('${b.id}')">Kartu</button><button class="btn-sm ok" onclick="generateDigitalWarranty('${b.id}', 'baterai')">📸 E-Warranty</button>${isAdmin()?`<button class="btn-sm danger" onclick="hapusBaterai('${b.id}')">Hapus</button>`:''}</div></div>`; 
-  }).join('') : '<div class="empty">Belum ada data</div>');
+  // 6. Render Riwayat Baterai
+const cariB = (document.getElementById('bCari')?.value || '').toLowerCase(); 
+const listB = db.baterai.filter(b => !cariB || b.customer.toLowerCase().includes(cariB) || (b.telp||'').includes(cariB) || b.produk.toLowerCase().includes(cariB)).sort((a,b) => new Date(a.tgl_expired) - new Date(b.tgl_expired));
 
+setHTML('listBaterai', listB.length ? listB.map(b => { 
+  const end = new Date(b.tgl_expired + 'T23:59:59'); const sisa = Math.ceil((end - new Date()) / 86400000);
+  let cls = 'ok', label = 'AKTIF'; if(sisa < 0) { cls = 'danger'; label = 'EXPIRED'; } else if(sisa <= 30) { cls = 'warn'; label = 'HAMPIR HABIS'; }
+  
+  return `<div class="bat-item ${cls}">
+    <div style="display:flex;justify-content:space-between;align-items:center"><strong>${esc(b.customer)}</strong><span class="badge ${cls}">${label}${sisa>=0?' ('+sisa+' hr)':''}</span></div>
+    <div style="font-size:12px;color:#475569;margin-top:2px">Barang: ${esc(b.produk)} - Baterai: ${b.tipe}<br>Tgl: ${new Date(b.tgl_ganti).toLocaleDateString('id-ID')} s/d ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}<br>Biaya: ${rp(b.biaya)} ${b.telp?'- Telp: '+esc(b.telp):''}</div>
+    <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+      ${b.telp?`<button class="btn-sm warn" onclick="waReminderBaterai('${b.id}')">WA</button>`:''}
+      <button class="btn-sm blue" onclick="cetakKartuBaterai('${b.id}')">Kartu</button>
+      <button class="btn-sm ok" onclick="generateDigitalWarranty('${b.id}', 'baterai')">📸 E-Warranty</button>
+      ${isAdmin()?`<button class="btn-sm danger" onclick="hapusBaterai('${b.id}')">Hapus</button>`:''}
+    </div>
+  </div>`; 
+}).join('') : '<div class="empty">Belum ada data</div>');
   // 7. Render Transaksi & Kas Kecil Hari Ini
   const trxHariIni = db.jual.filter(t => new Date(t.waktu).toDateString() === today);
   setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => `<tr><td>${new Date(t.waktu).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})}</td><td>${t.items.length} item<br><small>${labelMetode(t.metode||'tunai')}</small></td><td>${rp(t.total)}</td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="cetakStruk('${t.id}')">Cetak</button><button class="btn-sm ok" onclick="shareStrukDigital('${t.id}')">WA</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty">Belum ada transaksi</td></tr>');
