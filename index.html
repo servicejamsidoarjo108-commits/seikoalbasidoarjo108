@@ -1265,12 +1265,25 @@ function hitungTotalServis(){
   const jasa = isKlaim ? 0 : (+document.getElementById('sJasa').value || 0);
   
   const totalParts = cartServis.reduce((s,c) => s + c.harga*c.qty, 0); 
-  const totalBaterai = cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0); // Menggunakan cartBateraiServis
+  const totalBaterai = cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0);
   
-  let totalBiaya = isKlaim ? (totalParts + totalBaterai) : (garansi === 'garansi' ? 0 : (jasa + totalParts + totalBaterai));
+  let totalBiaya = 0;
+  let labelTotal = '';
+
+  if (isKlaim) {
+    totalBiaya = totalParts + totalBaterai;
+    labelTotal = `Rp ${totalBiaya.toLocaleString('id-ID')} (Klaim)`;
+  } else if (garansi === 'garansi') {
+    // Jasa 0, tapi Part & Baterai tetap dihitung
+    totalBiaya = totalParts + totalBaterai;
+    labelTotal = `Rp ${totalBiaya.toLocaleString('id-ID')} (Jasa Gratis)`;
+  } else {
+    totalBiaya = jasa + totalParts + totalBaterai;
+    labelTotal = rp(totalBiaya);
+  }
+
   const dp = +document.getElementById('sDp').value || 0;
-  
-  document.getElementById('sTotalBiaya').value = isKlaim ? `Rp ${totalBiaya.toLocaleString('id-ID')} (Klaim)` : (garansi === 'garansi' ? `Rp 0 (garansi)` : rp(totalBiaya));
+  document.getElementById('sTotalBiaya').value = labelTotal;
   document.getElementById('sSisa').value = rp(Math.max(0, totalBiaya - dp));
 }
   
@@ -1287,7 +1300,7 @@ async function simpanServis(){
   const totalBaterai = cartBateraiServis.reduce((s,c) => s + c.harga*c.qty, 0);
   
   const totalKeseluruhan = jasa + totalParts + totalBaterai; 
-  let biayaPelanggan = isKlaim ? (totalParts + totalBaterai) : (garansi === 'garansi' ? 0 : totalKeseluruhan);
+  let biayaPelanggan = isKlaim ? (totalParts + totalBaterai) : (garansi === 'garansi' ? (totalParts + totalBaterai) : totalKeseluruhan);
   const dp = Math.min(biayaPelanggan, +document.getElementById('sDp').value || 0); 
   const sisa = biayaPelanggan - dp;
   
