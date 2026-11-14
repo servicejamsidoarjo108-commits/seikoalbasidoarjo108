@@ -1625,15 +1625,39 @@ async function simpanSemuaServis() {
       }
     }
 
-    // Tambah Poin Pelanggan
-    const namaPelanggan = cartServisGabungan[0].customer;
-    if(namaPelanggan && grandTotal > 0) {
-      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', namaPelanggan).maybeSingle();
-      if(exPel) {
-        const poinDidapat = Math.floor(grandTotal / 10000);
-        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
-      }
-    }
+    // 5. TAMBAH POIN & OTOMATIS DAFTARKAN PELANGGAN BARU
+const namaPelanggan = cartServisGabungan[0].customer;
+const telpPelanggan = cartServisGabungan[0].telp;
+
+if(namaPelanggan && grandTotal > 0) {
+  // 1. Cari pelanggan. Prioritaskan No HP. Jika tidak ada, baru cari Nama.
+  let query = supabaseClient.from('pelanggan').select('*');
+  if (telpPelanggan) {
+    query = query.eq('telp', telpPelanggan);
+  } else {
+    query = query.ilike('nama', namaPelanggan);
+  }
+  
+  const { data: exPel } = await query.maybeSingle();
+  
+  if(exPel) {
+    // JIKA PELANGGAN SUDAH ADA: Update Poin & Tanggal
+    const poinDidapat = Math.floor(grandTotal / 10000);
+    await supabaseClient.from('pelanggan').update({ 
+      poin: (exPel.poin || 0) + poinDidapat, 
+      terakhir_transaksi: nowISO() 
+    }).eq('id', exPel.id);
+  } else {
+    // JIKA PELANGGAN BARU: Daftarkan Otomatis (Seperti Efendi)
+    await supabaseClient.from('pelanggan').insert([{ 
+      id: genId('CUST'), 
+      nama: namaPelanggan, 
+      telp: telpPelanggan || '-', 
+      poin: Math.floor(grandTotal / 10000), 
+      terakhir_transaksi: nowISO() 
+    }]);
+  }
+}
 
     await catatLog('SERVIS_GABUNGAN', `Menyimpan ${cartServisGabungan.length} servis untuk ${namaPelanggan} (Total: ${rp(grandTotal)})`);
     
@@ -2019,18 +2043,36 @@ async function simpanBaterai(){
       }]);
     }
 
-    // 6. TAMBAH POIN PELANGGAN
-    if(nama && metode !== 'hutang' && totalBiaya > 0) {
-      const pel = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase() || x.telp === telp);
-      if(pel) {
-        const poinDidapat = Math.floor(totalBiaya / 10000);
-        await supabaseClient.from('pelanggan').update({ poin: (pel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', pel.id);
-      }
-    }
-
-    await catatLog('GANTI_BATERAI', `Ganti ${cartBaterai.length} baterai untuk ${nama} (Total: ${rp(totalBiaya)})`);
-    
-    flash('Baterai berhasil diproses'); 
+    // 6. TAMBAH POIN & OTOMATIS DAFTARKAN PELANGGAN BARU
+if(nama && metode !== 'hutang' && totalBiaya > 0) {
+  // Cari pelanggan langsung ke database Supabase (bukan dari cache)
+  let query = supabaseClient.from('pelanggan').select('*');
+  if (telp) {
+    query = query.eq('telp', telp);
+  } else {
+    query = query.ilike('nama', nama);
+  }
+  
+  const { data: exPel } = await query.maybeSingle();
+  
+  if(exPel) {
+    // Jika sudah ada, update poinnya
+    const poinDidapat = Math.floor(totalBiaya / 10000);
+    await supabaseClient.from('pelanggan').update({ 
+      poin: (exPel.poin || 0) + poinDidapat, 
+      terakhir_transaksi: nowISO() 
+    }).eq('id', exPel.id);
+  } else {
+    // JIKA BELUM ADA (Pelanggan Baru), DAFTARKAN OTOMATIS
+    await supabaseClient.from('pelanggan').insert([{ 
+      id: genId('CUST'), 
+      nama: nama, 
+      telp: telp || '-', 
+      poin: Math.floor(totalBiaya / 10000), 
+      terakhir_transaksi: nowISO() 
+    }]);
+  }
+} 
     
     // 7. CETAK STRUK GABUNGAN (1 Struk untuk semua item)
     cetakStrukGabunganBaterai(listDataBaterai, nama, telp, totalBiaya);
@@ -3159,9 +3201,9 @@ setHTML('listHutang', hutang.length ? `<table><thead><tr><th>ID</th><th>Supplier
 </tr>`).join('') + '</tbody></table>' : '<div class="empty">Tidak ada hutang</div>');
 
 setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No HP</th><th>Total Belanja</th><th></th></tr></thead><tbody>` + listP.map(p => { 
-  const trxJual = db.jual.filter(t => t.cust_hp === p.telp).reduce((s,t) => s + t.total, 0); 
-  const trxServis = db.servis.filter(t => t.telp === p.telp).reduce((s,t) => s + (t.biaya_pelanggan||0), 0); 
-  const trxBaterai = db.baterai.filter(t => t.telp === p.telp).reduce((s,t) => s + (t.biaya||0), 0); 
+  const trxJual = db.jual.filter(t => (t.cust_hp && t.cust_hp === p.telp) || (t.cust_nama && t.cust_nama.toLowerCase() === p.nama.toLowerCase())).reduce((s,t) => s + t.total, 0); 
+const trxServis = db.servis.filter(t => (t.telp && t.telp === p.telp) || (t.customer && t.customer.toLowerCase() === p.nama.toLowerCase())).reduce((s,t) => s + (t.biaya_pelanggan||0), 0); 
+const trxBaterai = db.baterai.filter(t => (t.telp && t.telp === p.telp) || (t.customer && t.customer.toLowerCase() === p.nama.toLowerCase())).reduce((s,t) => s + (t.biaya||0), 0);  
   const totalBelanja = trxJual + trxServis + trxBaterai; 
   return `<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.telp || '-')}</td><td>${rp(totalBelanja)}<br><small style="color:#f59e0b">⭐ ${p.poin || 0} Poin</small></td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="showCustomerHistory('${esc(p.nama)}', '${esc(p.telp)}')">Riwayat</button>${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="window.open('https://wa.me/'+waPhone('${p.telp}'),'_blank')">WA</button>` : ''}${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${p.id}')">Hapus</button>` : ''}</td></tr>`; 
 }).join('') + '</tbody></table>' : '<div class="empty">Belum ada data pelanggan</div>');
