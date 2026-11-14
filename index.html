@@ -907,53 +907,6 @@ function playBeep() {
     osc.stop(ctx.currentTime + 0.1); 
   } catch (e) { console.log("Audio error:", e); }
 }
-
-// 2. Fungsi Scan Kamera
-let scanStream = null, scanTarget = null, scanInterval = null;
-
-async function scanBarcode(targetId){
-  scanTarget = targetId;
-  
-  // Cek dukungan browser
-  if(!('BarcodeDetector' in window)) {
-    return alert('Browser HP Anda (terutama iPhone/Safari) belum mendukung fitur scan kamera ini secara langsung. Silakan gunakan Google Chrome di Android, atau ketik barcode secara manual.');
-  }
-  
-  try {
-    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }});
-    const video = document.getElementById('scanVideo'); 
-    video.srcObject = scanStream; 
-    await video.play();
-    
-    // TAMPILKAN KAMERA (Gunakan 'flex' bukan 'block' agar ke tengah)
-    document.getElementById('scanArea').style.display = 'flex';
-    
-    const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','qr_code','upc_a','upc_e'] });
-    
-    scanInterval = setInterval(async () => {
-      try { 
-        const codes = await detector.detect(video); 
-        if(codes.length > 0){ 
-          playBeep(); // Mainkan suara Beep
-          document.getElementById(scanTarget).value = codes[0].rawValue; 
-          stopScan(); 
-          flash('Barcode terdeteksi: ' + codes[0].rawValue); 
-        } 
-      } catch(e){}
-    }, 500);
-  } catch(e){ 
-    alert('Tidak bisa akses kamera: Pastikan Anda mengizinkan akses kamera di browser HP Anda.\n\n' + e.message); 
-  }
-}
-
-// 3. Fungsi Tutup Kamera
-function stopScan(){ 
-  if(scanInterval) clearInterval(scanInterval); 
-  if(scanStream) scanStream.getTracks().forEach(t => t.stop()); 
-  document.getElementById('scanArea').style.display = 'none'; 
-  scanStream = null; 
-  scanInterval = null; 
-}
   
 const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
@@ -2547,20 +2500,42 @@ async function simpanAuditGlobal() {
 }
 
 let scanStream = null, scanTarget = null, scanInterval = null;
+// 1. FUNGSI SCAN KAMERA (VERSI BARU DENGAN BEEP)
 async function scanBarcode(targetId){
   scanTarget = targetId;
-  if(!('BarcodeDetector' in window)) return alert('Browser tidak mendukung scan kamera.');
+  if(!('BarcodeDetector' in window)) return alert('Browser tidak mendukung scan kamera. Gunakan Google Chrome di Android.');
   try {
     scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' }});
-    const video = document.getElementById('scanVideo'); video.srcObject = scanStream; await video.play();
-    document.getElementById('scanArea').style.display = 'block';
+    const video = document.getElementById('scanVideo'); 
+    video.srcObject = scanStream; 
+    await video.play();
+    
+    document.getElementById('scanArea').style.display = 'flex'; // Pakai flex agar di tengah
+    
     const detector = new BarcodeDetector({ formats: ['code_128','code_39','ean_13','ean_8','qr_code','upc_a','upc_e'] });
     scanInterval = setInterval(async () => {
-      try { const codes = await detector.detect(video); if(codes.length){ document.getElementById(scanTarget).value = codes[0].rawValue; stopScan(); flash('Barcode: ' + codes[0].rawValue); } } catch(e){}
+      try { 
+        const codes = await detector.detect(video); 
+        if(codes.length){ 
+          playBeep(); // BUNYIKAN SUARA BEEP
+          document.getElementById(scanTarget).value = codes[0].rawValue; 
+          stopScan(); 
+          flash('Barcode: ' + codes[0].rawValue); 
+        } 
+      } catch(e){}
     }, 500);
   } catch(e){ alert('Tidak bisa akses kamera: ' + e.message); }
 }
-function stopScan(){ if(scanInterval) clearInterval(scanInterval); if(scanStream) scanStream.getTracks().forEach(t => t.stop()); document.getElementById('scanArea').style.display = 'none'; scanStream = null; scanInterval = null; }
+
+function stopScan(){ 
+  if(scanInterval) clearInterval(scanInterval); 
+  if(scanStream) scanStream.getTracks().forEach(t => t.stop()); 
+  document.getElementById('scanArea').style.display = 'none'; 
+  scanStream = null; 
+  scanInterval = null; 
+}
+
+// 2. FUNGSI FOTO (JANGAN DIHAPUS!)
 function resizeImage(file) {
   return new Promise((resolve) => {
     const reader = new FileReader();
@@ -2575,8 +2550,15 @@ function resizeImage(file) {
     }; reader.readAsDataURL(file);
   });
 }
-document.getElementById('pFoto')?.addEventListener('change', async function(e) { if (e.target.files.length > 0) { tempFotoBase64 = await resizeImage(e.target.files[0]); } else { tempFotoBase64 = ''; } });
-async function scanFotoAI() {
+
+// 3. EVENT FOTO (JANGAN DIHAPUS!)
+document.getElementById('pFoto')?.addEventListener('change', async function(e) { 
+  if (e.target.files.length > 0) { 
+    tempFotoBase64 = await resizeImage(e.target.files[0]); 
+  } else { 
+    tempFotoBase64 = ''; 
+  } 
+});async function scanFotoAI() {
   const fileInput = document.getElementById('pFoto');
   if (!fileInput.files || fileInput.files.length === 0) return flash('Pilih foto produk terlebih dahulu', 'err');
   const loading = document.getElementById('loadingAI'); loading.style.display = 'flex'; flash('Memproses gambar dengan AI...', 'ok');
