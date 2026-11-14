@@ -1733,6 +1733,67 @@ function cekPoinPelanggan(nama) {
   }
   updateTotalKasir();
 }
+
+  function cekKlaimBaterai(nama) {
+  console.log("=== MULAI CEK KLAIM ===");
+  console.log("Nama yang dicari:", nama);
+  
+  if(!nama) {
+    statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+    return;
+  }
+  const telp = document.getElementById('bHp').value.trim();
+  const tglInput = document.getElementById('bTgl').value; 
+  
+  console.log("Tanggal input form:", tglInput);
+
+  const riwayat = db.baterai
+    .filter(b => b.customer.toLowerCase() === nama.toLowerCase() || (telp && b.telp === telp))
+    .sort((a, b) => new Date(b.tgl_ganti) - new Date(a.tgl_ganti));
+
+  console.log("Data riwayat ditemukan:", riwayat.length, "baris");
+
+  const infoKlaim = document.getElementById('infoKlaimBaterai');
+
+  if (riwayat.length > 0) {
+    const tglGantiLama = new Date(riwayat[0].tgl_ganti);
+    const tglGantiBaru = new Date(tglInput);
+    
+    let selisihBulan = (tglGantiBaru.getFullYear() - tglGantiLama.getFullYear()) * 12 + (tglGantiBaru.getMonth() - tglGantiLama.getMonth());
+    if (tglGantiBaru.getDate() < tglGantiLama.getDate()) selisihBulan--;
+    
+    console.log("Tanggal Lama:", tglGantiLama);
+    console.log("Selisih Bulan:", selisihBulan);
+
+    let pesan = ''; let warnaBg = '';
+
+    if (selisihBulan <= 6) {
+      statusKlaimAktif = { multiplier: 0, tipe: 'Garansi (Gratis)' };
+      pesan = `✅ MASIH GARANSI (Bulan ke-${selisihBulan}). Biaya Baterai: Rp 0`;
+      warnaBg = '#dcfce7';
+    } else if (selisihBulan > 6 && selisihBulan <= 9) {
+      statusKlaimAktif = { multiplier: 0.5, tipe: 'Klaim 50%' };
+      pesan = `⚠️ LEWAT GARANSI (Bulan ke-${selisihBulan}). Biaya Baterai: 50%`;
+      warnaBg = '#fef3c7';
+    } else {
+      statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+      pesan = `❌ LEWAT GARANSI >3 BULAN (Bulan ke-${selisihBulan}). Biaya Baterai: Full`;
+      warnaBg = '#fee2e2';
+    }
+    
+    console.log("Status Klaim diset ke:", statusKlaimAktif);
+
+    if (infoKlaim) {
+      infoKlaim.style.display = 'block';
+      infoKlaim.textContent = pesan;
+      infoKlaim.style.background = warnaBg;
+    }
+  } else {
+    statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+    if (infoKlaim) infoKlaim.style.display = 'none';
+    console.log("Pelanggan tidak punya riwayat. Set ke Normal.");
+  }
+}
   
 // === KAS & KEUANGAN ===
 async function simpanKasManual(){
