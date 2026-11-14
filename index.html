@@ -1200,7 +1200,7 @@ async function hapusProduk(id){
   flash('Dihapus'); 
   tarikSemuaData(); 
 } 
-}
+
   async function prosesRestock(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   const tipe = document.getElementById('rsTipe').value; const id = document.getElementById('rsItem').value; const qty = +document.getElementById('rsQty').value || 0; const hargaBaru = +document.getElementById('rsHarga').value || 0;
