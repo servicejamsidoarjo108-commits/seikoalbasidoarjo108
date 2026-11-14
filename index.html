@@ -425,7 +425,7 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
   <div id="infoKlaimBaterai" style="display:none; padding:10px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:10px;"></div>
   
   <div class="row3">
-    <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5"></div>
+    <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" onblur="cekKlaimBaterai(document.getElementById('bNama').value)">
     <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
     <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiCart()" style="width:100%">+</button></div>
   </div>
@@ -1735,36 +1735,47 @@ function cekPoinPelanggan(nama) {
 }
 
   function cekKlaimBaterai(nama) {
-  console.log("=== MULAI CEK KLAIM ===");
-  console.log("Nama yang dicari:", nama);
-  
-  if(!nama) {
+  const produkInput = document.getElementById('bProduk').value.trim().toLowerCase(); // Ambil nama produk
+
+  if(!nama || !produkInput) {
     statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+    const infoKlaim = document.getElementById('infoKlaimBaterai');
+    if(infoKlaim) infoKlaim.style.display = 'none';
     return;
   }
+
   const telp = document.getElementById('bHp').value.trim();
-  const tglInput = document.getElementById('bTgl').value; 
   
-  console.log("Tanggal input form:", tglInput);
-
-  const riwayat = db.baterai
-    .filter(b => b.customer.toLowerCase() === nama.toLowerCase() || (telp && b.telp === telp))
-    .sort((a, b) => new Date(b.tgl_ganti) - new Date(a.tgl_ganti));
-
-  console.log("Data riwayat ditemukan:", riwayat.length, "baris");
+  // Ambil tanggal dari form. Jika kosong, otomatis pakai tanggal HARI INI
+  let tglInputStr = document.getElementById('bTgl').value;
+  if(!tglInputStr) {
+    tglInputStr = new Date().toISOString().slice(0,10);
+  }
+  const tglGantiBaru = new Date(tglInputStr);
 
   const infoKlaim = document.getElementById('infoKlaimBaterai');
 
+  // CARI RIWAYAT: Nama/HP SAMA **DAN** NAMA PRODUK SAMA
+  const riwayat = db.baterai
+    .filter(b => {
+      const matchCustomer = b.customer.toLowerCase() === nama.toLowerCase() || (telp && b.telp === telp);
+      const matchProduk = b.produk.toLowerCase() === produkInput;
+      return matchCustomer && matchProduk; // Harus keduanya cocok!
+    })
+    .sort((a, b) => new Date(b.tgl_ganti) - new Date(a.tgl_ganti));
+
   if (riwayat.length > 0) {
     const tglGantiLama = new Date(riwayat[0].tgl_ganti);
-    const tglGantiBaru = new Date(tglInput);
     
+    if(isNaN(tglGantiBaru.getTime()) || isNaN(tglGantiLama.getTime())) {
+        statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+        if(infoKlaim) infoKlaim.style.display = 'none';
+        return; 
+    }
+
     let selisihBulan = (tglGantiBaru.getFullYear() - tglGantiLama.getFullYear()) * 12 + (tglGantiBaru.getMonth() - tglGantiLama.getMonth());
     if (tglGantiBaru.getDate() < tglGantiLama.getDate()) selisihBulan--;
     
-    console.log("Tanggal Lama:", tglGantiLama);
-    console.log("Selisih Bulan:", selisihBulan);
-
     let pesan = ''; let warnaBg = '';
 
     if (selisihBulan <= 6) {
@@ -1780,8 +1791,6 @@ function cekPoinPelanggan(nama) {
       pesan = `❌ LEWAT GARANSI >3 BULAN (Bulan ke-${selisihBulan}). Biaya Baterai: Full`;
       warnaBg = '#fee2e2';
     }
-    
-    console.log("Status Klaim diset ke:", statusKlaimAktif);
 
     if (infoKlaim) {
       infoKlaim.style.display = 'block';
@@ -1789,9 +1798,9 @@ function cekPoinPelanggan(nama) {
       infoKlaim.style.background = warnaBg;
     }
   } else {
+    // Jika nama ada tapi produk tidak cocok (misal: Budi bawa Alba padahal riwayatnya Seiko)
     statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
     if (infoKlaim) infoKlaim.style.display = 'none';
-    console.log("Pelanggan tidak punya riwayat. Set ke Normal.");
   }
 }
   
