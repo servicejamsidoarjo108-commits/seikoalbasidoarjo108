@@ -1509,19 +1509,22 @@ async function tambahStokBaterai(){
 function pilihBaterai(){ 
   const id = document.getElementById('bTipeSel').value; 
   const sb = db.stokBaterai.find(x => x.id === id); 
-  
   const info = document.getElementById('bStokInfo'); 
-  if(info) {
-    if(!sb) info.value = '-'; 
-    else info.value = `${sb.stok} unit (min ${sb.min_stok})`; 
-  }
   
-  const biaya = document.getElementById('bBiaya');
-  if(biaya && !biaya.value && sb && sb.harga_jual > 0) {
-    biaya.value = sb.harga_jual; 
+  if(!sb){ 
+    if(info) info.value = '-'; 
+    return; 
+  } 
+  
+  if(info) info.value = `${sb.stok} unit (min ${sb.min_stok})`; 
+  
+  // --- TAMBAHKAN BARIS INI UNTUK MENGEKSEKUSI KLAIM ---
+  const namaPelanggan = document.getElementById('bNama').value.trim();
+  if(namaPelanggan) {
+    cekKlaimBaterai(namaPelanggan);
   }
 }
-
+  
 function addBateraiCart(){
   const produk = document.getElementById('bProduk').value.trim();
   const sbId = document.getElementById('bTipeSel').value;
