@@ -1843,12 +1843,22 @@ function hitungMDR(total, metode){
   
   return 0;
 }
-  function cetakHTML(html) { const win = window.open('', '_blank'); if (!win) return alert("Pop-up diblokir!"); win.document.open(); win.document.write(html); win.document.close(); setTimeout(() => { win.focus(); win.print(); }, 800); }
-function cetakStruk(trxId){
-  const t = db.jual.find(x => x.id === trxId); if(!t) return; const toko = getToko();
-  const tgl = new Date(t.waktu).toLocaleString('id-ID');
-  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%;font-size:11px}td{padding:1px 0}.r{text-align:right}</style></head><body><div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c">${esc(toko.alamat)}<br>WA: ${esc(toko.telp)}</div><hr><div>No: ${t.id}</div><div>${tgl}</div>${t.cust_nama?`<div>Pembeli: ${esc(t.cust_nama)}</div>`:''}<div>Metode: ${t.metode}</div><hr>${t.items.map(i => `<table><tr><td colspan="2">${esc(i.nama)}</td></tr><tr><td>${i.qty} x ${i.harga.toLocaleString('id-ID')}</td><td class="r">${(i.qty*i.harga).toLocaleString('id-ID')}</td></tr></table>`).join('')}<hr><table><tr><td class="b">TOTAL</td><td class="r b">${t.total.toLocaleString('id-ID')}</td></tr><tr><td>BAYAR</td><td class="r">${t.bayar.toLocaleString('id-ID')}</td></tr><tr><td>KEMBALI</td><td class="r">${t.kembali.toLocaleString('id-ID')}</td></tr></table><hr>${toko.syarat_singkat ? `<hr><div style="font-size:8px;text-align:left;line-height:1.1">${esc(toko.syarat_singkat).replace(/\n/g, '<br>')}</div>` : ''}<div class="c" style="margin-top:4px">${esc(toko.footer)}</div></body></html>`;
-  cetakHTML(html);
+  function cetakHTML(html) { 
+  console.log("Mencoba membuka jendela cetak..."); // Cek di F12
+  const win = window.open('', '_blank'); 
+  
+  if (!win) {
+    alert("BROWSER MEMBLOKIR POP-UP!\n\nSilakan izinkan pop-up (Always allow pop-ups) di pengaturan browser Anda untuk situs ini.");
+    return;
+  }
+  
+  win.document.open(); 
+  win.document.write(html); 
+  win.document.close(); 
+  setTimeout(() => { 
+    win.focus(); 
+    win.print(); 
+  }, 800); 
 }
 
 function renderAuditGlobal() {
