@@ -3014,6 +3014,76 @@ function hitungLaporanKeuangan() {
   setVal('ak_keluar_mdr', akKeluarMdr); setVal('ak_keluar_operasional', akKeluarOps); setVal('ak_keluar_restock', akKeluarRestock);
   setVal('ak_total_keluar', totalKeluar); setVal('ak_arus_bersih', arusBersih);
 }
+
+  async function tambahSparePart(){
+  if (!checkRequired(['spNama'])) return flash('Lengkapi kolom wajib', 'err'); 
+  const nama = document.getElementById('spNama').value.trim();
+  const kategori = document.getElementById('spKat').value;
+  const stokInput = +document.getElementById('spStok').value || 0;
+  
+  // Cek apakah sparepart dengan nama sama sudah ada
+  const existing = db.sparePart.find(sp => sp.nama.toLowerCase() === nama.toLowerCase());
+  
+  if (existing) {
+    // Jika ada, tambahkan stoknya
+    const stokBaru = (existing.stok || 0) + stokInput;
+    await supabaseClient.from('sparepart').update({ stok: stokBaru }).eq('id', existing.id);
+    flash(`Stok ${nama} ditambahkan (Total: ${stokBaru})`);
+  } else {
+    // Jika baru
+    await supabaseClient.from('sparepart').insert([{ 
+      id: 'SP' + Date.now(), nama, kategori, 
+      harga_beli: +document.getElementById('spBeli').value || 0, 
+      harga_jual: +document.getElementById('spJual').value || 0, 
+      stok: stokInput, min_stok: +document.getElementById('spMin').value || 0, 
+      updated: nowISO() 
+    }]);
+    flash('Sparepart baru ditambahkan');
+  }
+  
+  await catatLog('TAMBAH_SPAREPART', 'Simpan sparepart: ' + nama);
+  ['spNama','spBeli','spJual'].forEach(id => document.getElementById(id).value = ''); 
+  document.getElementById('spStok').value = 0; 
+  tarikSemuaData();
+}
+
+  async function editSparePart(id){
+  if(!isAdmin()) return flash('Akses ditolak', 'err'); 
+  const sp = db.sparePart.find(x => x.id === id); 
+  if(!sp) return;
+  
+  const nama = prompt('Nama Sparepart:', sp.nama); if(nama === null) return;
+  const beli = prompt('Harga Beli:', sp.harga_beli); if(beli === null) return;
+  const jual = prompt('Harga Jual:', sp.harga_jual); if(jual === null) return;
+  const min = prompt('Min Stok:', sp.min_stok); if(min === null) return;
+  
+  await supabaseClient.from('sparepart').update({ 
+    nama: nama.trim() || sp.nama, 
+    harga_beli: +beli || 0, 
+    harga_jual: +jual || 0, 
+    min_stok: +min || 0 
+  }).eq('id', id);
+  
+  await catatLog('EDIT_SPAREPART', 'Mengubah data sparepart: ' + nama);
+  flash('Sparepart diperbarui'); 
+  tarikSemuaData();
+}
+
+async function hapusSparePart(id){
+  if(!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus', 'err');
+  if(!confirm('Hapus sparepart ini?')) return;
+  
+  const sp = db.sparePart.find(x => x.id === id);
+  const { error } = await supabaseClient.from('sparepart').delete().eq('id', id);
+  
+  if(error) {
+    return flash('Gagal menghapus! Sparepart ini mungkin sudah pernah dipakai di transaksi servis.', 'err');
+  }
+  
+  await catatLog('HAPUS_SPAREPART', 'Menghapus sparepart ID: ' + id);
+  flash('Sparepart dihapus'); 
+  tarikSemuaData();
+}
   
 // === INISIALISASI ===
 if(sessionStorage.getItem('ta_logged') === '1') {
