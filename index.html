@@ -1192,11 +1192,14 @@ function editProduk(id){
 }
 
 async function hapusProduk(id){ 
-  if(!isAdmin() || !confirm('Hapus?')) return; 
+  // Ubah isAdmin() menjadi isPemilik()
+  if(!isPemilik() || !confirm('Hapus?')) return flash('Hanya Pemilik yang bisa menghapus produk', 'err'); 
+  
   await supabaseClient.from('produk').delete().eq('id', id); 
-  await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id); // Pindah ke dalam sini
+  await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id); 
   flash('Dihapus'); 
   tarikSemuaData(); 
+} 
 }
   async function prosesRestock(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
@@ -3012,7 +3015,7 @@ setHTML('listProduk', db.produk.length ? `
     <td style="white-space:nowrap">
       <button class="btn-sm blue" onclick="editProduk('${p.id}')">Edit</button>
       <button class="btn-sm warn" onclick="cetakBarcode('${p.id}')">Barcode</button>
-      ${isAdmin()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}
+      ${isPemilik()?`<button class="btn-sm danger" onclick="hapusProduk('${p.id}')">Hapus</button>`:''}
     </td>
   </tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
   // Render Daftar Spare Part (Dengan Pencarian & Role)
