@@ -812,7 +812,8 @@ let filterServisStatus = '', filterKasJenis = '';
 let tempFotoBase64 = '';
 let tempAuditData = {};
 let filterAuditUser = '';
-let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' }; 
+let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+let currentGroupId = ''; // Untuk menyimpan ID Nota Gabungan
 
 const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
@@ -1363,11 +1364,12 @@ function hitungTotalServis(){
 async function simpanServis(){
   if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi kolom', 'err'); 
   const customer = formatNama(document.getElementById('sNama').value);
-  // Ambil data kondisi fisik
-let listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => cb.value);
-const kondisiLain = document.getElementById('sKondisiLain')?.value.trim();
-if(kondisiLain) listKondisi.push(kondisiLain);
-const kondisiFisik = listKondisi.length > 0 ? listKondisi.join(', ') : '-';
+  
+  let listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => cb.value);
+  const kondisiLain = document.getElementById('sKondisiLain')?.value.trim();
+  if(kondisiLain) listKondisi.push(kondisiLain);
+  const kondisiFisik = listKondisi.length > 0 ? listKondisi.join(', ') : '-';
+  
   const produk = document.getElementById('sProduk').value.trim();
   const garansi = document.getElementById('sGaransi').value; 
   const parentId = document.getElementById('sParentId').value; 
@@ -1382,14 +1384,19 @@ const kondisiFisik = listKondisi.length > 0 ? listKondisi.join(', ') : '-';
   const dp = Math.min(biayaPelanggan, +document.getElementById('sDp').value || 0); 
   const sisa = biayaPelanggan - dp;
   
+  // JIKA BELUM ADA GROUP ID, BUAT BARU
+  if (!currentGroupId) {
+    currentGroupId = genId('GRP');
+  }
+
   const srvId = genId('SRV');
   const data = { 
-  id: srvId, waktu: nowISO(), customer, telp: document.getElementById('sHp').value.trim(), 
-  produk, keluhan: document.getElementById('sKeluhan').value.trim(), catatan: document.getElementById('sCatatan').value.trim(), 
-  garansi: isKlaim ? 'luar' : garansi, jasa, total_parts: totalParts, total_baterai: totalBaterai, 
-  biaya_pelanggan: biayaPelanggan, dp, sisa, paid: sisa <= 0, status: 'antri', is_klaim: isKlaim, parent_id: parentId || null,
-  kondisi_fisik: kondisiFisik // <--- TAMBAHKAN BARIS INI
-};
+    id: srvId, group_id: currentGroupId, waktu: nowISO(), customer, telp: document.getElementById('sHp').value.trim(), 
+    produk, keluhan: document.getElementById('sKeluhan').value.trim(), catatan: document.getElementById('sCatatan').value.trim(), 
+    garansi: isKlaim ? 'luar' : garansi, jasa, total_parts: totalParts, total_baterai: totalBaterai, 
+    biaya_pelanggan: biayaPelanggan, dp, sisa, paid: sisa <= 0, status: 'antri', is_klaim: isKlaim, parent_id: parentId || null,
+    kondisi_fisik: kondisiFisik
+  };
 
   try {
     await supabaseClient.from('servis').insert([data]);
@@ -1404,48 +1411,48 @@ const kondisiFisik = listKondisi.length > 0 ? listKondisi.join(', ') : '-';
       for(const c of cartBateraiServis){ const sb = db.stokBaterai.find(x => x.id === c.id); if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - c.qty }).eq('id', c.id); }
     }
     
-    const metodeDp = document.getElementById('metodeDp').value;
-    if(dp > 0) {
-      await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode: metodeDp, nominal: dp, keterangan: `DP Servis ${srvId}`, sumber: 'servis', ref_id: srvId }]);
-      const mdrDp = hitungMDR(dp, metodeDp);
-      if(mdrDp > 0) {
-        await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode: metodeDp, nominal: mdrDp, keterangan: `MDR ${labelMetode(metodeDp)} DP ${srvId}`, sumber: 'mdr', ref_id: srvId }]);
-      }
-    }
-    
-    const nominalBayarAwal = sisa <= 0 ? biayaPelanggan : dp;
-    if(customer && nominalBayarAwal > 0) {
-      const { data: exPel } = await supabaseClient.from('pelanggan').select('*').ilike('nama', customer).maybeSingle();
-      if(exPel) {
-        const poinDidapat = Math.floor(nominalBayarAwal / 10000);
-        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) + poinDidapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
-      }
-    }
+    // ... (Biarkan kode pencatatan KAS, MDR, dan Poin Pelanggan ASLI Anda di sini) ...
+    // (Salin dari kode lama Anda, tidak perlu diubah)
 
     await catatLog('SERVIS', 'Input Servis ID: ' + srvId + ' (' + customer + ')');
     
-    // --- BUG FIX: MASUKKAN DATA KE MEMORI LOKAL SEBELUM CETAK ---
     data.parts = [...cartServis];
     data.baterai = [...cartBateraiServis];
     db.servis.unshift(data); 
-    // -----------------------------------------------------------
 
     flash(`Servis ${srvId} dibuat`); 
-    cetakNotaServis(srvId); // Sekarang ini akan berfungsi!
+
+    // --- LOGIKA NOTA GABUNGAN ---
+    // Tanya Kasir apakah ada jam lain
+    const tambahLagi = confirm(`✅ Servis ${produk} berhasil disimpan.\n\nApakah pelanggan (${customer}) membawa jam lain?`);
     
-    batalKlaimGaransi(); 
-    cartServis = []; 
-    cartBateraiServis = []; 
+    if (tambahLagi) {
+      // JIKA IYA: Bersihkan form, TAPI biarkan Nama & HP & currentGroupId
+      document.getElementById('sProduk').value = '';
+      document.getElementById('sKeluhan').value = '';
+      document.getElementById('sCatatan').value = '';
+      document.getElementById('sJasa').value = 0;
+      document.getElementById('sDp').value = 0;
+      document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
+      if(document.getElementById('sKondisiLain')) document.getElementById('sKondisiLain').value = '';
+      cartServis = []; cartBateraiServis = [];
+      renderServisCart(); renderBateraiServisCart(); hitungTotalServis();
+      window.scrollTo(0, 0);
+      flash('Silakan input jam berikutnya');
+    } else {
+      // JIKA SELESAI: Cetak Nota Gabungan & Reset Semua
+      batalKlaimGaransi(); 
+      cartServis = []; cartBateraiServis = [];
+      ['sNama','sHp','sProduk','sKeluhan','sCatatan'].forEach(x => document.getElementById(x).value = ''); 
+      document.getElementById('sJasa').value = 0; document.getElementById('sDp').value = 0;
+      document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
+      renderServisCart(); renderBateraiServisCart(); hitungTotalServis(); 
+      
+      // Panggil fungsi cetak gabungan
+      cetakNotaGabunganServis(currentGroupId); 
+      currentGroupId = ''; // Reset Group ID untuk pelanggan selanjutnya
+    }
     
-    ['sNama','sHp','sProduk','sKeluhan','sCatatan'].forEach(x => document.getElementById(x).value = ''); 
-    document.getElementById('sJasa').value = 0; 
-    document.getElementById('sDp').value = 0;
-    document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
-if(document.getElementById('sKondisiLain')) document.getElementById('sKondisiLain').value = '';
-    
-    renderServisCart(); 
-    renderBateraiServisCart(); 
-    hitungTotalServis(); 
     tarikSemuaData();
   } catch(e) { 
     flash('Gagal: ' + e.message, 'err'); 
@@ -1683,52 +1690,65 @@ async function simpanBaterai(){
   const tglExpired = d.toISOString().slice(0,10);
   
   const totalBiaya = cartBaterai.reduce((s,c) => s + (c.harga * c.qty), 0);
-const totalHargaNormal = cartBaterai.reduce((s,c) => {
-  const sb = db.stokBaterai.find(x => x.id === c.sbId);
-  return s + ((sb ? sb.harga_jual : 0) * c.qty);
-}, 0);
+  const totalHargaNormal = cartBaterai.reduce((s,c) => {
+    const sb = db.stokBaterai.find(x => x.id === c.sbId);
+    return s + ((sb ? sb.harga_jual : 0) * c.qty);
+  }, 0);
 
-// Jika ada potongan (Klaim), Minta PIN
-if (totalBiaya < totalHargaNormal) {
-  const pin = prompt(`🔒 OTORISASI KLAIM\n\nHarga Normal: ${rp(totalHargaNormal)}\nDibayar: ${rp(totalBiaya)}\n\nKasir tidak bisa memberi harga klaim tanpa persetujuan.\nMasukkan PIN Admin/Pemilik:`);
-  if (pin === null) return flash('Dibatalkan', 'err');
+  // 1. HITUNG MDR DI SINI (Mengobati error mdr is not defined)
+  const mdr = hitungMDR(totalBiaya, metode);
+
+  // 2. Jika ada potongan (Klaim), Minta PIN
+  if (totalBiaya < totalHargaNormal) {
+    const pin = prompt(`🔒 OTORISASI KLAIM\n\nHarga Normal: ${rp(totalHargaNormal)}\nDibayar: ${rp(totalBiaya)}\n\nKasir tidak bisa memberi harga klaim tanpa persetujuan.\nMasukkan PIN Admin/Pemilik:`);
+    if (pin === null) return flash('Dibatalkan', 'err');
+    
+    const isValid = getUsers().some(u => (u.role === 'admin' || u.role === 'pemilik') && u.pin === pin);
+    if (!isValid) return flash('PIN Salah!', 'err');
+    
+    await catatLog('OTORISASI_KLAIM', `Admin menyetujui klaim baterai ${nama}. Biaya: ${rp(totalBiaya)}`);
+  }
   
-  const isValid = getUsers().some(u => (u.role === 'admin' || u.role === 'pemilik') && u.pin === pin);
-  if (!isValid) return flash('PIN Salah!', 'err');
-  
-  await catatLog('OTORISASI_KLAIM', `Admin menyetujui klaim baterai ${nama}. Biaya: ${rp(totalBiaya)}`);
-}
   try {
+    // 3. BUAT GROUP ID UNTUK NOTA GABUNGAN
+    const groupId = genId('GRP-BAT');
+    const listDataBaterai = []; // Simpan data sementara untuk dicetak
+
     for (const item of cartBaterai) {
       const batId = genId('BAT');
       const data = { 
-  id: batId, waktu: nowISO(), customer: nama, telp: telp, 
-  produk: item.produk, tipe: item.tipe, sb_id: item.sbId, 
-  tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: tglExpired, 
-  biaya: item.harga * item.qty, metode: metode, paid: metode !== 'hutang',
-  jenis_klaim: item.jenisKlaim // <--- TAMBAHKAN BARIS INI
-};
+        id: batId, group_id: groupId, waktu: nowISO(), customer: nama, telp: telp, 
+        produk: item.produk, tipe: item.tipe, sb_id: item.sbId, 
+        tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: tglExpired, 
+        biaya: item.harga * item.qty, metode: metode, paid: metode !== 'hutang',
+        jenis_klaim: item.jenisKlaim 
+      };
+      
       await supabaseClient.from('baterai').insert([data]);
+      listDataBaterai.push(data); // Masukkan ke list cetak
 
       const sb = db.stokBaterai.find(x => x.id === item.sbId);
       if(sb) await supabaseClient.from('stok_baterai').update({ stok: sb.stok - item.qty }).eq('id', item.sbId);
     }
 
+    // 4. CATAT KAS MASUK
     if(metode !== 'hutang' && totalBiaya > 0) {
       await supabaseClient.from('kas').insert([{ 
         id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, 
         nominal: totalBiaya, keterangan: `Ganti Baterai (${cartBaterai.length} item) - ${nama}`, 
-        sumber: 'baterai', ref_id: genId('BAT') 
+        sumber: 'baterai', ref_id: groupId 
       }]);
     }
     
+    // 5. CATAT MDR (Biaya Bank) JIKA ADA
     if(mdr > 0) {
       await supabaseClient.from('kas').insert([{ 
         id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode, nominal: mdr, 
-        keterangan: `MDR ${labelMetode(metode)} Baterai - ${nama}`, sumber: 'mdr', ref_id: genId('BAT') 
+        keterangan: `MDR ${labelMetode(metode)} Baterai - ${nama}`, sumber: 'mdr', ref_id: groupId 
       }]);
     }
 
+    // 6. TAMBAH POIN PELANGGAN
     if(nama && metode !== 'hutang' && totalBiaya > 0) {
       const pel = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase() || x.telp === telp);
       if(pel) {
@@ -1740,6 +1760,11 @@ if (totalBiaya < totalHargaNormal) {
     await catatLog('GANTI_BATERAI', `Ganti ${cartBaterai.length} baterai untuk ${nama} (Total: ${rp(totalBiaya)})`);
     
     flash('Baterai berhasil diproses'); 
+    
+    // 7. CETAK STRUK GABUNGAN (1 Struk untuk semua item)
+    cetakStrukGabunganBaterai(listDataBaterai, nama, telp, totalBiaya);
+    
+    // 8. RESET FORM
     cartBaterai = []; 
     renderBateraiCart();
     ['bNama','bHp','bProduk'].forEach(id => document.getElementById(id).value = ''); 
@@ -1749,7 +1774,6 @@ if (totalBiaya < totalHargaNormal) {
     flash('Gagal: ' + e.message, 'err'); 
   }
 }
-
 async function hapusBaterai(id){
   if(!isPemilik() || !confirm('Hapus data riwayat baterai ini?')) return;
   await supabaseClient.from('baterai').delete().eq('id', id);
@@ -2390,6 +2414,95 @@ function cetakNotaServis(id){
   
   cetakHTML(html);
 }
+  
+  function cetakNotaGabunganServis(groupId) {
+  const toko = getToko();
+  const listServis = db.servis.filter(s => s.group_id === groupId);
+  if(listServis.length === 0) return;
+
+  const customer = listServis[0].customer;
+  const telp = listServis[0].telp;
+  const totalBiaya = listServis.reduce((s, x) => s + x.biaya_pelanggan, 0);
+  const totalSisa = listServis.reduce((s, x) => s + x.sisa, 0);
+  
+  const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${listServis[0].id}`; // QR mengarah ke barang pertama
+  const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(linkLacak)}`;
+
+  let itemsHTML = '';
+  listServis.forEach((s, idx) => {
+    itemsHTML += `
+      <div style="margin-bottom:6px; font-size:10px; border-bottom:1px dotted #ccc; padding-bottom:4px;">
+        <b>${idx + 1}. ${s.produk}</b><br>
+        No: ${s.id} | Keluhan: ${s.keluhan || '-'}<br>
+        Biaya: Rp ${(s.biaya_pelanggan||0).toLocaleString('id-ID')}
+      </div>
+    `;
+  });
+
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+  <div class="c b">NOTA SERVIS GABUNGAN</div><hr>
+  <div>Pelanggan: ${esc(customer)}</div>
+  <div>No HP: ${esc(telp)}</div>
+  <div>Tgl: ${new Date().toLocaleString('id-ID')}</div><hr>
+  
+  <div class="b">Daftar Barang (${listServis.length} item):</div>
+  ${itemsHTML}
+  <hr>
+  
+  <table style="width:100%">
+    <tr><td class="b">TOTAL BIAYA</td><td class="b" style="text-align:right">Rp ${totalBiaya.toLocaleString('id-ID')}</td></tr>
+    <tr><td class="b">SISA TAGIHAN</td><td class="b" style="text-align:right">Rp ${totalSisa.toLocaleString('id-ID')}</td></tr>
+  </table>
+  <hr>
+  
+  <div class="c" style="margin-top: 8px;">
+    <div style="font-size:9px;">Scan untuk lacak semua servis:</div>
+    <img src="${qrCodeUrl}" width="80" height="80">
+  </div>
+  <div class="c" style="font-size:9px; margin-top:4px;">
+    ${linkLacak}
+  </div>
+  <div class="c" style="margin-top:6px">Simpan nota ini</div></body></html>`;
+  
+  cetakHTML(html);
+}
+
+  function cetakStrukGabunganBaterai(listData, nama, telp, totalBiaya) {
+  const toko = getToko();
+  
+  let itemsHTML = '';
+  listData.forEach((b, idx) => {
+    itemsHTML += `
+      <tr>
+        <td style="font-size:10px; padding:2px 0;">${idx + 1}. ${esc(b.produk)}</td>
+        <td style="font-size:10px; text-align:center;">${esc(b.tipe)}</td>
+        <td style="font-size:10px; text-align:right;">${(b.biaya||0).toLocaleString('id-ID')}</td>
+      </tr>
+    `;
+  });
+
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+  <div class="c b">STRUK BATERAI</div><hr>
+  <div>Pelanggan: ${esc(nama)}</div>
+  <div>Tgl: ${new Date().toLocaleDateString('id-ID')}</div><hr>
+  
+  <table>
+    <tr><th style="text-align:left;font-size:10px">Jam</th><th style="font-size:10px">Baterai</th><th style="text-align:right;font-size:10px">Harga</th></tr>
+    ${itemsHTML}
+  </table><hr>
+  
+  <table>
+    <tr><td class="b">TOTAL (${listData.length} item)</td><td class="b" style="text-align:right">Rp ${totalBiaya.toLocaleString('id-ID')}</td></tr>
+  </table><hr>
+  
+  <div class="c" style="font-size:9px;">Garansi baterai s/d ${new Date(listData[0].tgl_expired).toLocaleDateString('id-ID')}<br><br>${esc(toko.footer)}</div>
+  </body></html>`;
+  
+  cetakHTML(html);
+}
+  
 function cetakKartuGaransiServis(id){
   const s = db.servis.find(x => x.id === id); if(!s || !s.tgl_garansi_servis_sampai) return flash('Belum ada garansi', 'err'); const toko = getToko();
   const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px;text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body><div class="b" style="font-size:12px">KARTU GARANSI SERVIS</div><div class="b">${esc(toko.nama)}</div><hr><div style="text-align:left">No: ${s.id}<br>Pelanggan: ${esc(s.customer)}<br>Jam: ${esc(s.produk)}<br>Selesai: ${new Date(s.tgl_selesai||s.waktu).toLocaleDateString('id-ID')}<br><span class="b">Garansi s/d: ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')}</span></div><hr><div class="b">Simpan kartu ini</div></body></html>`;
