@@ -334,6 +334,19 @@ body.role-kasir #wrapHargaBeliProduk, body.role-kasir #cardTambahSparePart, body
     <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" placeholder="Budi"></div><div><label>No HP</label><input id="sHp" placeholder="0812..."></div></div>
     <div class="row"><div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div><div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div></div>
     <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
+    <label>Kondisi Fisik Saat Diterima (Centang jika ada)</label>
+<div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:10px; background:#f8fafc; padding:10px; border-radius:8px; font-size:12px;">
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Kaca Baret" style="width:auto; margin:0;"> Kaca Baret</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Kaca Retak" style="width:auto; margin:0;"> Kaca Retak</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Case Lecet" style="width:auto; margin:0;"> Case Lecet</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Dial Noda" style="width:auto; margin:0;"> Dial Noda</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Jarum Lepas" style="width:auto; margin:0;"> Jarum Lepas</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Crown Patah" style="width:auto; margin:0;"> Crown Patah</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Tanpa Strap" style="width:auto; margin:0;"> Tanpa Strap</label>
+  <label style="display:flex; align-items:center; gap:6px; margin-bottom:0;"><input type="checkbox" class="chk-kondisi" value="Mesin Mati" style="width:auto; margin:0;"> Mesin Mati</label>
+</div>
+<label>Catatan Kondisi Lainnya</label>
+<input id="sKondisiLain" placeholder="Contoh: Ada goresan di belakang, bau parfum" style="margin-bottom:10px">
     <div class="row">
       <div><label>Status Garansi</label><select id="sGaransi" onchange="hitungTotalServis()"><option value="garansi">Dalam Garansi (gratis)</option><option value="luar">Luar Garansi (bayar)</option></select></div>
       <div><label>Biaya Jasa (Rp)</label><input type="number" id="sJasa" value="0" min="0" oninput="hitungTotalServis()"></div>
@@ -1293,7 +1306,12 @@ function hitungTotalServis(){
   
 async function simpanServis(){
   if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi kolom', 'err'); 
-  const customer = formatNama(document.getElementById('sNama').value); 
+  const customer = formatNama(document.getElementById('sNama').value);
+  // Ambil data kondisi fisik
+let listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => cb.value);
+const kondisiLain = document.getElementById('sKondisiLain')?.value.trim();
+if(kondisiLain) listKondisi.push(kondisiLain);
+const kondisiFisik = listKondisi.length > 0 ? listKondisi.join(', ') : '-';
   const produk = document.getElementById('sProduk').value.trim();
   const garansi = document.getElementById('sGaransi').value; 
   const parentId = document.getElementById('sParentId').value; 
@@ -1310,11 +1328,12 @@ async function simpanServis(){
   
   const srvId = genId('SRV');
   const data = { 
-    id: srvId, waktu: nowISO(), customer, telp: document.getElementById('sHp').value.trim(), 
-    produk, keluhan: document.getElementById('sKeluhan').value.trim(), catatan: document.getElementById('sCatatan').value.trim(), 
-    garansi: isKlaim ? 'luar' : garansi, jasa, total_parts: totalParts, total_baterai: totalBaterai, 
-    biaya_pelanggan: biayaPelanggan, dp, sisa, paid: sisa <= 0, status: 'antri', is_klaim: isKlaim, parent_id: parentId || null
-  };
+  id: srvId, waktu: nowISO(), customer, telp: document.getElementById('sHp').value.trim(), 
+  produk, keluhan: document.getElementById('sKeluhan').value.trim(), catatan: document.getElementById('sCatatan').value.trim(), 
+  garansi: isKlaim ? 'luar' : garansi, jasa, total_parts: totalParts, total_baterai: totalBaterai, 
+  biaya_pelanggan: biayaPelanggan, dp, sisa, paid: sisa <= 0, status: 'antri', is_klaim: isKlaim, parent_id: parentId || null,
+  kondisi_fisik: kondisiFisik // <--- TAMBAHKAN BARIS INI
+};
 
   try {
     await supabaseClient.from('servis').insert([data]);
@@ -1364,7 +1383,9 @@ async function simpanServis(){
     
     ['sNama','sHp','sProduk','sKeluhan','sCatatan'].forEach(x => document.getElementById(x).value = ''); 
     document.getElementById('sJasa').value = 0; 
-    document.getElementById('sDp').value = 0; 
+    document.getElementById('sDp').value = 0;
+    document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
+if(document.getElementById('sKondisiLain')) document.getElementById('sKondisiLain').value = '';
     
     renderServisCart(); 
     renderBateraiServisCart(); 
@@ -2266,7 +2287,17 @@ function cetakNotaServis(id){
   const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}`;
   const qrCodeUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(linkLacak)}`;
   
-  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body><div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c">${esc(toko.alamat)}</div><div class="c b">NOTA SERVIS</div><hr><div>No: ${s.id}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr><div>Produk: ${esc(s.produk)}</div><div>Keluhan: ${esc(s.keluhan||'-')}</div><hr><div class="b">Spare Part:</div><div>${partsList}</div><hr><table style="width:100%"><tr><td>Jasa</td><td style="text-align:right">${rp(s.jasa||0)}</td></tr><tr><td>Spare part</td><td style="text-align:right">${rp(s.total_parts||0)}</td></tr><tr><td>Baterai</td><td style="text-align:right">${rp(s.total_baterai||0)}</td></tr><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${rp(s.biaya_pelanggan)}</td></tr></table><hr>
+  // KONDISI FISIK DIMASUKKAN KE DALAM SINI
+  const kondisiHTML = (s.kondisi_fisik && s.kondisi_fisik !== '-') 
+    ? `<div style="font-size:9px; margin:2px 0;"><b>Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</div>` 
+    : '';
+
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body><div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c">${esc(toko.alamat)}</div><div class="c b">NOTA SERVIS</div><hr><div>No: ${s.id}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr><div>Produk: ${esc(s.produk)}</div><div>Keluhan: ${esc(s.keluhan||'-')}</div>
+  
+  <!-- KONDISI FISIK DITARUH DI SINI -->
+  ${kondisiHTML}
+  
+  <hr><div class="b">Spare Part:</div><div>${partsList}</div><hr><table style="width:100%"><tr><td>Jasa</td><td style="text-align:right">${rp(s.jasa||0)}</td></tr><tr><td>Spare part</td><td style="text-align:right">${rp(s.total_parts||0)}</td></tr><tr><td>Baterai</td><td style="text-align:right">${rp(s.total_baterai||0)}</td></tr><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${rp(s.biaya_pelanggan)}</td></tr></table><hr>
   
   <!-- QR CODE & LINK LACAK -->
   <div class="c" style="margin-top: 8px;">
@@ -2547,10 +2578,10 @@ setHTML('listServis', srvFiltered.length ? srvFiltered.map(s => {
   const btnKartuGaransi = s.tgl_garansi_servis_sampai ? `<button class="btn-sm blue" onclick="cetakKartuGaransiServis('${s.id}')">Kartu</button><button class="btn-sm ok" onclick="generateDigitalWarranty('${s.id}', 'servis')">📸 E-Warranty</button>` : '';
   const btnKlaim = bisaKlaimGaransi(s) ? `<button class="btn-sm warn" onclick="mulaiKlaimGaransi('${s.id}')">Klaim (${2 - (s.klaim_count||0)}x)</button>` : '';
 
-  return `<div class="servis-item ${s.status}"><h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4><p>Barang: ${esc(s.produk)}</p><p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Status</button><button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>${btnBayar}${btnStruk}${btnKartuGaransi}${btnKlaim}${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}</div></div>`;
+  return `<div class="servis-item ${s.status}"><h4>${s.id} - ${esc(s.customer)} <span class="badge ${s.status}">${s.status.toUpperCase()}</span></h4><p>Barang: ${esc(s.produk)}</p>${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<p style="color:#dc2626; font-size:11px; margin-top:2px;"><b>⚠️ Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</p>` : ''}<p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}<div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm blue" onclick="ubahStatusServis('${s.id}')">Status</button><button class="btn-sm ghost" onclick="cetakNotaServis('${s.id}')">Nota</button>${s.telp?`<button class="btn-sm ok" onclick="waServisMasuk('${s.id}')">WA Terima</button>`:''}${btnBayar}${btnStruk}${btnKartuGaransi}${btnKlaim}${s.telp?`<button class="btn-sm warn" onclick="waServisSelesai('${s.id}')">WA</button>`:''}${isAdmin()?`<button class="btn-sm danger" onclick="hapusServis('${s.id}')">Hapus</button>`:''}</div></div>`;
 }).join('') : '<div class="empty">Tidak ada servis</div>');
 
-if(document.getElementById('hasilCekGaransi')) renderCekGaransi();
+if(document.getElementById('hasilCekGaransi')) renderCekGaransi(); 
   
   // 6. Render Riwayat Baterai
 const cariB = (document.getElementById('bCari')?.value || '').toLowerCase(); 
@@ -3207,6 +3238,19 @@ async function hapusSparePart(id){
     if(saved && Array.isArray(saved) && saved.length > 0) return saved; 
   } catch(e) {}
   return [{ user: 'admin', pin: 'Admin123!', role: 'admin' }]; // PIN default
+}
+
+  function waServisMasuk(id) {
+  const s = db.servis.find(x => x.id === id); 
+  if(!s || !s.telp) return alert('Nomor HP tidak ada');
+  
+  const toko = getToko(); 
+  const garis = '=========================';
+  const linkLacak = `https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html?id=${s.id}`;
+  
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\n${garis}\n*TANDA TERIMA SERVIS*\n${garis}\nHalo *${s.customer}*, jam Anda telah kami terima.\n\n*No Servis:* ${s.id}\n*Barang:* ${s.produk}\n*Keluhan:* ${s.keluhan || '-'}\n\n*⚠️ KONDISI AWAL (Telah Dicek):*\n_${s.kondisi_fisik || 'Normal / Tidak ada catatan'}._\n\nMohon simpan pesan ini. Jika ada kondisi yang tidak tercatat, segera hubungi kami.\n\n🔍 *Lacak status servis:*\n${linkLacak}\n${garis}\n${toko.footer}`;
+  
+  openWA(s.telp, text);
 }
   
 // === INISIALISASI ===
