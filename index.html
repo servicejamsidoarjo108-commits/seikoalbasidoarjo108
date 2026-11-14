@@ -456,33 +456,51 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   </div>
 
   <!-- 8. PEMBAYARAN DP GABUNGAN (Muncul saat ada list) -->
-  <div class="card" id="cardPembayaranServis" style="display:none; border: 1px solid var(--border);">
-    <h3>💳 Pembayaran & DP</h3>
-    <div class="row">
-      <div>
-        <label>Total Biaya (Semua Jam)</label>
-        <input id="sTotalBiayaGroup" readonly style="font-size:18px;font-weight:700;text-align:right; color:var(--p);">
-      </div>
-      <div>
-        <label>DP Diterima (Rp)</label>
-        <input type="number" id="sDpGroup" value="0" min="0" oninput="updateTotalGroupServis()">
-      </div>
+  <!-- PEMBAYARAN DP GABUNGAN -->
+<div class="card" id="cardPembayaranServis" style="display:none; border: 1px solid var(--border);">
+  <h3>💳 Pembayaran & DP</h3>
+  <div class="row">
+    <div>
+      <label>Total Biaya (Semua Jam)</label>
+      <input id="sTotalBiayaGroup" readonly style="font-size:18px;font-weight:700;text-align:right; color:var(--p);">
     </div>
-    <div class="row">
-      <div>
-        <label>Metode DP</label>
-        <select id="metodeDpGroup">
-          <option value="tunai">Tunai</option>
-          <option value="transfer">Transfer</option>
-          <option value="qris">QRIS</option>
-        </select>
-      </div>
-      <div>
-        <label>Sisa Tagihan</label>
-        <input id="sSisaGroup" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626;">
-      </div>
+    <div>
+      <label>DP Diterima (Rp)</label>
+      <input type="number" id="sDpGroup" value="0" min="0" oninput="updateTotalGroupServis()">
     </div>
   </div>
+  <div class="row">
+    <div>
+      <label>Metode DP</label>
+      <!-- PILIHAN METODE LENGKAP SEPERTI KASIR -->
+      <select id="metodeDpGroup" onchange="updateTotalGroupServis()">
+        <option value="tunai">Tunai</option>
+        <option value="transfer">Transfer</option>
+        <option value="qris">QRIS</option>
+        <optgroup label="Kartu Kredit">
+          <option value="edc_cc_bca">BCA Card (1,5%)</option>
+          <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
+          <option value="edc_cc_amex">Amex (3,25%)</option>
+        </optgroup>
+        <optgroup label="Kartu Debit">
+          <option value="edc_dc_bca">BCA (0,15%)</option>
+          <option value="edc_dc_lain">Bank Lain (1%)</option>
+          <option value="edc_dc_maestro">Maestro (2%)</option>
+        </optgroup>
+      </select>
+    </div>
+    <div>
+      <label>Sisa Tagihan</label>
+      <input id="sSisaGroup" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626;">
+    </div>
+  </div>
+  
+  <!-- BARIS INFO MDR (Muncul jika ada biaya bank) -->
+  <div class="row" id="mdrDpInfo" style="display:none; color:#dc2626; font-size:14px; margin-top:5px; background:rgba(220, 38, 38, 0.1); padding:8px; border-radius:6px;">
+    <span>Biaya Bank (MDR)</span>
+    <span id="mdrDpValue">-Rp 0</span>
+  </div>
+</div>
   
   <!-- 9. STICKY BOTTOM BAR -->
   <div class="sticky-bottom-bar">
@@ -1481,12 +1499,24 @@ function updateTotalGroupServis() {
   const grandTotal = cartServisGabungan.reduce((s, item) => s + item.biayaPelanggan, 0);
   const dpGroup = +document.getElementById('sDpGroup').value || 0;
   const sisaGroup = Math.max(0, grandTotal - dpGroup);
+  const metodeDp = document.getElementById('metodeDpGroup').value;
 
   document.getElementById('sTotalBiayaGroup').value = rp(grandTotal);
   document.getElementById('sSisaGroup').value = rp(sisaGroup);
   document.getElementById('sTotalBiayaDisplay').innerText = rp(grandTotal);
-}
 
+  // HITUNG & TAMPILKAN MDR
+  const mdrDp = hitungMDR(dpGroup, metodeDp);
+  const elMdr = document.getElementById('mdrDpInfo');
+  
+  if (mdrDp > 0) {
+    elMdr.style.display = 'flex';
+    document.getElementById('mdrDpValue').textContent = '-' + rp(mdrDp);
+  } else {
+    elMdr.style.display = 'none';
+  }
+}
+  
 // FUNGSI 4: HAPUS ITEM DARI LIST
 function hapusItemKeranjangServis(index) {
   cartServisGabungan.splice(index, 1);
