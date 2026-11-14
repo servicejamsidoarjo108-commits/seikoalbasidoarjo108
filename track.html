@@ -62,58 +62,84 @@
 <script>
   if (!window.supabase) {
     document.getElementById('errorBox').style.display = 'block';
-    document.getElementById('errorBox').innerText = 'Gagal memuat library Supabase. Periksa koneksi internet Anda.';
+    document.getElementById('errorBox').innerText = 'Gagal memuat library Supabase.';
   } else {
     const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
     const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     async function prosesLacak() {
-      const id = document.getElementById('inputSrv').value.trim();
-      if(!id) return alert('Masukkan nomor servis terlebih dahulu!');
+      const keyword = document.getElementById('inputSrv').value.trim();
+      const urlParams = new URLSearchParams(window.location.search);
+      const groupIdDariUrl = urlParams.get('group_id');
+      const idDariUrl = urlParams.get('id');
+
+      if (!keyword && !groupIdDariUrl && !idDariUrl) return alert('Masukkan nomor servis terlebih dahulu!');
 
       const btn = document.getElementById('btnLacak');
       btn.innerText = 'Mencari...';
       btn.disabled = true;
+      document.getElementById('errorBox').style.display = 'none';
 
       try {
-        const { data, error } = await supabaseClient.rpc('lacak_servis', { srv_id: id });
+        // GUNAKAN RPC AGAR AMAN (Hanya mengambil data yang diminta)
+        const { data, error } = await supabaseClient.rpc('lacak_servis', { 
+            p_id: (keyword || idDariUrl) ? (keyword || idDariUrl) : null, 
+            p_group_id: (groupIdDariUrl && !keyword) ? groupIdDariUrl : null 
+        });
+        
         if (error) throw new Error(error.message);
         
         if (data && data.length > 0) {
-          const s = data[0];
-          document.getElementById('resId').textContent = s.id;
-          document.getElementById('resNama').textContent = s.customer;
-          document.getElementById('resProduk').textContent = s.produk;
-          document.getElementById('resKeluhan').textContent = s.keluhan || '-';
+          const customer = data[0].customer;
+          document.getElementById('resNamaUtama').innerHTML = `Pelanggan: <b>${customer}</b> <br><span style="font-size:12px;color:#94a3b8">Total: ${data.length} Barang</span>`;
           
-          const badge = document.getElementById('resStatus');
-          badge.textContent = s.status.toUpperCase();
-          badge.className = 'badge ' + s.status;
+          let htmlList = '';
+          let grandTotal = 0;
+          let grandSisa = 0;
 
-          // Rincian Biaya
-          document.getElementById('resJasa').textContent = 'Rp ' + (s.jasa || 0).toLocaleString('id-ID');
-          document.getElementById('resParts').textContent = 'Rp ' + (s.total_parts || 0).toLocaleString('id-ID');
-          document.getElementById('resBaterai').textContent = 'Rp ' + (s.total_baterai || 0).toLocaleString('id-ID');
-          document.getElementById('resTotal').textContent = 'Rp ' + (s.biaya_pelanggan || 0).toLocaleString('id-ID');
+          data.forEach((s, index) => {
+            grandTotal += (s.biaya_pelanggan || 0);
+            grandSisa += (s.sisa || 0);
+
+            let warnaBorder = '#fbbf24'; 
+            if (s.status === 'proses') warnaBorder = '#3b82f6';
+            if (s.status === 'selesai') warnaBorder = '#16a34a';
+            if (s.status === 'diambil') warnaBorder = '#94a3b8';
+
+            let statusBayar = s.paid ? `<span style="color:#16a34a;font-weight:bold;font-size:12px;">LUNAS</span>` : `<span style="color:#f87171;font-weight:bold;font-size:12px;">Sisa: Rp ${(s.sisa||0).toLocaleString('id-ID')}</span>`;
+
+            htmlList += `
+              <div class="item-servis" style="border-left-color: ${warnaBorder}">
+                <div class="header-item">
+                  <span class="judul">${index + 1}. ${s.produk}</span>
+                  <span class="badge ${s.status}">${s.status}</span>
+                </div>
+                <div class="detail">No: <b>${s.id}</b> | Keluhan: ${s.keluhan || '-'}</div>
+                ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<div class="detail" style="color:#f87171;">⚠️ Kondisi: ${s.kondisi_fisik}</div>` : ''}
+                <div class="row" style="margin-top:5px; margin-bottom:0; border-top:1px dashed #334155; padding-top:5px;">
+                  <span class="label">Biaya: Rp ${(s.biaya_pelanggan||0).toLocaleString('id-ID')}</span>
+                  ${statusBayar}
+                </div>
+              </div>
+            `;
+          });
+
+          document.getElementById('listBarangContainer').innerHTML = htmlList;
+          document.getElementById('resTotal').textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
           
-          if (s.sisa > 0) {
-            document.getElementById('resSisa').textContent = 'Rp ' + s.sisa.toLocaleString('id-ID');
+          const elSisa = document.getElementById('resSisa');
+          if (grandSisa > 0) {
+            elSisa.textContent = 'Rp ' + grandSisa.toLocaleString('id-ID');
+            elSisa.style.color = '#f87171';
           } else {
-            document.getElementById('resSisa').textContent = 'LUNAS';
-            document.getElementById('resSisa').style.color = '#16a34a'; // Hijau jika lunas
-          }
-
-          if (s.tgl_garansi_servis_sampai) {
-            document.getElementById('rowGaransi').style.display = 'flex';
-            document.getElementById('resGaransi').textContent = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID');
-          } else {
-            document.getElementById('rowGaransi').style.display = 'none';
+            elSisa.textContent = 'LUNAS';
+            elSisa.style.color = '#16a34a';
           }
 
           document.getElementById('hasil').style.display = 'block';
         } else {
-          alert('Nomor Servis tidak ditemukan. Pastikan penulisan sudah benar.');
+          alert('Data Servis tidak ditemukan. Pastikan penulisan sudah benar.');
           document.getElementById('hasil').style.display = 'none';
         }
       } catch (err) {
@@ -129,12 +155,9 @@
       if (e.key === 'Enter') prosesLacak();
     });
 
-    // Otomatis cari jika ada parameter ?id= di URL
     const urlParams = new URLSearchParams(window.location.search);
-    const idDariUrl = urlParams.get('id');
-    if (idDariUrl) {
-      document.getElementById('inputSrv').value = idDariUrl;
-      prosesLacak();
+    if (urlParams.get('group_id') || urlParams.get('id')) {
+      prosesLacak(); 
     }
   }
 </script>
