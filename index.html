@@ -525,56 +525,73 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 </section>
 
 <section id="baterai">
-  <!-- CARD 1: CATAT GANTI BATERAI -->
- <!-- CARD 1: KERANJANG GANTI BATERAI -->
-<div class="card"><h3>Keranjang Ganti Baterai</h3>
-  
-  <div class="row">
-    <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi" onblur="cekKlaimBaterai(this.value)"></div>
-    <div><label>No HP</label><input id="bHp" placeholder="0812..."></div>
+  <!-- CARD 1: KERANJANG GANTI BATERAI -->
+  <div class="card" id="cardKeranjangBaterai">
+    <h3>Input Ganti Baterai</h3>
+    
+    <!-- Data Pelanggan -->
+    <div class="row">
+      <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi" onblur="cekKlaimBaterai(this.value)"></div>
+      <div><label>No HP</label><input id="bHp" placeholder="0812..."></div>
+    </div>
+
+    <!-- Info Klaim -->
+    <div id="infoKlaimBaterai" style="display:none; padding:10px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:10px;"></div>
+    
+    <!-- Input Barang & Baterai -->
+    <div class="row">
+      <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" onblur="cekKlaimBaterai(document.getElementById('bNama').value)"></div>
+      <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
+    </div>
+    
+    <!-- Tanggal & Garansi -->
+    <div class="row" style="margin-top:10px">
+      <div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div>
+      <div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div>
+    </div>
+
+    <!-- Tombol Tambah ke List -->
+    <button class="btn blue" onclick="addBateraiCart()" style="margin-top:10px; padding:12px; font-weight:bold;">➕ Tambah Baterai ke List</button>
   </div>
 
-  <!-- KOTAK INFO KLAIM DILETAKKAN DI SINI (DI LUAR ROW) -->
-  <div id="infoKlaimBaterai" style="display:none; padding:10px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:10px;"></div>
-  
-  <div class="row">
-    <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" onblur="cekKlaimBaterai(document.getElementById('bNama').value)">
-    <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
-    <div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiCart()" style="width:100%">+</button></div>
+  <!-- CARD 2: LIST KERANJANG BATERAI (Mirip Servis) -->
+  <div class="card" id="cardListBaterai" style="display:none; border: 2px solid var(--p);">
+    <h3 style="color:var(--p); margin-top:0;">🛒 Daftar Baterai di Nota Ini</h3>
+    <div id="cartBateraiList"></div>
+    <button class="btn danger" onclick="batalKeranjangBaterai()" style="margin-top:10px; font-size:12px; padding:8px;">🗑️ Batal / Kosongkan List</button>
   </div>
-  
-  <div id="cartBateraiList"><div class="empty">Belum ada baterai di keranjang</div></div>
-  <div class="cart-total"><span>Total Biaya</span><span id="cartBateraiTotal">Rp 0</span></div>
-  
-  <div class="row" style="margin-top:10px">
-    <div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div>
-    <div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div>
-  </div>
-  
-  <div class="row">
-    <div>
-      <label>Metode Bayar</label>
-      <select id="metodeBaterai" onchange="toggleBankBaterai()">
-        <option value="tunai">Tunai</option>
-        <option value="transfer">Transfer</option>
-        <option value="qris">QRIS</option>
-        <option value="edc_cc_bca">BCA Card (1,5%)</option>
-        <option value="edc_cc_vm">Visa/Master (2%)</option>
-        <option value="edc_cc_amex">Amex (3,25%)</option>
-        <option value="edc_dc_bca">Debit BCA (0,15%)</option>
-        <option value="edc_dc_lain">Debit Lain (1%)</option>
-        <option value="edc_dc_maestro">Maestro (2%)</option>
-      </select>
+
+  <!-- CARD 3: PEMBAYARAN (Metode Bayar) -->
+  <div class="card" id="cardPembayaranBaterai" style="display:none;">
+    <h3>💳 Pembayaran Baterai</h3>
+    <div class="row">
+      <div>
+        <label>Metode Bayar</label>
+        <select id="metodeBaterai" onchange="toggleBankBaterai(); updateTotalBaterai()">
+          <option value="tunai">Tunai</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+          <option value="edc_cc_bca">BCA Card (1,5%)</option>
+          <option value="edc_cc_vm">Visa/Master (2%)</option>
+          <option value="edc_cc_amex">Amex (3,25%)</option>
+          <option value="edc_dc_bca">Debit BCA (0,15%)</option>
+          <option value="edc_dc_lain">Debit Lain (1%)</option>
+          <option value="edc_dc_maestro">Maestro (2%)</option>
+        </select>
+      </div>
+      <div></div>
     </div>
-    <div></div>
+    <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
+    
+    <!-- Info MDR -->
+    <div class="row" id="mdrBateraiInfo" style="display:none; color:#dc2626; font-size:14px; background:rgba(220, 38, 38, 0.1); padding:8px; border-radius:6px; margin-top:10px;">
+      <span>Biaya Bank (MDR)</span>
+      <span id="mdrBateraiValue">-Rp 0</span>
+    </div>
   </div>
-  
-  <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
-  
-  <button class="btn ok" onclick="simpanBaterai()">Simpan & Proses Baterai</button>
-</div>
-  <!-- CARD 2: FORM TAMBAH TIPE BATERAI -->
-  <div class="card" id="cardTambahBaterai"><h3>Tambah Tipe Baterai</h3>
+
+  <!-- CARD 4: FORM TAMBAH TIPE BATERAI (Tetap Sama) -->
+  <div class="card" id="cardTambahBaterai" style="margin-top:20px;"><h3>Tambah Tipe Baterai</h3>
     <div class="row"><div><label>Tipe *</label><input id="sbTipe" placeholder="SR626SW"></div><div><label>Min Stok</label><input type="number" id="sbMin" value="5" min="0"></div></div>
     <div class="row" id="wrapHargaBeliBaterai">
       <div><label>Harga Beli</label><input type="number" id="sbBeli" placeholder="8000"></div>
@@ -582,13 +599,20 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     </div>
     <div class="row"><div><label>Stok Awal</label><input type="number" id="sbStok" value="0" min="0"></div><div></div></div>
     <button class="btn" onclick="tambahStokBaterai()">+ Tambah Tipe</button>
-  </div> <!-- PERHATIKAN: CARD 2 DITUTUP DI SINI -->
+  </div>
 
-  <!-- CARD 3: DAFTAR STOK BATERAI (Pastikan ini ada di bawahnya) -->
+  <!-- CARD 5 & 6: DAFTAR STOK & CEK GARANSI (Tetap Sama) -->
   <div class="card"><h3>Daftar Stok Baterai</h3><div id="listStokBaterai"></div></div>
-  
-  <!-- CARD 4: CEK GARANSI BATERAI -->
   <div class="card"><h3>Cek Garansi Baterai</h3><input id="bCari" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listBaterai"></div></div>
+
+  <!-- STICKY BOTTOM BAR BATERAI -->
+  <div class="sticky-bottom-bar" id="stickyBaterai" style="display:none;">
+    <div>
+      <div class="total-text">Total Biaya Baterai</div>
+      <div class="total-amount" id="displayTotalBaterai">Rp 0</div>
+    </div>
+    <button class="btn ok btn-simpan" onclick="simpanBaterai()">💾 Proses Baterai</button>
+  </div>
 </section>
   
 <section id="supplier">
@@ -1840,56 +1864,82 @@ function addBateraiCart(){
   if(sb.stok < 1) return alert('Stok baterai habis!');
   
   const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
- if(existing) {
-  if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
-  existing.qty += 1;
-} else {
-  // HARGA DISESUAIKAN DENGAN STATUS KLAIM
-  const hargaFinal = (sb.harga_jual || 0) * statusKlaimAktif.multiplier;
+  if(existing) {
+    if(existing.qty + 1 > sb.stok) return alert('Stok baterai tidak mencukupi!');
+    existing.qty += 1;
+  } else {
+    const hargaFinal = (sb.harga_jual || 0) * statusKlaimAktif.multiplier;
+    cartBaterai.push({ 
+      produk, sbId, tipe: sb.tipe, 
+      harga: hargaFinal, 
+      qty: 1, 
+      jenisKlaim: statusKlaimAktif.tipe 
+    });
+  }
   
-  cartBaterai.push({ 
-    produk, sbId, tipe: sb.tipe, 
-    harga: hargaFinal, 
-    qty: 1, 
-    jenisKlaim: statusKlaimAktif.tipe 
-  });
-}
-  
+  // Reset input produk & baterai, TAPI biarkan Nama & HP
   document.getElementById('bProduk').value = '';
   document.getElementById('bTipeSel').value = '';
   
   renderBateraiCart();
-  alert('Berhasil menambah ' + sb.tipe + ' ke keranjang!');
+  flash('Baterai berhasil ditambahkan ke list');
 }
-
+  
 function renderBateraiCart(){
-  const el = document.getElementById('cartBateraiList');
-  const totalEl = document.getElementById('cartBateraiTotal');
-  if(!el) return;
+  const listEl = document.getElementById('cartBateraiList');
+  const cardList = document.getElementById('cardListBaterai');
+  const cardBayar = document.getElementById('cardPembayaranBaterai');
+  const stickyBar = document.getElementById('stickyBaterai');
   
   if (cartBaterai.length === 0) {
-    el.innerHTML = '<div class="empty">Belum ada baterai di keranjang</div>';
-  } else {
-    let html = '';
-    cartBaterai.forEach((c, i) => {
-      html += `
-        <div style="border-bottom:1px solid #eee;padding:8px 0;display:flex;justify-content:space-between;align-items:center;">
-          <div>
-            <strong>${c.produk}</strong> (${c.tipe}) x${c.qty}<br>
-            <small style="color:#64748b">Harga: ${rp(c.harga)} | Subtotal: ${rp(c.harga * c.qty)}</small>
-          </div>
-          <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">Batal</button>
-        </div>
-      `;
-    });
-    el.innerHTML = html;
+    cardList.style.display = 'none';
+    cardBayar.style.display = 'none';
+    stickyBar.style.display = 'none';
+    return;
   }
+
+  cardList.style.display = 'block';
+  cardBayar.style.display = 'block';
+  stickyBar.style.display = 'flex';
+
+  let html = '';
+  cartBaterai.forEach((c, i) => {
+    html += `
+      <div class="item-servis-cart">
+        <div class="info">
+          <strong>${i + 1}. ${esc(c.produk)} (${esc(c.tipe)}) x${c.qty}</strong><br>
+          Harga: ${rp(c.harga)} | Subtotal: ${rp(c.harga * c.qty)}
+        </div>
+        <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">X</button>
+      </div>
+    `;
+  });
+  listEl.innerHTML = html;
   
-  if(totalEl) {
-    totalEl.textContent = rp(cartBaterai.reduce((s,c) => s + (c.harga * c.qty), 0));
+  updateTotalBaterai();
+}
+
+function updateTotalBaterai() {
+  const total = cartBaterai.reduce((s,c) => s + (c.harga * c.qty), 0);
+  document.getElementById('displayTotalBaterai').innerText = rp(total);
+  
+  // Hitung MDR
+  const metode = document.getElementById('metodeBaterai').value;
+  const mdr = hitungMDR(total, metode);
+  const elMdr = document.getElementById('mdrBateraiInfo');
+  if (mdr > 0) {
+    elMdr.style.display = 'flex';
+    document.getElementById('mdrBateraiValue').textContent = '-' + rp(mdr);
+  } else {
+    elMdr.style.display = 'none';
   }
 }
 
+function batalKeranjangBaterai() {
+  if(!confirm('Kosongkan list baterai?')) return;
+  cartBaterai = [];
+  renderBateraiCart();
+}
 function hapusBateraiCart(i){ 
   cartBaterai.splice(i,1); 
   renderBateraiCart(); 
