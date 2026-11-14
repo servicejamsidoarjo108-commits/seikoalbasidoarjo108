@@ -901,6 +901,7 @@ let filterAuditUser = '';
 let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
 let currentGroupId = ''; // Untuk menyimpan ID Nota Gabungan
 let cartServisGabungan = [];
+let scanStream = null, scanTarget = null, scanInterval = null, scanMode = 'input'; // Pastikan scanMode ada di sini  
 
 // 1. Fungsi Suara Beep
 function playBeep() {
