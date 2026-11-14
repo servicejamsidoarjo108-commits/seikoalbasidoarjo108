@@ -143,6 +143,21 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 }
 
 #loginErr { color: #f87171; font-size: 13px; margin-top: 10px; min-height: 18px; }  
+
+ /* --- STYLING KERANJANG SERVIS --- */
+.item-servis-cart {
+  background: #0f172a;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 10px;
+  margin-bottom: 8px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.item-servis-cart .info { font-size: 12px; }
+.item-servis-cart .info strong { color: var(--text-main); font-size: 14px; } 
+
 </style>
 </head>
 <body>
@@ -369,74 +384,53 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 </section>
   
 <section id="servis">
+  <!-- 1. FORM INPUT SERVIS -->
   <div class="card"><h3>Input Servis</h3>
     <div id="klaimBanner" style="display:none;background:#fef3c7;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400e"></div>
     <input type="hidden" id="sParentId">
     <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" placeholder="Budi"></div><div><label>No HP</label><input id="sHp" placeholder="0812..."></div></div>
     <div class="row"><div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div><div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div></div>
     <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
+    
     <label>Kondisi Fisik Saat Diterima (Klik jika ada)</label>
-<div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; padding:12px; border-radius:12px; border: 1px dashed var(--border);">
-  <input type="checkbox" id="k1" class="chk-kondisi pill-checkbox" value="Kaca Baret"><label for="k1" class="pill-label">Kaca Baret</label>
-  <input type="checkbox" id="k2" class="chk-kondisi pill-checkbox" value="Kaca Retak"><label for="k2" class="pill-label">Kaca Retak</label>
-  <input type="checkbox" id="k3" class="chk-kondisi pill-checkbox" value="Case Lecet"><label for="k3" class="pill-label">Case Lecet</label>
-  <input type="checkbox" id="k4" class="chk-kondisi pill-checkbox" value="Dial Noda"><label for="k4" class="pill-label">Dial Noda</label>
-  <input type="checkbox" id="k5" class="chk-kondisi pill-checkbox" value="Jarum Lepas"><label for="k5" class="pill-label">Jarum Lepas</label>
-  <input type="checkbox" id="k6" class="chk-kondisi pill-checkbox" value="Crown Patah"><label for="k6" class="pill-label">Crown Patah</label>
-  <input type="checkbox" id="k7" class="chk-kondisi pill-checkbox" value="Tanpa Strap"><label for="k7" class="pill-label">Tanpa Strap</label>
-  <input type="checkbox" id="k8" class="chk-kondisi pill-checkbox" value="Mesin Mati"><label for="k8" class="pill-label">Mesin Mati</label>
-</div>
-<label>Catatan Kondisi Lainnya</label>
-<input id="sKondisiLain" placeholder="Contoh: Ada goresan di belakang, bau parfum" style="margin-bottom:10px">
+    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; padding:12px; border-radius:12px; border: 1px dashed var(--border);">
+      <input type="checkbox" id="k1" class="chk-kondisi pill-checkbox" value="Kaca Baret"><label for="k1" class="pill-label">Kaca Baret</label>
+      <input type="checkbox" id="k2" class="chk-kondisi pill-checkbox" value="Kaca Retak"><label for="k2" class="pill-label">Kaca Retak</label>
+      <input type="checkbox" id="k3" class="chk-kondisi pill-checkbox" value="Case Lecet"><label for="k3" class="pill-label">Case Lecet</label>
+      <input type="checkbox" id="k4" class="chk-kondisi pill-checkbox" value="Dial Noda"><label for="k4" class="pill-label">Dial Noda</label>
+      <input type="checkbox" id="k5" class="chk-kondisi pill-checkbox" value="Jarum Lepas"><label for="k5" class="pill-label">Jarum Lepas</label>
+      <input type="checkbox" id="k6" class="chk-kondisi pill-checkbox" value="Crown Patah"><label for="k6" class="pill-label">Crown Patah</label>
+      <input type="checkbox" id="k7" class="chk-kondisi pill-checkbox" value="Tanpa Strap"><label for="k7" class="pill-label">Tanpa Strap</label>
+      <input type="checkbox" id="k8" class="chk-kondisi pill-checkbox" value="Mesin Mati"><label for="k8" class="pill-label">Mesin Mati</label>
+    </div>
+    
+    <label>Catatan Kondisi Lainnya</label>
+    <input id="sKondisiLain" placeholder="Contoh: Ada goresan di belakang, bau parfum" style="margin-bottom:10px">
+    
     <div class="row">
       <div><label>Status Garansi</label><select id="sGaransi" onchange="hitungTotalServis()"><option value="garansi">Dalam Garansi (gratis)</option><option value="luar">Luar Garansi (bayar)</option></select></div>
       <div><label>Biaya Jasa (Rp)</label><input type="number" id="sJasa" value="0" min="0" oninput="hitungTotalServis()"></div>
     </div>
   </div>
   
+  <!-- 2. FORM SPARE PART -->
   <div class="card"><h3>Pakai Spare Part</h3>
-  <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
-  <div id="cartServisList"><div class="empty">Belum ada part</div></div>
-  <div class="cart-total"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
-</div>
-
-<div class="card"><h3>Pakai Baterai (Opsional)</h3>
-  <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
-  <!-- BAGIAN INI YANG KITA UBAH -->
-  <div id="cartBateraiServisList"><div class="empty">Belum ada baterai</div></div>
-  <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiServisTotal">Rp 0</span></div>
-</div>
-  
-  <div class="card"><h3>Pembayaran Awal (DP)</h3>
-    <div class="row"><div><label>Total Biaya Servis</label><input id="sTotalBiaya" readonly style="font-size:16px;font-weight:700;text-align:right"></div><div><label>DP Awal (Rp)</label><input type="number" id="sDp" value="0" min="0" oninput="hitungTotalServis()"></div></div>
-    
-    <div class="row">
-      <div>
-        <label>Metode Bayar DP</label>
-        <select id="metodeDp" onchange="toggleBankDp()">
-          <option value="tunai">Tunai</option>
-          <option value="transfer">Transfer</option>
-          <option value="qris">QRIS</option>
-          <optgroup label="Kartu Kredit">
-            <option value="edc_cc_bca">BCA Card (1,5%)</option>
-            <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
-            <option value="edc_cc_amex">Amex (3,25%)</option>
-          </optgroup>
-          <optgroup label="Kartu Debit">
-            <option value="edc_dc_bca">BCA (0,15%)</option>
-            <option value="edc_dc_lain">Bank Lain (1%)</option>
-            <option value="edc_dc_maestro">Maestro (2%)</option>
-          </optgroup>
-        </select>
-      </div>
-      <div><label>Sisa Tagihan</label><input id="sSisa" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626"></div>
-    </div>
-    
-    <div class="row" id="wrapBankDp" style="display:none"><div><label>Rekening Tujuan DP</label><select id="bankDp"></select></div><div></div></div>
-    <p style="font-size:12px;color:#64748b;margin:6px 0 10px">Jika garansi, customer bayar 0, tapi spare part & baterai tetap keluar stok.</p>
+    <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
+    <div id="cartServisList"><div class="empty">Belum ada part</div></div>
+    <div class="cart-total"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
   </div>
 
-  <!-- DAFTAR SERVIS & CEK GARANSI HARUS DI DALAM SINI -->
+  <!-- 3. FORM BATERAI -->
+  <div class="card"><h3>Pakai Baterai (Opsional)</h3>
+    <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
+    <div id="cartBateraiServisList"><div class="empty">Belum ada baterai</div></div>
+    <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiServisTotal">Rp 0</span></div>
+  </div>
+
+  <!-- 4. TOMBOL TAMBAH KE LIST -->
+  <button class="btn blue" onclick="tambahKeKeranjangServis()" style="margin-bottom:20px; padding:14px; width:100%; font-weight:bold; font-size:15px; border-radius:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">➕ Tambah Jam Ini ke List</button>
+
+  <!-- 5. DAFTAR SERVIS (ANTRIAN) -->
   <div class="card"><h3>Daftar Servis</h3>
     <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
       <button class="btn-sm ghost" onclick="filterServis('')">Semua</button>
@@ -448,17 +442,55 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <div id="listServis"></div>
   </div>
   
+  <!-- 6. CEK GARANSI -->
   <div class="card"><h3>Cek Garansi Servis</h3>
     <input id="cariGaransi" placeholder="Cari nama / no HP / no servis / produk..." oninput="renderCekGaransi()" style="margin-bottom:10px">
     <div id="hasilCekGaransi"><div class="empty">Ketik untuk mencari garansi</div></div>
   </div>
-    <!-- STICKY BOTTOM BAR -->
+
+  <!-- 7. KERANJANG SERVIS GABUNGAN (Muncul saat ada list) -->
+  <div class="card" id="cardKeranjangServis" style="display:none; border: 2px solid var(--p);">
+    <h3 style="color:var(--p); margin-top:0;">🛒 Daftar Jam di Nota Ini</h3>
+    <div id="listKeranjangServis"></div>
+    <button class="btn danger" onclick="batalKeranjangServis()" style="margin-top:10px; font-size:12px; padding:8px;">🗑️ Batal / Kosongkan List</button>
+  </div>
+
+  <!-- 8. PEMBAYARAN DP GABUNGAN (Muncul saat ada list) -->
+  <div class="card" id="cardPembayaranServis" style="display:none; border: 1px solid var(--border);">
+    <h3>💳 Pembayaran & DP</h3>
+    <div class="row">
+      <div>
+        <label>Total Biaya (Semua Jam)</label>
+        <input id="sTotalBiayaGroup" readonly style="font-size:18px;font-weight:700;text-align:right; color:var(--p);">
+      </div>
+      <div>
+        <label>DP Diterima (Rp)</label>
+        <input type="number" id="sDpGroup" value="0" min="0" oninput="updateTotalGroupServis()">
+      </div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Metode DP</label>
+        <select id="metodeDpGroup">
+          <option value="tunai">Tunai</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+        </select>
+      </div>
+      <div>
+        <label>Sisa Tagihan</label>
+        <input id="sSisaGroup" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626;">
+      </div>
+    </div>
+  </div>
+  
+  <!-- 9. STICKY BOTTOM BAR -->
   <div class="sticky-bottom-bar">
     <div>
       <div class="total-text">Total Biaya Servis</div>
       <div class="total-amount" id="sTotalBiayaDisplay">Rp 0</div>
     </div>
-    <button class="btn ok btn-simpan" onclick="simpanServis()">💾 Simpan</button>
+    <button class="btn ok btn-simpan" onclick="simpanSemuaServis()">💾 Proses & Cetak</button>
   </div>
 </section>
   
@@ -814,6 +846,7 @@ let tempAuditData = {};
 let filterAuditUser = '';
 let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
 let currentGroupId = ''; // Untuk menyimpan ID Nota Gabungan
+let cartServisGabungan = [];
 
 const rp = n => 'Rp ' + (n||0).toLocaleString('id-ID');
 const nowISO = () => new Date().toISOString();
