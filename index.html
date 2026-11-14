@@ -2395,10 +2395,15 @@ setHTML('listProduk', db.produk.length ? `
   </td>
 </tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` + db.stokBaterai.map(sb => `<tr>
-  <td>${sb.tipe}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td>
+  <td>${sb.tipe}</td>
+  <td>${sb.stok}</td>
+  <td>${rp(sb.harga_jual)}</td>
   <td style="white-space:nowrap">
+    <!-- Tombol Edit: Bisa diakses Admin & Pemilik -->
     <button class="btn-sm blue" onclick="editStokBaterai('${sb.id}')">Edit</button>
-    ${isAdmin()?`<button class="btn-sm danger" onclick="hapusStokBaterai('${sb.id}')">Hapus</button>`:''}
+    
+    <!-- Tombol Hapus: HANYA untuk Pemilik -->
+    ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusStokBaterai('${sb.id}')">Hapus</button>` : ''}
   </td>
 </tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
   
