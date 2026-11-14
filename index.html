@@ -129,25 +129,27 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 <main>
 <section id="home" class="active">
   <div style="text-align:center;margin-bottom:20px">
-    <h2 style="margin:0;color:#0f172a;font-size:20px">Selamat Datang <i class="fa-solid fa-hand" style="color:#f59e0b"></i></h2>
+    <h2 style="margin:0;color:#f8fafc;font-size:20px">Selamat Datang <i class="fa-solid fa-hand" style="color:#f59e0b"></i></h2>
     <p style="color:#64748b;font-size:13px;margin-top:4px" id="homeUser">-</p>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0284c7;font-size:16px" onclick="bukaMenu('kasir')"><i class="fa-solid fa-cash-register" style="font-size:32px;margin-bottom:8px"></i> Kasir</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f59e0b;font-size:16px" onclick="bukaMenu('servis')"><i class="fa-solid fa-screwdriver-wrench" style="font-size:32px;margin-bottom:8px"></i> Servis</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#16a34a;font-size:16px" onclick="bukaMenu('baterai')"><i class="fa-solid fa-battery-full" style="font-size:32px;margin-bottom:8px"></i> Baterai</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#8b5cf6;font-size:16px" onclick="bukaMenu('produk')"><i class="fa-solid fa-clock" style="font-size:32px;margin-bottom:8px"></i> Produk & Stock</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#64748b;font-size:16px" onclick="bukaMenu('sparepart')"><i class="fa-solid fa-gears" style="font-size:32px;margin-bottom:8px"></i> Spare Part</button>
-    <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#0ea5e9;font-size:16px" onclick="bukaMenu('laporan')"><i class="fa-solid fa-chart-pie" style="font-size:32px;margin-bottom:8px"></i> Laporan</button>
-  </div>
-  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#ea580c;font-size:16px" onclick="bukaMenu('pelanggan')">
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('kasir')"><i class="fa-solid fa-cash-register" style="font-size:32px;margin-bottom:8px"></i> Kasir</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('servis')"><i class="fa-solid fa-screwdriver-wrench" style="font-size:32px;margin-bottom:8px"></i> Servis</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('baterai')"><i class="fa-solid fa-battery-full" style="font-size:32px;margin-bottom:8px"></i> Baterai</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('produk')"><i class="fa-solid fa-clock" style="font-size:32px;margin-bottom:8px"></i> Produk & Stock</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('sparepart')"><i class="fa-solid fa-gears" style="font-size:32px;margin-bottom:8px"></i> Spare Part</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('laporan')"><i class="fa-solid fa-chart-pie" style="font-size:32px;margin-bottom:8px"></i> Laporan</button>
+</div>
+
+<button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('pelanggan')">
   <i class="fa-solid fa-users" style="font-size:32px;margin-bottom:8px"></i> Pelanggan
 </button>
-  <div id="menuAdmin" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;border-top:1px dashed #cbd5e1;padding-top:16px">
-  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#334155;font-size:16px" onclick="bukaMenu('kas')"><i class="fa-solid fa-money-bill-wave" style="font-size:32px;margin-bottom:8px"></i> Kas</button>
-  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#475569;font-size:16px" onclick="bukaMenu('supplier')"><i class="fa-solid fa-store" style="font-size:32px;margin-bottom:8px"></i> Supplier</button>
-  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#8b5cf6;font-size:16px" onclick="bukaMenu('keuangan')"><i class="fa-solid fa-file-invoice-dollar" style="font-size:32px;margin-bottom:8px"></i> Laporan Keuangan</button>
-  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#dc2626;font-size:16px" onclick="bukaMenu('setting')"><i class="fa-solid fa-gear" style="font-size:32px;margin-bottom:8px"></i> Setting</button>
+
+<div id="menuAdmin" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;border-top:1px dashed var(--border);padding-top:16px">
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('kas')"><i class="fa-solid fa-money-bill-wave" style="font-size:32px;margin-bottom:8px"></i> Kas</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('supplier')"><i class="fa-solid fa-store" style="font-size:32px;margin-bottom:8px"></i> Supplier</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('keuangan')"><i class="fa-solid fa-file-invoice-dollar" style="font-size:32px;margin-bottom:8px"></i> Laporan Keuangan</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('setting')"><i class="fa-solid fa-gear" style="font-size:32px;margin-bottom:8px"></i> Setting</button>
 </div>
 </section>
 
