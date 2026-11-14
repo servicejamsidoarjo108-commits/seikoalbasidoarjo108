@@ -2446,13 +2446,25 @@ async function catatLog(aksi, detail) {
   if(!supabaseClient) return;
   const user = sessionStorage.getItem('ta_user') || 'guest';
   const role = sessionStorage.getItem('ta_role') || 'guest';
-  try {
-    await supabaseClient.from('audit_log').insert([{ 
-      id: genId('LOG'), waktu: nowISO(), user_name: user, role: role, aksi: aksi, detail: detail 
-    }]);
-  } catch(e) { console.error("Gagal catat log:", e); }
-}
+  
+  // Coba simpan ke database
+  const { error } = await supabaseClient.from('audit_log').insert([{ 
+    id: genId('LOG'), 
+    waktu: nowISO(), 
+    user_name: user, 
+    role: role, 
+    aksi: aksi, 
+    detail: detail 
+  }]);
 
+  // Tampilkan pesan error jika gagal
+  if (error) {
+    console.error("❌ GAGAL SIMPAN AUDIT LOG:", error.message, error.details);
+  } else {
+    console.log("✅ Audit Log berhasil disimpan.");
+  }
+}
+  
 function renderAuditLog() {
   const el = document.getElementById('listAuditLog'); 
   if(!el) return;
