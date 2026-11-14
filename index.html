@@ -2512,10 +2512,6 @@ async function simpanAuditGlobal() {
   tempAuditData = {}; document.getElementById('auditCatatanMassal').value = ''; document.getElementById('cariAudit').value = ''; tarikSemuaData();
 }
 
-let scanStream = null, scanTarget = null, scanInterval = null;
-// 1. FUNGSI SCAN KAMERA (VERSI BARU DENGAN BEEP)
-let scanStream = null, scanTarget = null, scanInterval = null, scanMode = 'input';
-
 async function scanBarcode(targetId, mode = 'input'){
   scanTarget = targetId;
   scanMode = mode;
