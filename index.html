@@ -107,6 +107,42 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 .wc-expiry-label { font-size: 10px; color: #f59e0b; text-transform: uppercase; letter-spacing: 1px; }
 .wc-expiry-date { font-size: 18px; font-weight: 700; color: #f59e0b; margin-top: 4px; }
 .wc-footer { display: flex; justify-content: space-between; align-items: center; margin-top: 20px; font-size: 10px; color: #64748b; border-top: 1px solid #334155; padding-top: 12px; }
+
+/* --- PERBAIKAN LOGIN OVERLAY --- */
+#loginOverlay {
+  position: fixed !important;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: #0f172a !important; /* Warna Navy Gelap */
+  z-index: 9999 !important; /* Agar berada di paling atas */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  padding: 20px;
+}
+
+#loginOverlay.hidden {
+  display: none !important;
+}
+
+#loginOverlay h2 { font-size: 20px; margin: 0 0 4px; text-align: center; color: #f8fafc; }
+#loginOverlay p { color: #94a3b8; font-size: 13px; margin: 0 0 20px; }
+
+#loginUser, #pinInput { 
+  font-size: 16px; text-align: center; padding: 12px; 
+  width: 100%; max-width: 280px; 
+  background: #1e293b; border: 1px solid #334155; 
+  color: #fff; border-radius: 10px; margin-bottom: 10px; 
+}
+
+#loginOverlay button { 
+  margin-top: 14px; width: 100%; max-width: 280px; 
+  padding: 12px; background: #fbbf24; border: none; 
+  color: #0f172a; border-radius: 8px; font-size: 15px; font-weight: 700; 
+}
+
+#loginErr { color: #f87171; font-size: 13px; margin-top: 10px; min-height: 18px; }  
 </style>
 </head>
 <body>
