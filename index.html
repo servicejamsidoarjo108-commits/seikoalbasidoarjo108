@@ -898,7 +898,7 @@ let supabaseClient = null;
 try {
   if (window.supabase) supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 } catch(e) { console.error("Supabase Init Error:", e); }
-
+alert("JAVASCRIPT NYALA!");
 // === STATE GLOBAL ===
 let db = { produk: [], jual: [], servis: [], baterai: [], stokBaterai: [], sparePart: [], supplier: [], pembelian: [], kas: [], pelanggan: [], bank: [], auditBarang: [], settings: {}, auditLog: [] };
 let cart = [], cartServis = [], cartBaterai = [], cartBateraiServis = [];
