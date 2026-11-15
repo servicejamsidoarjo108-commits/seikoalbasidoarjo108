@@ -909,7 +909,8 @@ let filterAuditUser = '';
 let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
 let currentGroupId = ''; // Untuk menyimpan ID Nota Gabungan
 let cartServisGabungan = [];
-let scanStream = null, scanTarget = null, scanInterval = null, scanMode = 'input'; // Pastikan scanMode ada di sini  
+let scanStream = null, scanTarget = null, scanInterval = null, scanMode = 'input'; // Pastikan scanMode ada di sini 
+let isProcessingPayment = false; // KUNCI ANTI DOUBLE-CLICK
 
 // 1. Fungsi Suara Beep
 function playBeep() {
@@ -1321,37 +1322,50 @@ function updateTotalKasir(){
 }
 
 async function prosesBayar(){
+  // 1. CEK KUNCI: Jika sistem sedang memproses, hentikan!
+  if (isProcessingPayment) return flash('Transaksi sedang diproses, mohon tunggu...', 'err');
   if(!cart.length) return flash('Keranjang kosong', 'err');
 
-  // --- TAMBAHKAN 2 BARIS INI ---
+  const subtotal = cart.reduce((s,c) => s + c.harga*c.qty, 0);
+  const tipe = document.getElementById('tipeDiskon').value; 
+  const nilai = +document.getElementById('nilaiDiskon').value || 0;
+  let potongan = tipe === 'nominal' ? nilai : subtotal * (nilai / 100); 
+  if(potongan > subtotal) potongan = subtotal;
+  
+  const tukarPoin = +document.getElementById('tukarPoin').value || 0; 
+  const potonganPoin = tukarPoin * 100;
+  
+  let total = subtotal - potongan - potonganPoin; 
+  if(total < 0) total = 0; 
+  
+  const metode = document.getElementById('metodeBayar').value;
+  const bayarInput = document.getElementById('bayar'); 
+  const bayar = +bayarInput.value || 0;
+
+  // 2. VALIDASI UANG (Sebelum mengunci tombol)
+  if(metode === 'tunai' && bayar < total) return flash('Uang kurang', 'err');
+
+  // 3. KUNCI SISTEM & MATIKAN TOMBOL
+  isProcessingPayment = true;
   const btn = document.querySelector('button[onclick="prosesBayar()"]'); 
   if(btn) { btn.disabled = true; btn.innerHTML = 'Memproses...'; }
-  // ------------------------------
 
-  const subtotal = cart.reduce((s,c) => s + c.harga*c.qty, 0);
-  
-  // ... (BIARKAN SISA KODE ANDA DI BAWAHNYA SEPERTI ASLINYA) ...
-  // (Jangan lupa tambahkan } penutup di paling akhir fungsi)
-  const tipe = document.getElementById('tipeDiskon').value; const nilai = +document.getElementById('nilaiDiskon').value || 0;
-  let potongan = tipe === 'nominal' ? nilai : subtotal * (nilai / 100); if(potongan > subtotal) potongan = subtotal;
-  const tukarPoin = +document.getElementById('tukarPoin').value || 0; const potonganPoin = tukarPoin * 100;
-  let total = subtotal - potongan - potonganPoin; if(total < 0) total = 0; 
-  const metode = document.getElementById('metodeBayar').value;
-  const bayarInput = document.getElementById('bayar'); const bayar = +bayarInput.value || 0;
-  if(metode === 'tunai' && bayar < total) return flash('Uang kurang', 'err');
-  
-  // 1. HITUNG MDR DI SINI (INI YANG HILANG DI KODE LAMA ANDA)
   const mdr = hitungMDR(total, metode);
-  
   const trxId = genId('TRX');
+  
   const trxHeader = {
-    id: trxId, waktu: nowISO(), subtotal, diskon: potongan, total, bayar: metode === 'tunai' ? bayar : total, 
+    id: trxId, waktu: nowISO(), subtotal, diskon: potongan, total, 
+    bayar: metode === 'tunai' ? bayar : total, 
     kembali: metode === 'tunai' ? (bayar - total) : 0, metode,
-     cust_nama: formatNama(document.getElementById('custNama').value),
+    cust_nama: formatNama(document.getElementById('custNama').value),
     cust_hp: document.getElementById('custHp').value.trim(),
-    garansi_hari: +document.getElementById('garansiHari').value || 0, poin_dipakai: tukarPoin, poin_didapat: Math.floor(total / 10000)
+    garansi_hari: +document.getElementById('garansiHari').value || 0, 
+    poin_dipakai: tukarPoin, 
+    poin_didapat: Math.floor(total / 10000)
   };
+  
   const trxItems = cart.map(c => ({ jual_id: trxId, produk_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty }));
+  trxHeader.items = [...trxItems]; // PENTING: Masukkan item ke header agar struk bisa dibaca
 
   try {
     // Simpan Transaksi
@@ -1367,7 +1381,7 @@ async function prosesBayar(){
     // Catat Kas Masuk (Uang Masuk)
     await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), jenis: 'masuk', metode, nominal: total, keterangan: `Penjualan ${trxId}`, sumber: 'jual', ref_id: trxId }]);
     
-    // 2. CATAT MDR SEBAGAI KAS KELUAR (INI JUGA HILANG DI KODE LAMA)
+    // Catat MDR (Uang Keluar)
     if(mdr > 0) {
       await supabaseClient.from('kas').insert([{ 
         id: genId('KAS'), waktu: nowISO(), jenis: 'keluar', metode, nominal: mdr, 
@@ -1375,39 +1389,45 @@ async function prosesBayar(){
       }]);
     }
     
-    // Update Poin Pelanggan (Lebih Pintar)
-const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
-if(cNama || cHp) {
-  let query = supabaseClient.from('pelanggan').select('*');
-  // Jika ada No HP, cari berdasarkan No HP. Jika tidak, cari berdasarkan Nama.
-  if(cHp) query = query.eq('telp', cHp);
-  else query = query.ilike('nama', cNama);
+    // Update Poin Pelanggan
+    const cNama = trxHeader.cust_nama; const cHp = trxHeader.cust_hp;
+    if(cNama || cHp) {
+      let query = supabaseClient.from('pelanggan').select('*');
+      if(cHp) query = query.eq('telp', cHp);
+      else query = query.ilike('nama', cNama);
 
-  const { data: exPel } = await query.maybeSingle();
-  
-  if(exPel) {
-    await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) - tukarPoin + trxHeader.poin_didapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
-  } else {
-    await supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: cNama || 'Tanpa Nama', telp: cHp || '-', poin: trxHeader.poin_didapat, terakhir_transaksi: nowISO() }]);
-  }
-}
+      const { data: exPel } = await query.maybeSingle();
+      
+      if(exPel) {
+        await supabaseClient.from('pelanggan').update({ poin: (exPel.poin || 0) - tukarPoin + trxHeader.poin_didapat, terakhir_transaksi: nowISO() }).eq('id', exPel.id);
+      } else {
+        await supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: cNama || 'Tanpa Nama', telp: cHp || '-', poin: trxHeader.poin_didapat, terakhir_transaksi: nowISO() }]);
+      }
+    }
 
-    // Catat Audit Trail
     await catatLog('TRANSAKSI', 'Penjualan ' + rp(total) + ' via ' + labelMetode(metode) + ' (MDR: ' + rp(mdr) + ')');
+    
+    // MASUKKAN KE MEMORI AGAR STRUK BISA DICETAK SEKARANG
+    db.jual.unshift(trxHeader);
     
     flash('Transaksi berhasil'); 
     cetakStruk(trxId); 
+    
+    // Reset Form
     cart = []; 
     ['bayar','custNama','custHp','nilaiDiskon','tukarPoin'].forEach(x => document.getElementById(x).value = 0); 
     renderCart(); 
     tarikSemuaData();
-    } catch(e) { 
+
+  } catch(e) { 
     flash('Gagal: ' + e.message, 'err'); 
   } finally {
-    // TAMBAHKAN INI AGAR TOMBOL NYALA LAGI
+    // 4. BUKA KUNCI & NYALAKAN TOMBOL KEMBALI (Apapun yang terjadi)
+    isProcessingPayment = false;
     if(btn) { btn.disabled = false; btn.innerHTML = 'Proses & Cetak Struk'; }
   }
 }
+  
 function cetakStruk(trxId) {
   const t = db.jual.find(x => x.id === trxId); 
   if(!t) return;
