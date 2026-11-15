@@ -2518,6 +2518,7 @@ function renderAuditGlobal() {
   });
   el.innerHTML = html + `</tbody></table>`;
 }
+  
 function updateAuditGlobal(key, val) { if (val === '') delete tempAuditData[key]; else tempAuditData[key] = +val; }
 async function simpanAuditGlobal() {
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
@@ -2978,6 +2979,7 @@ function bisaKlaimGaransi(s){
   if((s.klaim_count || 0) >= 2) return false; 
   return true;
 }
+  
 function mulaiKlaimGaransi(id){
   const s = db.servis.find(x => x.id === id); if(!s || !bisaKlaimGaransi(s)) return flash('Tidak bisa diklaim', 'err');
   if(!confirm(`KLAIM GARANSI\n\nPelanggan: ${s.customer}\nSisa kuota: ${2 - (s.klaim_count||0)}x\n\nLanjut?`)) return;
@@ -3894,6 +3896,35 @@ async function hapusSparePart(id){
   let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\n${garis}\n*TANDA TERIMA SERVIS*\n${garis}\nHalo *${s.customer}*, jam Anda telah kami terima.\n\n*No Servis:* ${s.id}\n*Barang:* ${s.produk}\n*Keluhan:* ${s.keluhan || '-'}\n\n*⚠️ KONDISI AWAL (Telah Dicek):*\n_${s.kondisi_fisik || 'Normal / Tidak ada catatan'}._\n\nMohon simpan pesan ini. Jika ada kondisi yang tidak tercatat, segera hubungi kami.\n\n🔍 *Lacak status servis:*\n${linkLacak}\n${garis}\n${toko.footer}`;
   
   openWA(s.telp, text);
+}
+
+function cekPoinPelanggan(nama) {
+  const info = document.getElementById('infoPoin');
+  const inputPoin = document.getElementById('tukarPoin');
+  const telp = document.getElementById('custHp').value.trim();
+  
+  if(!info) return;
+
+  let p = null;
+  if (nama) p = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase());
+  if (!p && telp) p = db.pelanggan.find(x => x.telp === telp);
+  
+  if(p) {
+    info.value = p.poin || 0;
+    if(inputPoin) inputPoin.max = p.poin || 0;
+    
+    // PERBAIKAN DI SINI: Hanya isi otomatis jika no HP mengandung angka dan bukan nama
+    if (nama && !telp && p.telp !== '-' && /\d/.test(p.telp)) {
+      document.getElementById('custHp').value = p.telp;
+    }
+  } else {
+    info.value = 0;
+    if(inputPoin) {
+      inputPoin.value = 0;
+      inputPoin.max = 0;
+    }
+  }
+  updateTotalKasir();
 }
   
 // === INISIALISASI ===
