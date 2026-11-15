@@ -158,6 +158,14 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 .item-servis-cart .info { font-size: 12px; }
 .item-servis-cart .info strong { color: var(--text-main); font-size: 14px; } 
 
+/* Agar tabel bisa di-scroll ke samping di HP */
+#listProduk, #listSparePart, #listStokBaterai, #listKas, #listPelanggan {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+#listProduk table, #listSparePart table, #listStokBaterai table {
+  min-width: 500px; /* Memaksa tabel agar tidak gepeng */
+}
 </style>
 </head>
 <body>
@@ -1313,8 +1321,17 @@ function updateTotalKasir(){
 }
 
 async function prosesBayar(){
-  if(!cart.length) return flash('Keranjang kosong', 'err'); 
+  if(!cart.length) return flash('Keranjang kosong', 'err');
+
+  // --- TAMBAHKAN 2 BARIS INI ---
+  const btn = document.querySelector('button[onclick="prosesBayar()"]'); 
+  if(btn) { btn.disabled = true; btn.innerHTML = 'Memproses...'; }
+  // ------------------------------
+
   const subtotal = cart.reduce((s,c) => s + c.harga*c.qty, 0);
+  
+  // ... (BIARKAN SISA KODE ANDA DI BAWAHNYA SEPERTI ASLINYA) ...
+  // (Jangan lupa tambahkan } penutup di paling akhir fungsi)
   const tipe = document.getElementById('tipeDiskon').value; const nilai = +document.getElementById('nilaiDiskon').value || 0;
   let potongan = tipe === 'nominal' ? nilai : subtotal * (nilai / 100); if(potongan > subtotal) potongan = subtotal;
   const tukarPoin = +document.getElementById('tukarPoin').value || 0; const potonganPoin = tukarPoin * 100;
@@ -1384,10 +1401,47 @@ if(cNama || cHp) {
     ['bayar','custNama','custHp','nilaiDiskon','tukarPoin'].forEach(x => document.getElementById(x).value = 0); 
     renderCart(); 
     tarikSemuaData();
-  } catch(e) { 
+    } catch(e) { 
     flash('Gagal: ' + e.message, 'err'); 
+  } finally {
+    // TAMBAHKAN INI AGAR TOMBOL NYALA LAGI
+    if(btn) { btn.disabled = false; btn.innerHTML = 'Proses & Cetak Struk'; }
   }
 }
+function cetakStruk(trxId) {
+  const t = db.jual.find(x => x.id === trxId); 
+  if(!t) return;
+  const toko = getToko(); 
+  const garis = '-------------------------';
+  
+  let itemsHTML = '';
+  t.items.forEach(i => {
+    itemsHTML += `<tr>
+      <td style="font-size:10px">${i.nama}<br>${i.qty} x ${i.harga.toLocaleString('id-ID')}</td>
+      <td style="text-align:right; font-size:10px">${(i.qty * i.harga).toLocaleString('id-ID')}</td>
+    </tr>`;
+  });
+
+  const html = `<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%}</style></head><body>
+    <div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+    <div class="c">${esc(toko.alamat)}</div><hr>
+    <div>No: ${t.id}</div>
+    <div>Tgl: ${new Date(t.waktu).toLocaleString('id-ID')}</div>
+    <div>Kasir: ${sessionStorage.getItem('ta_user') || 'Admin'}</div>
+    <div>Pembeli: ${t.cust_nama || '-'}</div><hr>
+    <table>${itemsHTML}</table><hr>
+    <table>
+      <tr><td>Subtotal</td><td style="text-align:right">${t.subtotal.toLocaleString('id-ID')}</td></tr>
+      <tr><td>Diskon</td><td style="text-align:right">-${(t.diskon||0).toLocaleString('id-ID')}</td></tr>
+      <tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${t.total.toLocaleString('id-ID')}</td></tr>
+      <tr><td>Bayar (${labelMetode(t.metode)})</td><td style="text-align:right">${t.bayar.toLocaleString('id-ID')}</td></tr>
+      <tr><td>Kembali</td><td style="text-align:right">${t.kembali.toLocaleString('id-ID')}</td></tr>
+    </table><hr>
+    <div class="c" style="font-size:9px;">${esc(toko.footer)}</div>
+  </body></html>`;
+  
+  cetakHTML(html);
+}  
 // === SERVIS ===
 function addPartServis(){
   const id = document.getElementById('selSparePart').value; const qty = +document.getElementById('qtyPart').value; const sp = db.sparePart.find(x => x.id === id);
@@ -2252,20 +2306,26 @@ function cekPoinPelanggan(nama) {
 // === KAS & KEUANGAN ===
 async function simpanKasManual(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
-  if (!checkRequired(['kasNominal', 'kasKet'])) return flash('Lengkapi kolom', 'err');
-  const nominal = +document.getElementById('kasNominal').value || 0; const ket = document.getElementById('kasKet').value.trim();
-  const metode = document.getElementById('kasMetode').value; const jenis = document.getElementById('kasJenis').value;
+  if (!checkRequired(['kasNominal', 'kasKet'])) return flash('Lengkapi nominal & keterangan', 'err');
+  
+  const nominal = +document.getElementById('kasNominal').value || 0; 
+  const ket = document.getElementById('kasKet').value.trim();
+  const metode = document.getElementById('kasMetode').value; 
+  const jenis = document.getElementById('kasJenis').value;
+  let tgl = document.getElementById('kasTgl').value;
+  
+  if(!tgl) tgl = new Date().toISOString().slice(0,10); // Jika kosong, pakai hari ini
   if(nominal <= 0) return flash('Nominal tidak valid', 'err');
-    await supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), tgl: document.getElementById('kasTgl').value, jenis, metode, nominal, keterangan: ket, sumber: 'manual' }]);
+
+  await supabaseClient.from('kas').insert([{ 
+    id: genId('KAS'), waktu: nowISO(), tgl: tgl, jenis, metode, nominal, keterangan: ket, sumber: 'manual' 
+  }]);
   
-  // TAMBAHKAN BARIS INI UNTUK AUDIT TRAIL
   await catatLog('KAS_MANUAL', `Input kas ${jenis} - ${ket} (${rp(nominal)})`);
-  
   flash('Kas dicatat'); 
   ['kasNominal','kasKet'].forEach(x => document.getElementById(x).value = ''); 
   tarikSemuaData();
 }
-
 async function tambahBank(){
   if (!isAdmin()) return flash('Akses ditolak.', 'err');
   if (!checkRequired(['bankNama'])) return flash('Nama bank wajib', 'err');
