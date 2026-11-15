@@ -2081,7 +2081,7 @@ function hapusBateraiCart(i){
   renderBateraiCart(); 
 }
 
-async function simpanBaterai(){
+//async function simpanBaterai(){
   if (!checkRequired(['bNama'])) return flash('Nama Pelanggan wajib diisi', 'err'); 
   if (cartBaterai.length === 0) return flash('Keranjang baterai masih kosong', 'err');
   
@@ -2220,7 +2220,7 @@ async function editStokBaterai(id) {
   tarikSemuaData();
 }
 
-async function hapusStokBaterai(id) {
+//async function hapusStokBaterai(id) {
   if(!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus', 'err');
   if(!confirm('Hapus tipe baterai ini?')) return;
   
@@ -2231,7 +2231,7 @@ async function hapusStokBaterai(id) {
 }
 
 <input id="bHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812...">
-  function cekKlaimBaterai(nama) {
+  //function cekKlaimBaterai(nama) {
   const produkInput = document.getElementById('bProduk').value.trim().toLowerCase(); // Ambil nama produk
 
   if(!nama || !produkInput) {
@@ -2935,7 +2935,7 @@ function cetakNotaServis(id){
   cetakHTML(html);
 }
 
-  function cetakStrukGabunganBaterai(listData, nama, telp, totalBiaya) {
+  //function cetakStrukGabunganBaterai(listData, nama, telp, totalBiaya) {
   const toko = getToko();
   
   let itemsHTML = '';
