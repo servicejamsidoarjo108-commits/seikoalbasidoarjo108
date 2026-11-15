@@ -245,7 +245,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   </div>
   <div>
     <label>No HP</label>
-    <input id="custHp" placeholder="Opsional" oninput="cekPoinPelanggan(document.getElementById('custNama').value)">
+    <input id="custHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Opsional">
   </div>
 </div>
 <div class="row">
@@ -408,7 +408,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   <div class="card"><h3>Input Servis</h3>
     <div id="klaimBanner" style="display:none;background:#fef3c7;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400e"></div>
     <input type="hidden" id="sParentId">
-    <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" placeholder="Budi"></div><div><label>No HP</label><input id="sHp" placeholder="0812..."></div></div>
+    <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" placeholder="Budi"></div><div><label>No HP</label><input id="sHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
     <div class="row"><div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div><div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div></div>
     <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
     
@@ -552,7 +552,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <!-- Data Pelanggan -->
     <div class="row">
       <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi" onblur="cekKlaimBaterai(this.value)"></div>
-      <div><label>No HP</label><input id="bHp" placeholder="0812..."></div>
+      <div><label>No HP</label><input id="bHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
     </div>
 
     <!-- Info Klaim -->
@@ -2206,33 +2206,7 @@ async function hapusStokBaterai(id) {
   tarikSemuaData();
 }
 
-function cekPoinPelanggan(nama) {
-  const info = document.getElementById('infoPoin');
-  const inputPoin = document.getElementById('tukarPoin');
-  const telp = document.getElementById('custHp').value.trim();
-  
-  if(!info) return;
-
-  let p = null;
-  if (nama) p = db.pelanggan.find(x => x.nama.toLowerCase() === nama.toLowerCase());
-  if (!p && telp) p = db.pelanggan.find(x => x.telp === telp);
-  
-  if(p) {
-    info.value = p.poin || 0;
-    if(inputPoin) inputPoin.max = p.poin || 0;
-    if (nama && !telp && p.telp !== '-') {
-      document.getElementById('custHp').value = p.telp;
-    }
-  } else {
-    info.value = 0;
-    if(inputPoin) {
-      inputPoin.value = 0;
-      inputPoin.max = 0;
-    }
-  }
-  updateTotalKasir();
-}
-
+<input id="bHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812...">
   function cekKlaimBaterai(nama) {
   const produkInput = document.getElementById('bProduk').value.trim().toLowerCase(); // Ambil nama produk
 
