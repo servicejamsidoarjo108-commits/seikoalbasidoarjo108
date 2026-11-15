@@ -1111,7 +1111,6 @@ async function login(){
     sessionStorage.setItem('ta_user', user); 
     sessionStorage.setItem('ta_role', role);
     
-    
     const btn = document.querySelector('#loginOverlay button');
     btn.textContent = 'Memuat Data...';
     btn.disabled = true;
@@ -1131,10 +1130,15 @@ async function login(){
       btn.disabled = false;
     }
 
-  } catch(e) { 
-    alert("Error Sistem: " + e.message); 
+  } catch (error) {
+    // INI BAGIAN YANG HILANG SEBELUMNYA
+    // Menangkap error jika koneksi internet mati atau Supabase bermasalah
+    console.error("Error fatal saat login:", error);
+    document.getElementById('loginErr').textContent = "Koneksi gagal: " + error.message;
+    const btn = document.querySelector('#loginOverlay button');
+    if(btn) { btn.textContent = 'Masuk'; btn.disabled = false; }
   }
-}
+} // <--- PENUTUP FUNGSI
 
 async function logout(){ 
   if(supabaseClient) {
