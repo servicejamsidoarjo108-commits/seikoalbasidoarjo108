@@ -2,164 +2,155 @@
 <html lang="id">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Lacak Servis - Toko Seiko Alba</title>
 <style>
   body { font-family: system-ui, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
-  .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 400px; }
+  .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
   h2 { text-align: center; color: #0f172a; margin-top: 0; }
+  .sub { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 15px; }
   input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
   button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+  button:disabled { opacity: .6; cursor: default; }
   #hasil { display: none; margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
-  .row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; }
+  .row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 14px; }
   .label { color: #64748b; }
   .value { font-weight: bold; color: #0f172a; text-align: right; }
-  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; }
-  .antri { background: #fef3c7; color: #92400e; }
-  .proses { background: #dbeafe; color: #1e40af; }
-  .selesai { background: #dcfce7; color: #166534; }
-  .diambil { background: #e5e7eb; color: #374151; }
+  .badge { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: bold; background: #e5e7eb; color: #374151; white-space: nowrap; }
+  .badge.antri { background: #fef3c7; color: #92400e; }
+  .badge.proses { background: #dbeafe; color: #1e40af; }
+  .badge.selesai { background: #dcfce7; color: #166534; }
+  .badge.diambil { background: #e5e7eb; color: #374151; }
+  .item { border: 1px solid #e2e8f0; border-left: 4px solid #fbbf24; border-radius: 8px; padding: 10px; margin-bottom: 10px; }
+  .item .head { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .item .judul { font-weight: bold; color: #0f172a; font-size: 14px; }
+  .item .detail { font-size: 12px; color: #475569; margin-bottom: 3px; }
+  .item .warn { color: #dc2626; }
   .total-box { background: #f8fafc; padding: 10px; border-radius: 8px; margin-top: 10px; border-left: 4px solid #0284c7; }
-  .error-box { color: #dc2626; font-size: 12px; text-align: center; margin-top: 10px; display: none; }
+  .error-box { color: #dc2626; font-size: 13px; text-align: center; margin-top: 10px; display: none; }
+  .lunas { color: #16a34a; font-weight: bold; }
+  .sisa { color: #dc2626; font-weight: bold; }
 </style>
 </head>
 <body>
 
 <div class="card">
   <h2>⌚ Lacak Servis</h2>
-  <p style="text-align:center; font-size:13px; color:#64748b; margin-bottom:15px;">Masukkan Nomor Servis Anda</p>
-  
-  <input type="text" id="inputSrv" placeholder="Ketik Nomor Servis (Contoh: SRV123)">
-  <button id="btnLacak">Cari Status</button>
-  <div id="errorBox" class="error-box"></div>
-  
-  <div id="hasil">
-    <h3 style="text-align:center; margin-bottom:15px; color:#0284c7;">Status Servis Anda</h3>
-    <div class="row"><span class="label">No. Servis</span><span class="value" id="resId">-</span></div>
-    <div class="row"><span class="label">Nama</span><span class="value" id="resNama">-</span></div>
-    <div class="row"><span class="label">Barang</span><span class="value" id="resProduk">-</span></div>
-    <div class="row"><span class="label">Keluhan</span><span class="value" id="resKeluhan">-</span></div>
-    <div class="row"><span class="label">Status</span><span class="value"><span id="resStatus" class="badge">-</span></span></div>
-    
-    <!-- RINCIAN BIAYA -->
-    <div class="total-box">
-      <div class="row"><span class="label">Jasa Servis</span><span class="value" id="resJasa">Rp 0</span></div>
-      <div class="row"><span class="label">Spare Part</span><span class="value" id="resParts">Rp 0</span></div>
-      <div class="row"><span class="label">Baterai</span><span class="value" id="resBaterai">Rp 0</span></div>
-      <hr style="border:none;border-top:1px dashed #cbd5e1;margin:8px 0">
-      <div class="row"><span class="label" style="font-weight:bold;color:#0f172a;">TOTAL BIAYA</span><span class="value" id="resTotal" style="color:#0284c7; font-size:16px;">Rp 0</span></div>
-      <div class="row"><span class="label" style="color:#dc2626;">Sisa Tagihan</span><span class="value" id="resSisa" style="color:#dc2626;">Rp 0</span></div>
-    </div>
+  <p class="sub">Masukkan Nomor Servis Anda</p>
 
-    <div class="row" id="rowGaransi" style="display:none; margin-top:10px; border-top:1px dashed #cbd5e1; padding-top:10px;">
-      <span class="label">Garansi S/d</span><span class="value" id="resGaransi">-</span>
+  <input type="text" id="inputSrv" placeholder="Contoh: SRV1731234567890abcd" autocomplete="off" autocapitalize="off">
+  <button id="btnLacak">Cari Status</button>
+  <div id="errorBox" class="error-box" role="alert"></div>
+
+  <div id="hasil">
+    <h3 style="text-align:center; margin:0 0 5px; color:#0284c7;">Status Servis Anda</h3>
+    <div id="ringkasan" style="text-align:center; font-size:13px; color:#475569; margin-bottom:12px;"></div>
+    <div id="listBarang"></div>
+    <div class="total-box">
+      <div class="row"><span class="label" style="font-weight:bold;color:#0f172a;">TOTAL BIAYA</span><span class="value" id="resTotal" style="color:#0284c7;font-size:16px;">Rp 0</span></div>
+      <div class="row"><span class="label">Sisa Tagihan</span><span class="value" id="resSisa">Rp 0</span></div>
     </div>
   </div>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
-  if (!window.supabase) {
-    document.getElementById('errorBox').style.display = 'block';
-    document.getElementById('errorBox').innerText = 'Gagal memuat library Supabase.';
-  } else {
-    const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+(function () {
+  const $ = id => document.getElementById(id);
+  const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+  const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+  const STATUS = {
+    antri:    { label: 'Antri',                     warna: '#fbbf24' },
+    proses:   { label: 'Sedang Dikerjakan',         warna: '#3b82f6' },
+    selesai:  { label: 'Selesai - Siap Diambil',    warna: '#16a34a' },
+    diambil:  { label: 'Sudah Diambil',             warna: '#94a3b8' }
+  };
 
-    async function prosesLacak() {
-      const keyword = document.getElementById('inputSrv').value.trim();
-      const urlParams = new URLSearchParams(window.location.search);
-      const groupIdDariUrl = urlParams.get('group_id');
-      const idDariUrl = urlParams.get('id');
+  function tampilError(pesan) {
+    const el = $('errorBox');
+    el.textContent = pesan;
+    el.style.display = pesan ? 'block' : 'none';
+  }
 
-      if (!keyword && !groupIdDariUrl && !idDariUrl) return alert('Masukkan nomor servis terlebih dahulu!');
+  if (!window.supabase) { tampilError('Gagal memuat library Supabase. Periksa koneksi internet lalu muat ulang halaman.'); return; }
 
-      const btn = document.getElementById('btnLacak');
-      btn.innerText = 'Mencari...';
-      btn.disabled = true;
-      document.getElementById('errorBox').style.display = 'none';
+  const supabaseClient = window.supabase.createClient(
+    'https://khgooqasgscsxgegdqzc.supabase.co',
+    'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd'
+  );
 
-      try {
-        // GUNAKAN RPC AGAR AMAN (Hanya mengambil data yang diminta)
-        const { data, error } = await supabaseClient.rpc('lacak_servis', { 
-            p_id: (keyword || idDariUrl) ? (keyword || idDariUrl) : null, 
-            p_group_id: (groupIdDariUrl && !keyword) ? groupIdDariUrl : null 
-        });
-        
-        if (error) throw new Error(error.message);
-        
-        if (data && data.length > 0) {
-          const customer = data[0].customer;
-          document.getElementById('resNamaUtama').innerHTML = `Pelanggan: <b>${customer}</b> <br><span style="font-size:12px;color:#94a3b8">Total: ${data.length} Barang</span>`;
-          
-          let htmlList = '';
-          let grandTotal = 0;
-          let grandSisa = 0;
+  function barisItem(item, index) {
+    const st = STATUS[item.status] || { label: item.status || '-', warna: '#fbbf24' };
+    const kelasBadge = STATUS[item.status] ? item.status : '';
+    const lunas = item.paid || (item.sisa || 0) <= 0;
+    const garansi = item.tgl_garansi_servis_sampai
+      ? new Date(item.tgl_garansi_servis_sampai + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' pukul 23:59'
+      : '';
+    const rincian = [
+      ['Jasa Servis', item.jasa], ['Spare Part', item.total_parts], ['Baterai', item.total_baterai]
+    ].filter(r => (r[1] || 0) > 0).map(r => `<div class="row"><span class="label">${r[0]}</span><span class="value">${rp(r[1])}</span></div>`).join('');
 
-          data.forEach((s, index) => {
-            grandTotal += (s.biaya_pelanggan || 0);
-            grandSisa += (s.sisa || 0);
+    return `<div class="item" style="border-left-color:${st.warna}">
+      <div class="head"><span class="judul">${index + 1}. ${esc(item.produk)}</span><span class="badge ${kelasBadge}">${esc(st.label)}</span></div>
+      <div class="detail">No: <b>${esc(item.id)}</b></div>
+      <div class="detail">Keluhan: ${esc(item.keluhan || '-')}</div>
+      ${item.kondisi_fisik && item.kondisi_fisik !== '-' ? `<div class="detail warn">⚠️ Kondisi awal: ${esc(item.kondisi_fisik)}</div>` : ''}
+      <div style="margin-top:6px;border-top:1px dashed #cbd5e1;padding-top:6px;">
+        ${rincian}
+        <div class="row"><span class="label">Biaya</span><span class="value">${rp(item.biaya_pelanggan)}</span></div>
+        <div class="row"><span class="label">Pembayaran</span><span class="${lunas ? 'lunas' : 'sisa'}">${lunas ? 'LUNAS' : 'Sisa ' + rp(item.sisa)}</span></div>
+        ${garansi ? `<div class="row"><span class="label">Garansi s/d</span><span class="value">${esc(garansi)}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
 
-            let warnaBorder = '#fbbf24'; 
-            if (s.status === 'proses') warnaBorder = '#3b82f6';
-            if (s.status === 'selesai') warnaBorder = '#16a34a';
-            if (s.status === 'diambil') warnaBorder = '#94a3b8';
+  async function prosesLacak() {
+    const params = new URLSearchParams(window.location.search);
+    const keyword = $('inputSrv').value.trim();
+    const idUrl = params.get('id'), groupUrl = params.get('group_id');
 
-            let statusBayar = s.paid ? `<span style="color:#16a34a;font-weight:bold;font-size:12px;">LUNAS</span>` : `<span style="color:#f87171;font-weight:bold;font-size:12px;">Sisa: Rp ${(s.sisa||0).toLocaleString('id-ID')}</span>`;
-
-            htmlList += `
-              <div class="item-servis" style="border-left-color: ${warnaBorder}">
-                <div class="header-item">
-                  <span class="judul">${index + 1}. ${s.produk}</span>
-                  <span class="badge ${s.status}">${s.status}</span>
-                </div>
-                <div class="detail">No: <b>${s.id}</b> | Keluhan: ${s.keluhan || '-'}</div>
-                ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<div class="detail" style="color:#f87171;">⚠️ Kondisi: ${s.kondisi_fisik}</div>` : ''}
-                <div class="row" style="margin-top:5px; margin-bottom:0; border-top:1px dashed #334155; padding-top:5px;">
-                  <span class="label">Biaya: Rp ${(s.biaya_pelanggan||0).toLocaleString('id-ID')}</span>
-                  ${statusBayar}
-                </div>
-              </div>
-            `;
-          });
-
-          document.getElementById('listBarangContainer').innerHTML = htmlList;
-          document.getElementById('resTotal').textContent = 'Rp ' + grandTotal.toLocaleString('id-ID');
-          
-          const elSisa = document.getElementById('resSisa');
-          if (grandSisa > 0) {
-            elSisa.textContent = 'Rp ' + grandSisa.toLocaleString('id-ID');
-            elSisa.style.color = '#f87171';
-          } else {
-            elSisa.textContent = 'LUNAS';
-            elSisa.style.color = '#16a34a';
-          }
-
-          document.getElementById('hasil').style.display = 'block';
-        } else {
-          alert('Data Servis tidak ditemukan. Pastikan penulisan sudah benar.');
-          document.getElementById('hasil').style.display = 'none';
-        }
-      } catch (err) {
-        alert('Terjadi kesalahan: ' + err.message);
-      } finally {
-        btn.innerText = 'Cari Status';
-        btn.disabled = false;
-      }
+    let pId = null, pGroup = null;
+    if (keyword) {
+      // Nomor yang diawali GRP adalah nomor nota gabungan
+      if (/^grp/i.test(keyword)) pGroup = keyword; else pId = keyword;
+    } else {
+      pId = idUrl; pGroup = groupUrl;
     }
+    if (!pId && !pGroup) { tampilError('Masukkan nomor servis terlebih dahulu.'); return; }
 
-    document.getElementById('btnLacak').addEventListener('click', prosesLacak);
-    document.getElementById('inputSrv').addEventListener('keypress', function (e) {
-      if (e.key === 'Enter') prosesLacak();
-    });
+    const btn = $('btnLacak');
+    btn.textContent = 'Mencari...'; btn.disabled = true;
+    tampilError('');
+    $('hasil').style.display = 'none';
 
-    const urlParams = new URLSearchParams(window.location.search);
-    if (urlParams.get('group_id') || urlParams.get('id')) {
-      prosesLacak(); 
+    try {
+      const { data, error } = await supabaseClient.rpc('lacak_servis', { p_id: pId, p_group_id: pGroup });
+      if (error) throw new Error(error.message);
+      if (!data || !data.length) { tampilError('Data servis tidak ditemukan. Pastikan nomor sudah benar.'); return; }
+
+      const totalBiaya = data.reduce((s, x) => s + (Number(x.biaya_pelanggan) || 0), 0);
+      const totalSisa = data.reduce((s, x) => s + (Number(x.sisa) || 0), 0);
+
+      $('ringkasan').innerHTML = `Pelanggan: <b>${esc(data[0].customer)}</b>` + (data.length > 1 ? `<br><span style="font-size:12px;color:#94a3b8">${data.length} barang</span>` : '');
+      $('listBarang').innerHTML = data.map(barisItem).join('');
+      $('resTotal').textContent = rp(totalBiaya);
+      const elSisa = $('resSisa');
+      elSisa.textContent = totalSisa > 0 ? rp(totalSisa) : 'LUNAS';
+      elSisa.className = 'value ' + (totalSisa > 0 ? 'sisa' : 'lunas');
+      $('hasil').style.display = 'block';
+    } catch (err) {
+      tampilError('Terjadi kesalahan: ' + err.message);
+    } finally {
+      btn.textContent = 'Cari Status'; btn.disabled = false;
     }
   }
+
+  $('btnLacak').addEventListener('click', prosesLacak);
+  $('inputSrv').addEventListener('keypress', e => { if (e.key === 'Enter') prosesLacak(); });
+
+  const awal = new URLSearchParams(window.location.search);
+  if (awal.get('id') || awal.get('group_id')) prosesLacak();
+})();
 </script>
 </body>
 </html>
