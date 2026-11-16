@@ -1329,6 +1329,18 @@ async function simpanKasKecilKasir() {
   } catch (e) { flash('Gagal: ' + e.message, 'err'); }
 }
 
+
+async function hapusJual(id) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus transaksi penjualan', 'err');
+  if (!confirm('⚠️ Hapus transaksi penjualan ini?\n\nStok produk akan dikembalikan, dan catatan kas terkait ikut terhapus.')) return;
+  try {
+    const { error } = await supabaseClient.rpc('hapus_jual', { p_id: id });
+    if (error) throw error;
+    flash('Transaksi penjualan dihapus, stok dikembalikan');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus: ' + e.message, 'err'); }
+}
+
 async function hapusKas(id) {
   if (!isAdmin()) return flash('Akses ditolak. Hanya Admin/Pemilik yang bisa menghapus.', 'err');
   if (!confirm('⚠️ Yakin ingin menghapus riwayat kas ini?\n\nTindakan ini menghapus data secara permanen dan mempengaruhi total saldo.')) return;
@@ -2192,7 +2204,7 @@ function render() {
 
   // 8. Transaksi & kas kecil hari ini
   const trxHariIni = db.jual.filter(t => new Date(t.waktu).toDateString() === today);
-  setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => `<tr><td>${jam(t.waktu)}</td><td>${(t.items || []).length} item<br><small>${esc(labelMetode(t.metode || 'tunai'))}</small></td><td>${rp(t.total)}</td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="cetakStruk('${esc(t.id)}')">Cetak</button><button class="btn-sm ok" onclick="shareStrukDigital('${esc(t.id)}')">WA</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty">Belum ada transaksi</td></tr>');
+  setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => `<tr><td>${jam(t.waktu)}</td><td>${(t.items || []).length} item<br><small>${esc(labelMetode(t.metode || 'tunai'))}</small></td><td>${rp(t.total)}</td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="cetakStruk('${esc(t.id)}')">Cetak</button><button class="btn-sm ok" onclick="shareStrukDigital('${esc(t.id)}')">WA</button>${isPemilik() ? `<button class="btn-sm danger" onclick="hapusJual('${esc(t.id)}')">Hapus</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="4" class="empty">Belum ada transaksi</td></tr>');
 
   const listKK = db.kas.filter(k => k.sumber === 'kas_kecil' && new Date(k.waktu).toDateString() === today).slice(0, 10);
   setHTML('listKasKecilKasir', listKK.length ? `<table><thead><tr><th>Jam</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>` +
