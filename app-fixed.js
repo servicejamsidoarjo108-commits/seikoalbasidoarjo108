@@ -1,0 +1,2368 @@
+// ==========================================================
+//  SISTEM TOKO SEIKO ALBA SIDOARJO 108  (versi rapi + perbaikan)
+//  Catatan: pengecekan role di sisi browser hanya mengatur TAMPILAN.
+//  Pengamanan sebenarnya harus lewat Row Level Security (RLS) di Supabase.
+// ==========================================================
+
+// === STATE GLOBAL ===
+let db = { produk: [], jual: [], servis: [], baterai: [], stokBaterai: [], sparePart: [], supplier: [], pembelian: [], kas: [], pelanggan: [], bank: [], auditBarang: [], settings: {}, auditLog: [] };
+let cart = [], cartServis = [], cartBaterai = [], cartBateraiServis = [], cartServisGabungan = [];
+let filterServisStatus = '', filterKasJenis = '', filterAuditUser = '';
+let tempFotoBase64 = '', tempAuditData = {};
+let statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+let scanStream = null, scanTarget = null, scanInterval = null, scanMode = 'input';
+let isProcessingPayment = false, isSavingServis = false, isSavingBaterai = false;
+let realtimeChannel = null, refreshTimer = null;
+
+// === KONSTANTA (ubah di sini bila aturan berubah) ===
+const GARANSI_BATERAI_PENUH_BULAN = 6;     // <= 6 bulan: gratis
+const GARANSI_BATERAI_SETENGAH_BULAN = 9;  // 7-9 bulan: bayar 50%, lebih dari itu bayar penuh
+const MAX_KLAIM_SERVIS = 2;
+const NILAI_POIN = 100;                    // 1 poin = Rp 100
+const TRACK_URL = 'https://servicejamsidoarjo108-commits.github.io/seikoalbasidoarjo108/track.html';
+
+const TOKO_DEFAULT = {
+  nama: 'Toko Seiko Alba Sidoarjo 108',
+  telp: '081331939397',
+  alamat: 'Jl Gajah Mada No 108',
+  footer: 'Terima kasih telah berbelanja',
+  syarat: 'PEMBELIAN PRODUK:\n1. Pembeli wajib memeriksa kondisi fisik, kelengkapan, dan fungsi barang sebelum meninggalkan toko.\n2. Barang yang telah dibeli tidak dapat ditukar atau dikembalikan, kecuali terdapat cacat produksi dari pabrik.\n3. Garansi mesin berlaku sesuai dengan ketentuan yang tertera pada nota. Garansi tidak berlaku untuk aksesoris (tali, kaca, baterai) kecuali disepakati lain.\n\nGARANSI PRODUK:\n1. Klaim garansi produk wajib menyertakan nota pembelian asli atau kartu garansi.\n2. Garansi produk TIDAK BERLAKU apabila: (a) Kerusakan akibat kelalaian pengguna (terjatuh, terbentur, tergores); (b) Jam kemasukan air di luar spesifikasi; (c) Segel rusak atau pernah dibongkar oleh pihak lain.\n3. Waktu pengerjaan klaim garansi produk berkisar 7-14 hari kerja.\n\nGARANSI SERVIS (3 BULAN):\n1. Setiap servis yang telah selesai diberikan garansi pekerjaan selama 3 (tiga) bulan sejak tanggal servis selesai, kecuali dinyatakan lain pada nota.\n2. Garansi servis mencakup jaminan pekerjaan teknisi atas kerusakan yang SAMA pada bagian yang telah diservis.\n3. Garansi servis TIDAK BERLAKU apabila: (a) Kerusakan akibat kelalaian pengguna (jam terjatuh, terbentur, tergores, kemasukan air); (b) Jam pernah dibuka/diperbaiki oleh pihak lain di luar toko kami; (c) Kerusakan pada bagian yang berbeda dari yang diservis sebelumnya.\n4. Garansi servis berlaku hanya jika pelanggan dapat menunjukkan nota servis asli.\n5. Garansi servis berakhir pada pukul 23:59 WIB di tanggal terakhir masa berlaku. Klaim yang diajukan pada atau sebelum waktu tersebut tetap sah dan belum daluwarsa.\n\nKLAIM GARANSI SERVIS:\n1. Klaim garansi servis hanya dapat dilakukan selama masa garansi masih aktif (lihat tanggal garansi pada nota).\n2. Biaya jasa teknisi GRATIS (Rp 0) untuk semua klaim garansi dalam masa berlaku.\n3. Penggantian spare part atau baterai (jika diperlukan) TETAP DIKENAKAN BIAYA sesuai harga yang berlaku.\n4. Klaim garansi maksimal 2 (dua) kali per nota servis. Klaim ke-3 dan seterusnya dikenakan biaya normal.\n5. Setiap perbaikan ulang dalam rangka klaim garansi diberikan garansi baru 3 (tiga) bulan untuk pekerjaan tersebut.\n6. Keputusan teknisi mengenai penyebab kerusakan dan perlu-tidaknya penggantian spare part adalah mutlak.\n7. Waktu pengerjaan klaim garansi berkisar 3-7 hari kerja tergantung antrian.',
+  syaratSingkat: 'S&K PEMBELIAN:\n1. Barang yang telah dibeli tidak dapat ditukar/dikembalikan, kecuali cacat produksi pabrik.\n2. Pembeli wajib memeriksa kondisi barang sebelum bertransaksi.\n\nS&K GARANSI PRODUK:\n1. Wajib menunjukkan nota asli saat klaim.\n2. Garansi HANGUS apabila: Jam kemasukan air, terjatuh, atau segel rusak.\n\nS&K GARANSI SERVIS:\n1. Garansi servis 3 bulan sejak tanggal selesai (s/d 23:59 tanggal terakhir).\n2. Klaim: Jasa GRATIS, spare part/baterai tetap berbayar.\n3. Klaim maksimal 2x per nota. Klaim ke-3+ dikenakan biaya normal.\n4. Garansi HANGUS jika jam dibuka/diperbaiki pihak lain.\n5. Wajib menunjukkan nota servis asli saat klaim.'
+};
+
+const DAFTAR_METODE = { '1': 'tunai', '2': 'transfer', '3': 'qris', '4': 'edc_cc_bca', '5': 'edc_cc_vm', '6': 'edc_cc_amex', '7': 'edc_dc_bca', '8': 'edc_dc_lain', '9': 'edc_dc_maestro' };
+
+const SEMUA_MENU = ['kasir', 'servis', 'baterai', 'produk', 'sparepart', 'laporan', 'pelanggan', 'kas', 'supplier', 'keuangan', 'setting'];
+const MENU_BY_ROLE = {
+  kasir: ['kasir', 'baterai', 'pelanggan'],
+  admin: ['kasir', 'baterai', 'pelanggan', 'servis', 'produk', 'sparepart', 'kas', 'supplier'],
+  pemilik: SEMUA_MENU
+};
+
+// === HELPER UMUM ===
+const $ = id => document.getElementById(id);
+const num = id => +($(id)?.value) || 0;
+const txt = id => ($(id)?.value || '').trim();
+const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+const nowISO = () => new Date().toISOString();
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const genId = prefix => prefix + Date.now() + Math.random().toString(36).substring(2, 6);
+const escapeLike = s => String(s ?? '').replace(/[\\%_]/g, '\\$&');
+const waPhone = hp => (hp || '').replace(/\D/g, '').replace(/^0/, '62');
+const tglLokal = (d = new Date()) => new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 10);
+const tambahBulan = (tglStr, n) => { const d = new Date(tglStr + 'T00:00:00'); d.setMonth(d.getMonth() + n); return tglLokal(d); };
+const linkLacak = (param, nilai) => `${TRACK_URL}?${param}=${encodeURIComponent(nilai)}`;
+const qrUrl = link => `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent(link)}`;
+
+function formatNama(str) {
+  if (!str) return '';
+  return str.trim().toLowerCase().replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function flash(text, type = 'ok') {
+  const el = $('msg'); if (!el) return;
+  el.textContent = text; el.className = 'msg ' + type;
+  clearTimeout(window.__msgT);
+  window.__msgT = setTimeout(() => el.className = 'msg', 3500);
+}
+
+function checkRequired(ids) {
+  let valid = true;
+  ids.forEach(id => {
+    const el = $(id); if (!el) return;
+    if (!el.value.trim()) { el.classList.add('input-error'); valid = false; }
+    else el.classList.remove('input-error');
+  });
+  return valid;
+}
+document.addEventListener('input', e => { if (e.target && e.target.classList) e.target.classList.remove('input-error'); });
+
+// Jalankan query Supabase; lempar error bila gagal (supaya masuk ke catch)
+async function dbOk(query) {
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+// Ubah stok secara aman (cek stok terkini + kunci optimis), delta negatif = mengurangi
+async function ubahStok(tabel, id, delta) {
+  for (let i = 0; i < 3; i++) {
+    const { data: cur, error } = await supabaseClient.from(tabel).select('stok').eq('id', id).single();
+    if (error) throw error;
+    const baru = (cur.stok || 0) + delta;
+    if (baru < 0) throw new Error('Stok tidak cukup (' + id + ')');
+    const { data: upd, error: e2 } = await supabaseClient.from(tabel).update({ stok: baru }).eq('id', id).eq('stok', cur.stok).select('id');
+    if (e2) throw e2;
+    if (upd && upd.length) return baru;
+  }
+  throw new Error('Stok sedang berubah, coba lagi');
+}
+
+async function catatKas(o) {
+  await dbOk(supabaseClient.from('kas').insert([{ id: genId('KAS'), waktu: nowISO(), ...o }]));
+}
+async function catatMDR(mdr, metode, ket, refId, bankId = null) {
+  if (mdr > 0) await catatKas({ jenis: 'keluar', metode, nominal: mdr, keterangan: ket, sumber: 'mdr', ref_id: refId, bank_id: bankId });
+}
+function getBankId(selectId, metode) {
+  if (!metode || metode === 'tunai' || metode === 'hutang') return null;
+  const el = $(selectId);
+  return el && el.value ? el.value : null;
+}
+
+function pilihMetode(judul) {
+  const k = prompt(`${judul}\nKetik metode:\n1=Tunai\n2=Transfer\n3=QRIS\n4=BCA Card\n5=Visa/Master\n6=Amex\n7=Debit BCA\n8=Debit Lain\n9=Maestro`, '1');
+  if (k === null) return null;
+  const m = DAFTAR_METODE[k.trim()];
+  if (!m) { flash('Pilihan metode tidak valid', 'err'); return null; }
+  return m;
+}
+
+// Poin pelanggan: tambah / pakai. Otomatis mendaftarkan pelanggan baru.
+async function updatePoin({ nama, telp, tambah = 0, pakai = 0 }) {
+  const hp = (telp || '').trim(); const adaHp = hp && hp !== '-';
+  if (!nama && !adaHp) return;
+  let q = supabaseClient.from('pelanggan').select('*');
+  q = adaHp ? q.eq('telp', hp) : q.ilike('nama', escapeLike(nama));
+  const { data: ex, error } = await q.limit(1).maybeSingle();
+  if (error) throw error;
+  if (ex) {
+    await dbOk(supabaseClient.from('pelanggan').update({ poin: Math.max(0, (ex.poin || 0) - pakai + tambah), terakhir_transaksi: nowISO() }).eq('id', ex.id));
+  } else {
+    await dbOk(supabaseClient.from('pelanggan').insert([{ id: genId('CUST'), nama: nama || 'Tanpa Nama', telp: adaHp ? hp : '-', poin: Math.max(0, tambah - pakai), terakhir_transaksi: nowISO() }]));
+  }
+}
+
+function cariPelangganLokal(nama, telp) {
+  let p = null;
+  if (telp) p = db.pelanggan.find(x => x.telp === telp);
+  if (!p && nama) p = db.pelanggan.find(x => (x.nama || '').toLowerCase() === nama.toLowerCase());
+  return p || null;
+}
+
+// Identitas toko: pengaturan dari database, dilengkapi nilai bawaan bila kolom kosong
+function getToko() {
+  const s = db.settings || {};
+  const t = { ...TOKO_DEFAULT, syarat_singkat: TOKO_DEFAULT.syaratSingkat };
+  Object.keys(s).forEach(k => { if (s[k] !== null && s[k] !== undefined && s[k] !== '') t[k] = s[k]; });
+  return t;
+}
+
+// === ROLE ===
+const getRole = () => sessionStorage.getItem('ta_role');
+const isPemilik = () => getRole() === 'pemilik';
+const isAdmin = () => ['admin', 'pemilik'].includes(getRole());
+const isKasir = () => getRole() === 'kasir';
+
+function tentukanRole(authUser, username) {
+  const meta = authUser?.app_metadata?.role;
+  if (['pemilik', 'admin', 'kasir'].includes(meta)) return meta;
+  if (username === 'pemilik') return 'pemilik';
+  if (username === 'admin') return 'admin';
+  return 'kasir';
+}
+
+function applyRoleUI() {
+  const r = getRole();
+  const boleh = MENU_BY_ROLE[r] || [];
+  SEMUA_MENU.forEach(m => {
+    const b = document.querySelector(`button[onclick="bukaMenu('${m}')"]`);
+    if (b) b.style.display = boleh.includes(m) ? 'flex' : 'none';
+  });
+  const tampil = (id, kondisi) => { const el = $(id); if (el) el.style.display = kondisi ? 'block' : 'none'; };
+  tampil('cardAuditTrail', r === 'pemilik');
+  ['wrapHargaBeliProduk', 'wrapHargaBeliBaterai', 'wrapHargaBeliRestock'].forEach(id => tampil(id, r === 'pemilik'));
+  ['cardTambahBaterai', 'cardTambahSparePart'].forEach(id => tampil(id, r !== 'kasir'));
+  document.body.classList.toggle('role-kasir', r === 'kasir');
+  document.body.classList.toggle('role-admin', r === 'admin' || r === 'pemilik');
+}
+
+// Otorisasi admin/pemilik dengan verifikasi ke server (menggantikan PIN yang tertanam di kode)
+async function mintaOtorisasiAdmin(alasan) {
+  const u = (prompt(`🔒 OTORISASI\n${alasan}\n\nUsername Admin/Pemilik:`) || '').trim().toLowerCase();
+  if (!u) return false;
+  const p = prompt('Password ' + u + ':');
+  if (!p) return false;
+  try {
+    const lib = window.supabase;
+    if (!lib || !lib.createClient) throw new Error('Library Supabase tidak ditemukan');
+    const tmp = lib.createClient(supabaseClient.supabaseUrl, supabaseClient.supabaseKey, { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } });
+    const { data, error } = await tmp.auth.signInWithPassword({ email: u + '@tokoseiko.com', password: p });
+    if (error) return false;
+    const role = tentukanRole(data.user, u);
+    await tmp.auth.signOut({ scope: 'local' });
+    if (role === 'admin' || role === 'pemilik') { await catatLog('OTORISASI', `${alasan} - disetujui ${u}`); return true; }
+    return false;
+  } catch (e) { console.error('Gagal otorisasi:', e); return false; }
+}
+
+// === AMBIL DATA DARI CLOUD ===
+async function tarikSemuaData() {
+  if (!supabaseClient) return;
+  try {
+    const ambil = (tabel, select = '*', urut, asc = true, limit) => {
+      let q = supabaseClient.from(tabel).select(select);
+      if (urut) q = q.order(urut, { ascending: asc });
+      if (limit) q = q.limit(limit);
+      return q;
+    };
+    const hasil = await Promise.all([
+      supabaseClient.from('settings').select('*').eq('id', 'toko').maybeSingle(),
+      ambil('produk', '*', 'nama'), ambil('sparepart', '*', 'nama'), ambil('stok_baterai', '*', 'tipe'),
+      ambil('jual', '*, jual_items(*)', 'waktu', false),
+      ambil('servis', '*, servis_parts(*), servis_baterai(*)', 'waktu', false),
+      ambil('baterai', '*', 'waktu', false), ambil('kas', '*', 'waktu', false),
+      ambil('pelanggan'), ambil('bank'), ambil('supplier'),
+      ambil('pembelian', '*', 'waktu', false), ambil('audit_barang', '*', 'waktu', false),
+      ambil('audit_log', '*', 'waktu', false, 500)
+    ]);
+    hasil.forEach(r => { if (r.error) console.error('Gagal tarik data:', r.error.message); });
+    const [set, p, sp, sb, j, s, b, k, pel, bnk, sup, pem, aud, alog] = hasil;
+    const pakai = (r, lama) => (r.error ? lama : (r.data || []));
+
+    if (set.data) db.settings = set.data;
+    db.produk = pakai(p, db.produk);
+    db.sparePart = pakai(sp, db.sparePart);
+    db.stokBaterai = pakai(sb, db.stokBaterai);
+    db.jual = j.error ? db.jual : (j.data || []).map(x => ({ ...x, items: x.jual_items || [] }));
+    db.servis = s.error ? db.servis : (s.data || []).map(x => ({ ...x, parts: x.servis_parts || [], baterai: x.servis_baterai || [] }));
+    db.baterai = pakai(b, db.baterai);
+    db.kas = pakai(k, db.kas);
+    db.pelanggan = pakai(pel, db.pelanggan);
+    db.bank = pakai(bnk, db.bank);
+    db.supplier = pakai(sup, db.supplier);
+    db.pembelian = pakai(pem, db.pembelian);
+    db.auditBarang = pakai(aud, db.auditBarang);
+    db.auditLog = pakai(alog, db.auditLog);
+    render();
+  } catch (e) { console.error('Gagal tarik data:', e); }
+}
+
+// === REAL-TIME SYNC ===
+function jadwalRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(tarikSemuaData, 800); }
+
+function setupRealtime() {
+  if (!supabaseClient) return;
+  if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+  realtimeChannel = supabaseClient.channel('realtime-db');
+  ['produk', 'sparepart', 'stok_baterai', 'jual', 'servis', 'baterai', 'kas', 'pelanggan'].forEach(t => {
+    realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: t }, jadwalRefresh);
+  });
+  realtimeChannel.subscribe();
+}
+
+// === LOGIN & LOGOUT ===
+async function login() {
+  const btn = document.querySelector('#loginOverlay button');
+  const setErr = m => { const el = $('loginErr'); if (el) el.textContent = m; };
+  setErr('');
+  if (typeof supabaseClient === 'undefined' || !supabaseClient) return setErr('Koneksi database belum siap. Muat ulang halaman.');
+
+  const user = txt('loginUser').toLowerCase();
+  const pass = $('pinInput')?.value || '';
+  if (!user || !pass) return setErr('Username dan Password wajib diisi!');
+
+  if (btn) { btn.disabled = true; btn.textContent = 'Memeriksa...'; }
+  try {
+    const { data, error } = await supabaseClient.auth.signInWithPassword({ email: user + '@tokoseiko.com', password: pass });
+    if (error) throw error;
+
+    sessionStorage.setItem('ta_logged', '1');
+    sessionStorage.setItem('ta_user', user);
+    sessionStorage.setItem('ta_role', tentukanRole(data.user, user));
+
+    if (btn) btn.textContent = 'Memuat Data...';
+    await tarikSemuaData();
+    setupRealtime();
+    await catatLog('LOGIN', 'Berhasil masuk sistem');
+
+    $('loginOverlay').classList.add('hidden');
+    applyRoleUI();
+    bukaMenu('home');
+    flash('Login Berhasil!');
+  } catch (e) {
+    console.error('Gagal login:', e);
+    setErr(e.message || 'Login gagal');
+  } finally {
+    if (btn) { btn.textContent = 'Masuk'; btn.disabled = false; }
+  }
+}
+
+async function logout() {
+  if (supabaseClient) {
+    await catatLog('LOGOUT', 'User keluar dari sistem');
+    if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
+    realtimeChannel = null;
+    await supabaseClient.auth.signOut();
+  }
+  sessionStorage.clear();
+  cart = []; cartServis = []; cartBaterai = []; cartBateraiServis = []; cartServisGabungan = [];
+  db = { produk: [], jual: [], servis: [], baterai: [], stokBaterai: [], sparePart: [], supplier: [], pembelian: [], kas: [], pelanggan: [], bank: [], auditBarang: [], settings: {}, auditLog: [] };
+  document.body.classList.remove('role-admin', 'role-kasir');
+  $('loginOverlay').classList.remove('hidden');
+  $('loginUser').value = '';
+  $('pinInput').value = '';
+}
+
+function bukaMenu(tabId) {
+  if (SEMUA_MENU.includes(tabId) && !(MENU_BY_ROLE[getRole()] || []).includes(tabId)) return flash('Akses ditolak.', 'err');
+  document.querySelectorAll('section').forEach(x => x.classList.remove('active'));
+  const target = $(tabId);
+  if (target) target.classList.add('active');
+  const btnBack = document.querySelector('main > div > button[onclick="bukaMenu(\'home\')"]');
+  if (btnBack) btnBack.parentElement.style.display = (tabId === 'home') ? 'none' : 'block';
+  window.scrollTo(0, 0);
+  render();
+  if (tabId === 'setting') isiFormSetting(true);
+}
+
+// === PRODUK & STOK ===
+async function simpanProduk() {
+  if (!isAdmin()) return flash('Akses ditolak. Hanya Admin yang bisa mengubah produk.', 'err');
+  if (!checkRequired(['pNama', 'pHJual'])) return flash('Lengkapi kolom wajib', 'err');
+
+  const id = txt('pId'), nama = txt('pNama'), merek = txt('pMerek'), barcode = txt('pSerial');
+  const hargaBeli = num('pHBeli'), hargaJual = num('pHJual'), stokInput = num('pStok');
+  if (hargaBeli < 0 || hargaJual < 0 || stokInput < 0) return flash('Harga/stok tidak boleh negatif', 'err');
+
+  const existing = id ? null : db.produk.find(p => p.nama.toLowerCase() === nama.toLowerCase() && (p.merek || '').toLowerCase() === merek.toLowerCase());
+  const targetId = id || existing?.id;
+  if (barcode && db.produk.some(p => p.barcode === barcode && p.id !== targetId)) return flash('Barcode sudah dipakai produk lain', 'err');
+
+  try {
+    if (id) {
+      const data = { nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
+      if (isPemilik()) data.harga_beli = hargaBeli;
+      if (tempFotoBase64) data.foto = tempFotoBase64;
+      await dbOk(supabaseClient.from('produk').update(data).eq('id', id));
+      flash('Produk diperbarui');
+    } else if (existing) {
+      const totalStok = existing.stok + stokInput;
+      const hppBaru = totalStok > 0 ? Math.round(((existing.stok * (existing.harga_beli || 0)) + (stokInput * hargaBeli)) / totalStok) : hargaBeli;
+      const data = { stok: totalStok, harga_jual: hargaJual, updated_at: nowISO() };
+      if (isPemilik()) data.harga_beli = hppBaru;
+      if (barcode && !existing.barcode) data.barcode = barcode;
+      if (tempFotoBase64) data.foto = tempFotoBase64;
+      await dbOk(supabaseClient.from('produk').update(data).eq('id', existing.id));
+      flash(`Stok ${nama} berhasil ditambahkan (Total: ${totalStok})`);
+    } else {
+      const data = { id: genId('PRD'), nama, merek, barcode, harga_jual: hargaJual, stok: stokInput, updated_at: nowISO() };
+      if (isPemilik()) data.harga_beli = hargaBeli;
+      if (tempFotoBase64) data.foto = tempFotoBase64;
+      await dbOk(supabaseClient.from('produk').insert([data]));
+      flash('Produk baru ditambahkan');
+    }
+    await catatLog('PRODUK', (id ? 'Edit' : 'Tambah/Restock') + ' produk: ' + nama);
+    resetFormProduk();
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menyimpan produk: ' + e.message, 'err'); }
+}
+
+function resetFormProduk() {
+  ['pId', 'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'pSerial', 'pFoto'].forEach(x => { if ($(x)) $(x).value = ''; });
+  tempFotoBase64 = '';
+}
+
+function editProduk(id) {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  const p = db.produk.find(x => x.id === id);
+  if (!p) return;
+  $('pId').value = p.id; $('pNama').value = p.nama; $('pMerek').value = p.merek || '';
+  $('pHBeli').value = isPemilik() ? (p.harga_beli || '') : '';
+  $('pHJual').value = p.harga_jual; $('pStok').value = p.stok; $('pSerial').value = p.barcode || '';
+  window.scrollTo(0, 0);
+}
+
+async function hapusProduk(id) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus produk', 'err');
+  if (!confirm('Hapus produk ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('produk').delete().eq('id', id));
+    await catatLog('HAPUS_PRODUK', 'Menghapus produk ID: ' + id);
+    flash('Dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus (produk mungkin sudah ada di transaksi): ' + e.message, 'err'); }
+}
+
+async function prosesRestock() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  const tipe = $('rsTipe').value, id = $('rsItem').value;
+  const qty = Math.floor(num('rsQty')), hargaBaru = num('rsHarga');
+  if (!id || qty < 1 || hargaBaru < 0) return flash('Data tidak valid', 'err');
+
+  let item, tabel;
+  if (tipe === 'produk') { item = db.produk.find(x => x.id == id); tabel = 'produk'; }
+  else if (tipe === 'sparepart') { item = db.sparePart.find(x => x.id == id); tabel = 'sparepart'; }
+  else { item = db.stokBaterai.find(x => x.id == id); tabel = 'stok_baterai'; }
+  if (!item) return flash('Item tidak ditemukan', 'err');
+
+  const namaItem = item.nama || item.tipe;
+  const stokLama = item.stok || 0, hppLama = item.harga_beli || 0, totalStok = stokLama + qty;
+  const hppBaru = totalStok > 0 ? Math.round((stokLama * hppLama + qty * hargaBaru) / totalStok) : hargaBaru;
+
+  try {
+    await ubahStok(tabel, id, qty);
+    await dbOk(supabaseClient.from(tabel).update({ harga_beli: hppBaru }).eq('id', id));
+
+    const pemId = genId('BLI');
+    await dbOk(supabaseClient.from('pembelian').insert([{ id: pemId, waktu: nowISO(), supplier_nama: 'Manual', total: qty * hargaBaru, status: 'lunas', metode: 'tunai' }]));
+    if (qty * hargaBaru > 0) {
+      await catatKas({ jenis: 'keluar', metode: 'tunai', nominal: qty * hargaBaru, keterangan: `Restock ${namaItem}`, sumber: 'pembelian', ref_id: pemId });
+    }
+    await catatLog('RESTOCK', `Restock ${qty} ${namaItem} (Modal: ${rp(qty * hargaBaru)})`);
+    flash(`Berhasil restock ${qty} ${namaItem}`);
+    $('rsQty').value = 1; $('rsHarga').value = 0;
+    tarikSemuaData();
+  } catch (e) { flash('Gagal restock: ' + e.message, 'err'); }
+}
+
+async function lunasiHutang(id) {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  const p = db.pembelian.find(x => x.id === id);
+  if (!p || p.status !== 'hutang') return flash('Hutang tidak ditemukan / sudah lunas', 'err');
+  const metode = pilihMetode(`Lunasi hutang ${p.supplier_nama}: ${rp(p.total)}`);
+  if (!metode) return;
+  try {
+    await dbOk(supabaseClient.from('pembelian').update({ status: 'lunas', metode }).eq('id', id));
+    await catatKas({ jenis: 'keluar', metode, nominal: p.total, keterangan: `Pelunasan hutang ${p.supplier_nama} (${p.id})`, sumber: 'pelunasan_hutang', ref_id: p.id });
+    await catatLog('LUNASI_HUTANG', `${p.supplier_nama} ${rp(p.total)} via ${labelMetode(metode)}`);
+    flash('Hutang dilunasi');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal melunasi hutang: ' + e.message, 'err'); }
+}
+
+// === TRANSAKSI KASIR (JUAL) ===
+function addCart() {
+  const id = $('selProduk').value, qty = Math.floor(num('qty'));
+  const p = db.produk.find(x => x.id === id);
+  if (!p) return flash('Pilih produk', 'err');
+  if (qty < 1) return flash('Qty tidak valid', 'err');
+  const existing = cart.find(c => c.id === id);
+  if ((existing?.qty || 0) + qty > p.stok) return flash('Stok tidak cukup', 'err');
+  if (existing) existing.qty += qty; else cart.push({ id, nama: p.nama, harga: p.harga_jual, qty });
+  $('qty').value = 1;
+  renderCart();
+}
+function hapusCart(i) { cart.splice(i, 1); renderCart(); }
+
+function renderCart() {
+  $('cartList').innerHTML = cart.length
+    ? cart.map((c, i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga * c.qty)}</small></div><button class="btn-sm danger" onclick="hapusCart(${i})">Batal</button></div>`).join('')
+    : '<div class="empty">Belum ada item</div>';
+  updateTotalKasir();
+}
+
+// Satu sumber perhitungan untuk tampilan & pembayaran
+function hitungTotalKasir() {
+  const subtotal = cart.reduce((s, c) => s + c.harga * c.qty, 0);
+  const tipe = $('tipeDiskon')?.value || 'nominal';
+  const nilai = Math.max(0, num('nilaiDiskon'));
+  let potongan = tipe === 'nominal' ? nilai : subtotal * Math.min(nilai, 100) / 100;
+  potongan = Math.min(Math.round(potongan), subtotal);
+  const setelahDiskon = subtotal - potongan;
+  const pel = cariPelangganLokal(txt('custNama'), txt('custHp'));
+  const saldo = pel ? (pel.poin || 0) : 0;
+  const maxPoin = Math.min(saldo, Math.floor(setelahDiskon / NILAI_POIN));
+  const tukarInput = Math.max(0, Math.floor(num('tukarPoin')));
+  const tukarPoin = Math.min(tukarInput, maxPoin);
+  const potonganPoin = tukarPoin * NILAI_POIN;
+  return { subtotal, tipe, nilai, potongan, saldo, maxPoin, tukarInput, tukarPoin, potonganPoin, total: setelahDiskon - potonganPoin };
+}
+
+function updateTotalKasir() {
+  const h = hitungTotalKasir();
+  const mdr = hitungMDR(h.total, $('metodeBayar')?.value);
+  $('cartTotal').innerHTML = `
+    <div style="font-size:12px;color:#64748b;text-align:right">Subtotal: ${rp(h.subtotal)}</div>
+    <div style="font-size:12px;color:#dc2626;text-align:right">Diskon: -${rp(h.potongan)}</div>
+    <div style="font-size:12px;color:#f59e0b;text-align:right">Tukar Poin: -${rp(h.potonganPoin)}</div>
+    <div style="font-size:16px;font-weight:700;color:#0f172a">Total: ${rp(h.total)}</div>`;
+  const el = $('mdrInfo');
+  if (el) {
+    if (mdr > 0) { el.style.display = 'flex'; $('mdrValue').textContent = '-' + rp(mdr); }
+    else el.style.display = 'none';
+  }
+}
+
+async function prosesBayar() {
+  if (isProcessingPayment) return flash('Transaksi sedang diproses, mohon tunggu...', 'err');
+  if (!cart.length) return flash('Keranjang kosong', 'err');
+
+  const h = hitungTotalKasir();
+  const metode = $('metodeBayar').value;
+  const bayar = num('bayar');
+  if (h.tukarInput > h.maxPoin) return flash(`Poin melebihi batas (maksimal ${h.maxPoin} poin)`, 'err');
+  if (metode === 'tunai' && bayar < h.total) return flash('Uang kurang', 'err');
+
+  for (const c of cart) {
+    const p = db.produk.find(x => x.id === c.id);
+    if (!p || p.stok < c.qty) return flash(`Stok ${c.nama} tidak cukup`, 'err');
+  }
+
+  isProcessingPayment = true;
+  const btn = document.querySelector('button[onclick="prosesBayar()"]');
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Memproses...'; }
+
+  const dikurangi = [];
+  let trxId = null;
+  try {
+    // Diskon di atas batas aturan toko harus disetujui admin/pemilik
+    if (isKasir() && h.potongan > 0) {
+      const limP = +(db.settings.diskon_persen ?? 10), limN = +(db.settings.diskon_nominal ?? 20000);
+      const lewat = h.tipe === 'nominal' ? h.nilai > limN : h.nilai > limP;
+      if (lewat && !(await mintaOtorisasiAdmin(`Diskon ${h.tipe === 'nominal' ? rp(h.nilai) : h.nilai + '%'} melebihi batas kasir`))) {
+        flash('Diskon tidak disetujui', 'err');
+        return;
+      }
+    }
+
+    const mdr = hitungMDR(h.total, metode);
+    const bankId = getBankId('bankKasir', metode);
+    trxId = genId('TRX');
+    const cNama = formatNama(txt('custNama')), cHp = txt('custHp');
+
+    const trxHeader = {
+      id: trxId, waktu: nowISO(), subtotal: h.subtotal, diskon: h.potongan, total: h.total,
+      bayar: metode === 'tunai' ? bayar : h.total,
+      kembali: metode === 'tunai' ? (bayar - h.total) : 0, metode,
+      cust_nama: cNama, cust_hp: cHp, garansi_hari: num('garansiHari'),
+      poin_dipakai: h.tukarPoin, poin_didapat: Math.floor(h.total / 10000)
+    };
+    const trxItems = cart.map(c => ({ jual_id: trxId, produk_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty }));
+
+    // 1. Kurangi stok (aman terhadap transaksi bersamaan)
+    for (const c of cart) { await ubahStok('produk', c.id, -c.qty); dikurangi.push(c); }
+    // 2. Simpan transaksi
+    await dbOk(supabaseClient.from('jual').insert([trxHeader]));
+    await dbOk(supabaseClient.from('jual_items').insert(trxItems));
+    // 3. Kas, MDR, poin, log
+    await catatKas({ jenis: 'masuk', metode, nominal: h.total, keterangan: `Penjualan ${trxId}`, sumber: 'jual', ref_id: trxId, bank_id: bankId });
+    await catatMDR(mdr, metode, `MDR ${labelMetode(metode)} - ${trxId}`, trxId, bankId);
+    await updatePoin({ nama: cNama, telp: cHp, tambah: trxHeader.poin_didapat, pakai: h.tukarPoin });
+    await catatLog('TRANSAKSI', `Penjualan ${rp(h.total)} via ${labelMetode(metode)} (MDR: ${rp(mdr)})`);
+
+    db.jual.unshift({ ...trxHeader, items: [...trxItems] });
+    flash('Transaksi berhasil');
+    try { cetakStruk(trxId); } catch (e) { console.error(e); flash('Transaksi tersimpan, tetapi struk gagal dicetak: ' + e.message, 'err'); }
+
+    cart = [];
+    ['custNama', 'custHp'].forEach(x => { if ($(x)) $(x).value = ''; });
+    ['bayar', 'nilaiDiskon', 'tukarPoin', 'infoPoin'].forEach(x => { if ($(x)) $(x).value = 0; });
+    renderCart();
+    tarikSemuaData();
+  } catch (e) {
+    // Bila transaksi gagal sebelum tersimpan, kembalikan stok
+    if (trxId && !db.jual.some(t => t.id === trxId)) {
+      for (const c of dikurangi) { try { await ubahStok('produk', c.id, c.qty); } catch (_) { } }
+      try { await supabaseClient.from('jual').delete().eq('id', trxId); } catch (_) { }
+    }
+    flash('Gagal: ' + e.message, 'err');
+    tarikSemuaData();
+  } finally {
+    isProcessingPayment = false;
+    if (btn) { btn.disabled = false; btn.innerHTML = 'Proses & Cetak Struk'; }
+  }
+}
+
+function cetakStruk(trxId) {
+  const t = db.jual.find(x => x.id === trxId);
+  if (!t) return;
+  const toko = getToko();
+  const itemsHTML = (t.items || []).map(i => `<tr>
+      <td style="font-size:10px">${esc(i.nama)}<br>${i.qty} x ${(i.harga || 0).toLocaleString('id-ID')}</td>
+      <td style="text-align:right; font-size:10px">${(i.qty * i.harga).toLocaleString('id-ID')}</td></tr>`).join('');
+  const poinRow = t.poin_dipakai > 0 ? `<tr><td>Tukar Poin (${t.poin_dipakai})</td><td style="text-align:right">-${(t.poin_dipakai * NILAI_POIN).toLocaleString('id-ID')}</td></tr>` : '';
+
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%}</style></head><body>
+    <div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+    <div class="c">${esc(toko.alamat)}</div><hr>
+    <div>No: ${esc(t.id)}</div>
+    <div>Tgl: ${new Date(t.waktu).toLocaleString('id-ID')}</div>
+    <div>Kasir: ${esc(sessionStorage.getItem('ta_user') || 'Admin')}</div>
+    <div>Pembeli: ${esc(t.cust_nama || '-')}</div><hr>
+    <table>${itemsHTML}</table><hr>
+    <table>
+      <tr><td>Subtotal</td><td style="text-align:right">${(t.subtotal || 0).toLocaleString('id-ID')}</td></tr>
+      <tr><td>Diskon</td><td style="text-align:right">-${(t.diskon || 0).toLocaleString('id-ID')}</td></tr>
+      ${poinRow}
+      <tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${(t.total || 0).toLocaleString('id-ID')}</td></tr>
+      <tr><td>Bayar (${esc(labelMetode(t.metode))})</td><td style="text-align:right">${(t.bayar || 0).toLocaleString('id-ID')}</td></tr>
+      <tr><td>Kembali</td><td style="text-align:right">${(t.kembali || 0).toLocaleString('id-ID')}</td></tr>
+    </table><hr>
+    <div class="c" style="font-size:9px;">${esc(toko.footer)}</div>
+  </body></html>`);
+}
+
+function cekPoinPelanggan(nama) {
+  const info = $('infoPoin'), inputPoin = $('tukarPoin');
+  if (!info) return;
+  const telp = txt('custHp');
+  const p = cariPelangganLokal(nama, telp);
+  if (p) {
+    info.value = p.poin || 0;
+    if (inputPoin) inputPoin.max = p.poin || 0;
+    if (nama && !telp && p.telp && /\d/.test(p.telp)) $('custHp').value = p.telp;
+  } else {
+    info.value = 0;
+    if (inputPoin) { inputPoin.value = 0; inputPoin.max = 0; }
+  }
+  updateTotalKasir();
+}
+
+// === SERVIS ===
+function addPartServis() {
+  const id = $('selSparePart').value, qty = Math.floor(num('qtyPart'));
+  const sp = db.sparePart.find(x => x.id === id);
+  if (!sp || qty < 1) return flash('Data tidak valid', 'err');
+  const existing = cartServis.find(c => c.id === id);
+  if ((existing?.qty || 0) + qty > sp.stok) return flash('Stok tidak cukup', 'err');
+  if (existing) existing.qty += qty; else cartServis.push({ id: sp.id, nama: sp.nama, harga: sp.harga_jual, qty });
+  $('qtyPart').value = 1;
+  renderServisCart(); hitungTotalServis();
+}
+function hapusPartServis(i) { cartServis.splice(i, 1); renderServisCart(); hitungTotalServis(); }
+
+function renderServisCart() {
+  $('cartServisList').innerHTML = cartServis.length
+    ? cartServis.map((c, i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga * c.qty)}</small></div><button class="btn-sm danger" onclick="hapusPartServis(${i})">Batal</button></div>`).join('')
+    : '<div class="empty">Belum ada part</div>';
+  $('cartServisTotal').textContent = rp(cartServis.reduce((s, c) => s + c.harga * c.qty, 0));
+}
+
+function addBateraiServis() {
+  const id = $('selBateraiServis').value, qty = Math.floor(num('qtyBaterai'));
+  const sb = db.stokBaterai.find(x => x.id === id);
+  if (!sb || qty < 1) return flash('Data tidak valid', 'err');
+  const existing = cartBateraiServis.find(c => c.id === id);
+  if ((existing?.qty || 0) + qty > sb.stok) return flash('Stok tidak cukup', 'err');
+  if (existing) existing.qty += qty; else cartBateraiServis.push({ id: sb.id, nama: sb.tipe, harga: sb.harga_jual, qty });
+  $('qtyBaterai').value = 1;
+  renderBateraiServisCart(); hitungTotalServis();
+}
+function hapusBateraiServis(i) { cartBateraiServis.splice(i, 1); renderBateraiServisCart(); hitungTotalServis(); }
+
+function renderBateraiServisCart() {
+  const el = $('cartBateraiServisList'), totalEl = $('cartBateraiServisTotal');
+  if (el) {
+    el.innerHTML = cartBateraiServis.length
+      ? cartBateraiServis.map((c, i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga * c.qty)}</small></div><button class="btn-sm danger" onclick="hapusBateraiServis(${i})">Batal</button></div>`).join('')
+      : '<div class="empty">Belum ada baterai</div>';
+  }
+  if (totalEl) totalEl.textContent = rp(cartBateraiServis.reduce((s, c) => s + c.harga * c.qty, 0));
+}
+
+function hitungTotalServis() {
+  const isKlaim = !!txt('sParentId');
+  const garansi = $('sGaransi')?.value;
+  const gratisJasa = isKlaim || garansi === 'garansi';
+  const jasa = gratisJasa ? 0 : num('sJasa');
+  const totalParts = cartServis.reduce((s, c) => s + c.harga * c.qty, 0);
+  const totalBaterai = cartBateraiServis.reduce((s, c) => s + c.harga * c.qty, 0);
+  const totalBiaya = jasa + totalParts + totalBaterai;
+  const label = isKlaim ? `${rp(totalBiaya)} (Klaim)` : (gratisJasa ? `${rp(totalBiaya)} (Jasa Gratis)` : rp(totalBiaya));
+  const dp = num('sDp');
+  if ($('sTotalBiaya')) $('sTotalBiaya').value = label;
+  if ($('sSisa')) $('sSisa').value = rp(Math.max(0, totalBiaya - dp));
+  if ($('sTotalBiayaDisplay')) $('sTotalBiayaDisplay').innerText = label;
+}
+
+// 1. Masukkan jam ke list keranjang
+function tambahKeKeranjangServis() {
+  if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi Nama dan Produk', 'err');
+
+  const customer = formatNama($('sNama').value), telp = txt('sHp');
+  const listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => cb.value);
+  const kondisiLain = txt('sKondisiLain');
+  if (kondisiLain) listKondisi.push(kondisiLain);
+  const kondisiFisik = listKondisi.length ? listKondisi.join(', ') : '-';
+
+  const produk = txt('sProduk'), keluhan = txt('sKeluhan'), catatan = txt('sCatatan');
+  const garansi = $('sGaransi').value;
+  const parentId = txt('sParentId');
+  const isKlaim = !!parentId;
+
+  if (isKlaim) {
+    const parent = db.servis.find(x => x.id === parentId);
+    const terpakai = (parent?.klaim_count || 0) + cartServisGabungan.filter(i => i.parentId === parentId).length;
+    if (!parent || !bisaKlaimGaransi(parent) || terpakai >= MAX_KLAIM_SERVIS) return flash('Kuota klaim garansi untuk nota ini sudah habis', 'err');
+  }
+
+  const jasa = (isKlaim || garansi === 'garansi') ? 0 : num('sJasa');
+  const totalParts = cartServis.reduce((s, c) => s + c.harga * c.qty, 0);
+  const totalBaterai = cartBateraiServis.reduce((s, c) => s + c.harga * c.qty, 0);
+  const biayaPelanggan = jasa + totalParts + totalBaterai;
+
+  cartServisGabungan.push({
+    customer, telp, produk, keluhan, catatan, kondisiFisik, garansi, isKlaim, parentId,
+    jasa, totalParts, totalBaterai, biayaPelanggan,
+    parts: [...cartServis], baterai: [...cartBateraiServis]
+  });
+
+  renderKeranjangServis();
+
+  // Reset form per-jam (nama & HP dibiarkan), termasuk mode klaim agar tidak menular ke jam berikutnya
+  ['sProduk', 'sKeluhan', 'sCatatan'].forEach(x => { if ($(x)) $(x).value = ''; });
+  $('sJasa').value = 0;
+  $('sGaransi').value = 'garansi';
+  resetModeKlaim();
+  document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
+  if ($('sKondisiLain')) $('sKondisiLain').value = '';
+
+  cartServis = []; cartBateraiServis = [];
+  renderServisCart(); renderBateraiServisCart(); hitungTotalServis();
+  window.scrollTo(0, 0);
+  flash('Jam berhasil ditambahkan ke list');
+}
+
+// 2. Tampilkan list
+function renderKeranjangServis() {
+  const card = $('cardKeranjangServis'), cardBayar = $('cardPembayaranServis'), list = $('listKeranjangServis');
+  if (!cartServisGabungan.length) {
+    if (card) card.style.display = 'none';
+    if (cardBayar) cardBayar.style.display = 'none';
+    if ($('sTotalBiayaDisplay')) $('sTotalBiayaDisplay').innerText = 'Rp 0';
+    return;
+  }
+  if (card) card.style.display = 'block';
+  if (cardBayar) cardBayar.style.display = 'block';
+  if (list) {
+    list.innerHTML = cartServisGabungan.map((item, index) => `
+      <div class="item-servis-cart">
+        <div class="info">
+          <strong>${index + 1}. ${esc(item.produk)}${item.isKlaim ? ' (Klaim)' : ''}</strong><br>
+          Keluhan: ${esc(item.keluhan || '-')} | Biaya: ${rp(item.biayaPelanggan)}
+        </div>
+        <button class="btn-sm danger" onclick="hapusItemKeranjangServis(${index})">X</button>
+      </div>`).join('');
+  }
+  updateTotalGroupServis();
+}
+
+// 3. Total & DP gabungan
+function updateTotalGroupServis() {
+  const grandTotal = cartServisGabungan.reduce((s, item) => s + item.biayaPelanggan, 0);
+  const dpGroup = Math.min(Math.max(0, num('sDpGroup')), grandTotal);
+  if ($('sTotalBiayaGroup')) $('sTotalBiayaGroup').value = rp(grandTotal);
+  if ($('sSisaGroup')) $('sSisaGroup').value = rp(Math.max(0, grandTotal - dpGroup));
+  if ($('sTotalBiayaDisplay')) $('sTotalBiayaDisplay').innerText = rp(grandTotal);
+
+  const metodeDp = $('metodeDpGroup')?.value || 'tunai';
+  const mdrDp = hitungMDR(dpGroup, metodeDp);
+  const elMdr = $('mdrDpInfo');
+  if (elMdr) {
+    if (mdrDp > 0) { elMdr.style.display = 'flex'; $('mdrDpValue').textContent = '-' + rp(mdrDp); }
+    else elMdr.style.display = 'none';
+  }
+}
+
+function hapusItemKeranjangServis(index) { cartServisGabungan.splice(index, 1); renderKeranjangServis(); }
+
+// Kosongkan list TANPA konfirmasi (dipakai setelah simpan berhasil)
+function resetKeranjangServis() {
+  cartServisGabungan = [];
+  if ($('sDpGroup')) $('sDpGroup').value = 0;
+  renderKeranjangServis();
+}
+function batalKeranjangServis() {
+  if (!confirm('Kosongkan semua list servis?')) return;
+  resetKeranjangServis();
+}
+
+// 6. Simpan semua servis ke database & cetak nota
+async function simpanSemuaServis() {
+  if (isSavingServis) return;
+  if (!cartServisGabungan.length) return flash('List kosong. Klik "Tambah Jam Ini ke List".', 'err');
+
+  const btn = document.querySelector('.sticky-bottom-bar .btn-simpan');
+  isSavingServis = true;
+  if (btn) { btn.innerHTML = 'Memproses...'; btn.disabled = true; }
+
+  const groupId = genId('GRP');
+  const grandTotal = cartServisGabungan.reduce((s, item) => s + item.biayaPelanggan, 0);
+  const dpGroup = Math.min(Math.max(0, num('sDpGroup')), grandTotal);
+  const metodeDp = $('metodeDpGroup')?.value || 'tunai';
+  const bankId = getBankId('bankDp', metodeDp);
+  const namaPelanggan = cartServisGabungan[0].customer, telpPelanggan = cartServisGabungan[0].telp;
+
+  const dibuat = [];        // id servis yang sudah tersimpan (untuk rollback)
+  const stokKurang = [];    // { tabel, id, qty }
+  const hasil = [];         // data untuk nota
+
+  try {
+    // Validasi kuota klaim terhadap data terbaru di server
+    const hitungKlaim = {};
+    cartServisGabungan.filter(i => i.isKlaim).forEach(i => { hitungKlaim[i.parentId] = (hitungKlaim[i.parentId] || 0) + 1; });
+    for (const pid of Object.keys(hitungKlaim)) {
+      const { data: par, error } = await supabaseClient.from('servis').select('klaim_count').eq('id', pid).single();
+      if (error) throw error;
+      if ((par.klaim_count || 0) + hitungKlaim[pid] > MAX_KLAIM_SERVIS) throw new Error('Kuota klaim garansi nota ' + pid + ' sudah habis');
+    }
+
+    let sisaDp = dpGroup;
+    for (const item of cartServisGabungan) {
+      const srvId = genId('SRV');
+      const dpJamIni = Math.min(item.biayaPelanggan, sisaDp);
+      sisaDp -= dpJamIni;
+      const sisaJamIni = item.biayaPelanggan - dpJamIni;
+
+      await dbOk(supabaseClient.from('servis').insert([{
+        id: srvId, group_id: groupId, waktu: nowISO(),
+        customer: item.customer, telp: item.telp, produk: item.produk,
+        keluhan: item.keluhan, catatan: item.catatan, kondisi_fisik: item.kondisiFisik,
+        garansi: item.isKlaim ? 'luar' : item.garansi, jasa: item.jasa,
+        total_parts: item.totalParts, total_baterai: item.totalBaterai,
+        biaya_pelanggan: item.biayaPelanggan,
+        dp: dpJamIni, sisa: sisaJamIni, paid: sisaJamIni <= 0, status: 'antri',
+        is_klaim: item.isKlaim, parent_id: item.parentId || null
+      }]));
+      dibuat.push(srvId);
+
+      if (item.parts.length) {
+        await dbOk(supabaseClient.from('servis_parts').insert(item.parts.map(c => ({ servis_id: srvId, part_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty }))));
+        for (const c of item.parts) { await ubahStok('sparepart', c.id, -c.qty); stokKurang.push({ tabel: 'sparepart', id: c.id, qty: c.qty }); }
+      }
+      if (item.baterai.length) {
+        await dbOk(supabaseClient.from('servis_baterai').insert(item.baterai.map(c => ({ servis_id: srvId, baterai_id: c.id, nama: c.nama, harga: c.harga, qty: c.qty }))));
+        for (const c of item.baterai) { await ubahStok('stok_baterai', c.id, -c.qty); stokKurang.push({ tabel: 'stok_baterai', id: c.id, qty: c.qty }); }
+      }
+      hasil.push({ ...item, srvId, dpAlokasi: dpJamIni, sisaAlokasi: sisaJamIni });
+    }
+
+    // Tambah hitungan klaim pada nota induk
+    for (const pid of Object.keys(hitungKlaim)) {
+      const { data: par } = await supabaseClient.from('servis').select('klaim_count').eq('id', pid).single();
+      await dbOk(supabaseClient.from('servis').update({ klaim_count: (par?.klaim_count || 0) + hitungKlaim[pid] }).eq('id', pid));
+    }
+
+    if (dpGroup > 0) {
+      await catatKas({ jenis: 'masuk', metode: metodeDp, nominal: dpGroup, keterangan: `DP Servis (${cartServisGabungan.length} Jam) - ${namaPelanggan}`, sumber: 'servis', ref_id: groupId, bank_id: bankId });
+      await catatMDR(hitungMDR(dpGroup, metodeDp), metodeDp, `MDR DP ${groupId}`, groupId, bankId);
+      // Poin dihitung dari uang yang benar-benar masuk (DP sekarang, sisanya saat pelunasan)
+      await updatePoin({ nama: namaPelanggan, telp: telpPelanggan, tambah: Math.floor(dpGroup / 10000) });
+    }
+
+    await catatLog('SERVIS_GABUNGAN', `Menyimpan ${hasil.length} servis untuk ${namaPelanggan}`);
+    flash('Semua servis berhasil disimpan!');
+    try { cetakNotaGabunganServisByData(hasil, groupId, dpGroup); } catch (e) { console.error(e); flash('Servis tersimpan, tetapi nota gagal dicetak: ' + e.message, 'err'); }
+    resetKeranjangServis();
+    ['sNama', 'sHp'].forEach(x => { if ($(x)) $(x).value = ''; });
+    tarikSemuaData();
+  } catch (e) {
+    // Rollback servis yang sempat tersimpan bila gagal di tengah jalan
+    for (const s of stokKurang) { try { await ubahStok(s.tabel, s.id, s.qty); } catch (_) { } }
+    for (const id of dibuat) { try { await supabaseClient.from('servis').delete().eq('id', id); } catch (_) { } }
+    try { await supabaseClient.from('kas').delete().eq('ref_id', groupId); } catch (_) { }
+    flash('Gagal: ' + e.message, 'err');
+    tarikSemuaData();
+  } finally {
+    isSavingServis = false;
+    if (btn) { btn.innerHTML = '💾 Simpan Servis'; btn.disabled = false; }
+  }
+}
+
+// 7. Nota gabungan dari data keranjang
+function cetakNotaGabunganServisByData(listData, groupId, dpGroup = 0) {
+  const toko = getToko();
+  const customer = listData[0].customer, telp = listData[0].telp;
+  const totalBiaya = listData.reduce((s, x) => s + x.biayaPelanggan, 0);
+  const totalSisa = listData.reduce((s, x) => s + (x.sisaAlokasi ?? x.biayaPelanggan), 0);
+  const link = linkLacak('group_id', groupId);
+
+  const itemsHTML = listData.map((s, idx) => `
+      <div style="margin-bottom:6px; font-size:10px; border-bottom:1px dotted #ccc; padding-bottom:4px;">
+        <b>${idx + 1}. ${esc(s.produk)}</b><br>
+        Keluhan: ${esc(s.keluhan || '-')}<br>
+        Biaya: Rp ${(s.biayaPelanggan || 0).toLocaleString('id-ID')}
+      </div>`).join('');
+
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+  <div class="c b">NOTA SERVIS GABUNGAN</div><hr>
+  <div>Pelanggan: ${esc(customer)}</div>
+  <div>No HP: ${esc(telp)}</div>
+  <div>Tgl: ${new Date().toLocaleString('id-ID')}</div><hr>
+  <div class="b">Daftar Barang (${listData.length} item):</div>
+  ${itemsHTML}<hr>
+  <table style="width:100%">
+    <tr><td class="b">TOTAL BIAYA</td><td class="b" style="text-align:right">Rp ${totalBiaya.toLocaleString('id-ID')}</td></tr>
+    <tr><td>DP</td><td style="text-align:right">Rp ${dpGroup.toLocaleString('id-ID')}</td></tr>
+    <tr><td class="b">SISA TAGIHAN</td><td class="b" style="text-align:right">Rp ${totalSisa.toLocaleString('id-ID')}</td></tr>
+  </table><hr>
+  <div class="c" style="margin-top: 8px;">
+    <div style="font-size:9px;">Scan untuk lacak status servis:</div>
+    <img src="${qrUrl(link)}" width="80" height="80">
+  </div>
+  <div class="c" style="font-size:9px; margin-top:4px; word-break:break-all;">${esc(link)}</div>
+  <div class="c" style="margin-top:6px">Simpan nota ini</div></body></html>`);
+}
+
+async function bayarSisaServis(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s || s.sisa <= 0) return;
+
+  const m = pilihMetode(`Sisa: ${rp(s.sisa)}`);
+  if (!m) return;
+  const input = prompt('Nominal bayar:', s.sisa);
+  if (input === null) return;
+  const bayar = +input || 0;
+  if (bayar <= 0) return flash('Nominal tidak valid', 'err');
+
+  const nominal = Math.min(bayar, s.sisa);
+  const sisaBaru = s.sisa - nominal;
+  const isPaid = sisaBaru <= 0;
+  // Status "diambil" hanya otomatis bila jam sudah selesai dikerjakan
+  const statusBaru = (isPaid && s.status === 'selesai') ? 'diambil' : s.status;
+
+  try {
+    await dbOk(supabaseClient.from('servis').update({ sisa: sisaBaru, paid: isPaid, status: statusBaru }).eq('id', id));
+    await catatKas({ jenis: 'masuk', metode: m, nominal, keterangan: `Pelunasan Servis ${s.id}`, sumber: 'servis', ref_id: s.id });
+    await catatMDR(hitungMDR(nominal, m), m, `MDR ${labelMetode(m)} - ${s.id}`, s.id);
+    await updatePoin({ nama: s.customer, telp: s.telp, tambah: Math.floor(nominal / 10000) });
+    await catatLog('PELUNASAN_SERVIS', `Pelunasan ${s.id} sebesar ${rp(nominal)} via ${labelMetode(m)}`);
+    flash(isPaid ? 'LUNAS' : `Sisa ${rp(sisaBaru)}`);
+    tarikSemuaData();
+  } catch (e) { flash('Gagal melunasi: ' + e.message, 'err'); }
+}
+
+async function ubahStatusServis(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s) return;
+  if (s.status === 'diambil') return flash('Servis sudah diambil, status tidak bisa diubah kembali.', 'err');
+
+  const flow = ['antri', 'proses', 'selesai', 'diambil'];
+  const nextStatus = flow[flow.indexOf(s.status) + 1];
+  if (nextStatus === 'diambil' && !s.paid && s.sisa > 0) return flash('Lunasi sisa tagihan dulu sebelum jam diambil.', 'err');
+
+  const updateData = { status: nextStatus };
+  if (nextStatus === 'selesai' && !s.tgl_selesai) {
+    const bulan = +(db.settings.garansi_servis_bulan ?? 3);
+    updateData.tgl_selesai = nowISO();
+    updateData.garansi_servis_bulan = bulan;
+    updateData.tgl_garansi_servis_sampai = tambahBulan(tglLokal(), bulan);
+  }
+  try {
+    await dbOk(supabaseClient.from('servis').update(updateData).eq('id', id));
+    await catatLog('STATUS_SERVIS', `Ubah status ${s.id} menjadi ${nextStatus}`);
+    flash(`Status menjadi ${nextStatus}`);
+    tarikSemuaData();
+  } catch (e) { flash('Gagal ubah status: ' + e.message, 'err'); }
+}
+
+async function hapusServis(id) {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  const s = db.servis.find(x => x.id === id);
+  if (!s) return;
+  if (!confirm('Hapus servis ini?\n\nStok part/baterai dikembalikan. Catatan kas terkait TIDAK ikut terhapus (hapus manual di menu Kas bila perlu).')) return;
+  try {
+    for (const p of (s.parts || [])) await ubahStok('sparepart', p.part_id, p.qty);
+    for (const b of (s.baterai || [])) await ubahStok('stok_baterai', b.baterai_id, b.qty);
+    await dbOk(supabaseClient.from('servis').delete().eq('id', id));
+    if (s.is_klaim && s.parent_id) {
+      const { data: par } = await supabaseClient.from('servis').select('klaim_count').eq('id', s.parent_id).maybeSingle();
+      if (par) await supabaseClient.from('servis').update({ klaim_count: Math.max(0, (par.klaim_count || 0) - 1) }).eq('id', s.parent_id);
+    }
+    await catatLog('HAPUS_SERVIS', 'Menghapus servis ID: ' + id);
+    flash('Dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus: ' + e.message, 'err'); }
+}
+
+// === KLAIM GARANSI SERVIS ===
+function bisaKlaimGaransi(s) {
+  if (!s || s.is_klaim || !s.tgl_garansi_servis_sampai || s.status !== 'diambil') return false;
+  if (new Date() > new Date(s.tgl_garansi_servis_sampai + 'T23:59:59')) return false;
+  if ((s.klaim_count || 0) >= MAX_KLAIM_SERVIS) return false;
+  return true;
+}
+
+function resetModeKlaim() {
+  if ($('sParentId')) $('sParentId').value = '';
+  if ($('sJasa')) $('sJasa').readOnly = false;
+  if ($('sGaransi')) $('sGaransi').disabled = false;
+  const banner = $('klaimBanner');
+  if (banner) banner.style.display = 'none';
+}
+
+function mulaiKlaimGaransi(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s || !bisaKlaimGaransi(s)) return flash('Tidak bisa diklaim', 'err');
+  if (!confirm(`KLAIM GARANSI\n\nPelanggan: ${s.customer}\nSisa kuota: ${MAX_KLAIM_SERVIS - (s.klaim_count || 0)}x\n\nLanjut?`)) return;
+  $('sNama').value = s.customer; $('sHp').value = s.telp || ''; $('sProduk').value = s.produk;
+  $('sGaransi').value = 'luar'; $('sGaransi').disabled = true;
+  $('sJasa').value = 0; $('sJasa').readOnly = true; $('sParentId').value = s.id;
+  const banner = $('klaimBanner');
+  if (banner) { banner.style.display = 'block'; banner.innerHTML = `<b>MODE KLAIM GARANSI</b> - Dari: ${esc(s.id)}<br><button class="btn-sm danger" onclick="batalKlaimGaransi()">Batal Klaim</button>`; }
+  bukaMenu('servis'); window.scrollTo(0, 0); hitungTotalServis();
+}
+
+function batalKlaimGaransi() {
+  resetModeKlaim();
+  $('sJasa').value = 0; $('sGaransi').value = 'garansi';
+  ['sNama', 'sHp', 'sProduk', 'sKeluhan'].forEach(x => { if ($(x)) $(x).value = ''; });
+  hitungTotalServis(); flash('Klaim dibatalkan');
+}
+
+// === BATERAI ===
+async function tambahStokBaterai() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  const tipe = txt('sbTipe').toUpperCase();
+  if (!tipe) return flash('Tipe wajib', 'err');
+  const stokInput = Math.max(0, Math.floor(num('sbStok')));
+  const sb = db.stokBaterai.find(x => x.tipe.toUpperCase() === tipe);
+  try {
+    if (sb) await ubahStok('stok_baterai', sb.id, stokInput);
+    else await dbOk(supabaseClient.from('stok_baterai').insert([{ id: genId('SB'), tipe, min_stok: num('sbMin'), harga_beli: num('sbBeli'), harga_jual: num('sbJual'), stok: stokInput }]));
+    await catatLog('TAMBAH_BATERAI', 'Menambah stok baterai: ' + tipe);
+    flash('Stok baterai berhasil ditambahkan');
+    ['sbTipe', 'sbBeli', 'sbJual'].forEach(id => { if ($(id)) $(id).value = ''; });
+    $('sbStok').value = 0;
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+function pilihBaterai() {
+  const sb = db.stokBaterai.find(x => x.id === $('bTipeSel').value);
+  const info = $('bStokInfo');
+  if (!sb) { if (info) info.value = '-'; return; }
+  if (info) info.value = `${sb.stok} unit (min ${sb.min_stok})`;
+  cekKlaimBaterai(txt('bNama'));
+}
+
+function addBateraiCart() {
+  const produk = txt('bProduk'), sbId = $('bTipeSel').value;
+  if (!produk) return flash('Isi Nama Produk / Jam terlebih dahulu!', 'err');
+  if (!sbId) return flash('Pilih Tipe Baterai terlebih dahulu!', 'err');
+  const sb = db.stokBaterai.find(x => x.id === sbId);
+  if (!sb) return flash('Data baterai tidak ditemukan!', 'err');
+  if (sb.stok < 1) return flash('Stok baterai habis!', 'err');
+
+  const existing = cartBaterai.find(c => c.produk.toLowerCase() === produk.toLowerCase() && c.sbId === sbId);
+  if (existing) {
+    if (existing.qty + 1 > sb.stok) return flash('Stok baterai tidak mencukupi!', 'err');
+    existing.qty += 1;
+  } else {
+    cartBaterai.push({ produk, sbId, tipe: sb.tipe, harga: Math.round((sb.harga_jual || 0) * statusKlaimAktif.multiplier), qty: 1, jenisKlaim: statusKlaimAktif.tipe });
+  }
+  $('bProduk').value = ''; $('bTipeSel').value = '';
+  renderBateraiCart();
+  flash('Baterai berhasil ditambahkan ke list');
+}
+
+function renderBateraiCart() {
+  const listEl = $('cartBateraiList'), cardList = $('cardListBaterai'), cardBayar = $('cardPembayaranBaterai'), stickyBar = $('stickyBaterai');
+  if (!cartBaterai.length) {
+    if (cardList) cardList.style.display = 'none';
+    if (cardBayar) cardBayar.style.display = 'none';
+    if (stickyBar) stickyBar.style.display = 'none';
+    return;
+  }
+  if (cardList) cardList.style.display = 'block';
+  if (cardBayar) cardBayar.style.display = 'block';
+  if (stickyBar) stickyBar.style.display = 'flex';
+  if (listEl) {
+    listEl.innerHTML = cartBaterai.map((c, i) => `
+      <div class="item-servis-cart">
+        <div class="info">
+          <strong>${i + 1}. ${esc(c.produk)} (${esc(c.tipe)}) x${c.qty}</strong><br>
+          Harga: ${rp(c.harga)} | Subtotal: ${rp(c.harga * c.qty)}
+        </div>
+        <button type="button" class="btn-sm danger" onclick="hapusBateraiCart(${i})">X</button>
+      </div>`).join('');
+  }
+  updateTotalBaterai();
+}
+
+function updateTotalBaterai() {
+  const total = cartBaterai.reduce((s, c) => s + (c.harga * c.qty), 0);
+  if ($('displayTotalBaterai')) $('displayTotalBaterai').innerText = rp(total);
+  const mdr = hitungMDR(total, $('metodeBaterai')?.value);
+  const elMdr = $('mdrBateraiInfo');
+  if (elMdr) {
+    if (mdr > 0) { elMdr.style.display = 'flex'; $('mdrBateraiValue').textContent = '-' + rp(mdr); }
+    else elMdr.style.display = 'none';
+  }
+}
+
+function batalKeranjangBaterai() {
+  if (!confirm('Kosongkan list baterai?')) return;
+  cartBaterai = [];
+  renderBateraiCart();
+}
+function hapusBateraiCart(i) { cartBaterai.splice(i, 1); renderBateraiCart(); }
+
+async function simpanBaterai() {
+  if (isSavingBaterai) return;
+  if (!checkRequired(['bNama'])) return flash('Nama Pelanggan wajib diisi', 'err');
+  if (!cartBaterai.length) return flash('Keranjang baterai masih kosong', 'err');
+
+  const nama = formatNama($('bNama').value), telp = txt('bHp');
+  const metode = $('metodeBaterai').value;
+  const garansi = num('bGaransi');
+  const tglGanti = $('bTgl').value || tglLokal();
+  const tglExpired = tambahBulan(tglGanti, garansi);
+
+  const totalBiaya = cartBaterai.reduce((s, c) => s + (c.harga * c.qty), 0);
+  const totalHargaNormal = cartBaterai.reduce((s, c) => {
+    const sb = db.stokBaterai.find(x => x.id === c.sbId);
+    return s + ((sb ? sb.harga_jual : 0) * c.qty);
+  }, 0);
+  const mdr = hitungMDR(totalBiaya, metode);
+  const bankId = getBankId('bankBaterai', metode);
+
+  isSavingBaterai = true;
+  const stokKurang = [], dibuat = [];
+  let groupId = null;
+  try {
+    // Harga di bawah normal (klaim/garansi) harus disetujui admin/pemilik; admin yang login langsung dianggap setuju
+    if (totalBiaya < totalHargaNormal && !isAdmin()) {
+      const ok = await mintaOtorisasiAdmin(`Klaim baterai ${nama}: normal ${rp(totalHargaNormal)}, dibayar ${rp(totalBiaya)}`);
+      if (!ok) return flash('Otorisasi gagal / dibatalkan', 'err');
+    }
+
+    groupId = genId('GRP-BAT');
+    const listDataBaterai = [];
+    for (const item of cartBaterai) {
+      const data = {
+        id: genId('BAT'), group_id: groupId, waktu: nowISO(), customer: nama, telp,
+        produk: item.produk, tipe: item.tipe, sb_id: item.sbId,
+        tgl_ganti: tglGanti, garansi_bulan: garansi, tgl_expired: tglExpired,
+        biaya: item.harga * item.qty, metode, paid: metode !== 'hutang', jenis_klaim: item.jenisKlaim
+      };
+      await ubahStok('stok_baterai', item.sbId, -item.qty);
+      stokKurang.push({ id: item.sbId, qty: item.qty });
+      await dbOk(supabaseClient.from('baterai').insert([data]));
+      dibuat.push(data.id);
+      listDataBaterai.push(data);
+    }
+
+    if (metode !== 'hutang' && totalBiaya > 0) {
+      await catatKas({ jenis: 'masuk', metode, nominal: totalBiaya, keterangan: `Ganti Baterai (${cartBaterai.length} item) - ${nama}`, sumber: 'baterai', ref_id: groupId, bank_id: bankId });
+      await catatMDR(mdr, metode, `MDR ${labelMetode(metode)} Baterai - ${nama}`, groupId, bankId);
+      await updatePoin({ nama, telp, tambah: Math.floor(totalBiaya / 10000) });
+    }
+    await catatLog('BATERAI', `Ganti baterai ${cartBaterai.length} item untuk ${nama} (${rp(totalBiaya)})`);
+
+    try { cetakStrukGabunganBaterai(listDataBaterai, nama, telp, totalBiaya); } catch (e) { console.error(e); flash('Data tersimpan, tetapi struk gagal dicetak: ' + e.message, 'err'); }
+    cartBaterai = [];
+    renderBateraiCart();
+    ['bNama', 'bHp', 'bProduk'].forEach(id => { if ($(id)) $(id).value = ''; });
+    statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+    if ($('infoKlaimBaterai')) $('infoKlaimBaterai').style.display = 'none';
+    tarikSemuaData();
+  } catch (e) {
+    for (const s of stokKurang) { try { await ubahStok('stok_baterai', s.id, s.qty); } catch (_) { } }
+    for (const id of dibuat) { try { await supabaseClient.from('baterai').delete().eq('id', id); } catch (_) { } }
+    if (groupId) { try { await supabaseClient.from('kas').delete().eq('ref_id', groupId); } catch (_) { } }
+    flash('Gagal: ' + e.message, 'err');
+    tarikSemuaData();
+  } finally { isSavingBaterai = false; }
+}
+
+async function hapusBaterai(id) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus', 'err');
+  if (!confirm('Hapus data riwayat baterai ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('baterai').delete().eq('id', id));
+    await catatLog('HAPUS_BATERAI', 'Menghapus riwayat baterai ID: ' + id);
+    flash('Dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function editStokBaterai(id) {
+  if (!isAdmin()) return flash('Akses ditolak', 'err');
+  const sb = db.stokBaterai.find(x => x.id === id);
+  if (!sb) return;
+  const min = prompt('Min Stok:', sb.min_stok); if (min === null) return;
+  const beli = prompt('Harga Beli:', sb.harga_beli); if (beli === null) return;
+  const jual = prompt('Harga Jual:', sb.harga_jual); if (jual === null) return;
+  try {
+    await dbOk(supabaseClient.from('stok_baterai').update({ min_stok: +min || 0, harga_beli: +beli || 0, harga_jual: +jual || 0 }).eq('id', id));
+    await catatLog('EDIT_BATERAI', 'Mengubah data baterai: ' + sb.tipe);
+    flash('Data baterai diperbarui');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function hapusStokBaterai(id) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus', 'err');
+  if (!confirm('Hapus tipe baterai ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('stok_baterai').delete().eq('id', id));
+    await catatLog('HAPUS_STOK_BATERAI', 'Menghapus tipe baterai ID: ' + id);
+    flash('Tipe baterai dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus (mungkin sudah dipakai di transaksi): ' + e.message, 'err'); }
+}
+
+function cekKlaimBaterai(nama) {
+  const infoKlaim = $('infoKlaimBaterai');
+  const reset = () => { statusKlaimAktif = { multiplier: 1, tipe: 'Normal' }; if (infoKlaim) infoKlaim.style.display = 'none'; };
+
+  const produkInput = txt('bProduk').toLowerCase();
+  if (!nama || !produkInput) return reset();
+
+  const telp = txt('bHp');
+  const tglBaru = new Date(($('bTgl')?.value || tglLokal()) + 'T00:00:00');
+
+  const riwayat = db.baterai
+    .filter(b => (b.customer.toLowerCase() === nama.toLowerCase() || (telp && b.telp === telp)) && b.produk.toLowerCase() === produkInput)
+    .sort((a, b) => new Date(b.tgl_ganti) - new Date(a.tgl_ganti));
+  if (!riwayat.length) return reset();
+
+  const tglLama = new Date(riwayat[0].tgl_ganti + 'T00:00:00');
+  if (isNaN(tglBaru.getTime()) || isNaN(tglLama.getTime())) return reset();
+
+  let selisih = (tglBaru.getFullYear() - tglLama.getFullYear()) * 12 + (tglBaru.getMonth() - tglLama.getMonth());
+  if (tglBaru.getDate() < tglLama.getDate()) selisih--;
+
+  let pesan, warna;
+  if (selisih <= GARANSI_BATERAI_PENUH_BULAN) {
+    statusKlaimAktif = { multiplier: 0, tipe: 'Garansi (Gratis)' };
+    pesan = `✅ MASIH GARANSI (Bulan ke-${selisih}). Biaya Baterai: Rp 0`; warna = '#dcfce7';
+  } else if (selisih <= GARANSI_BATERAI_SETENGAH_BULAN) {
+    statusKlaimAktif = { multiplier: 0.5, tipe: 'Klaim 50%' };
+    pesan = `⚠️ LEWAT GARANSI ${GARANSI_BATERAI_PENUH_BULAN} BULAN (Bulan ke-${selisih}). Biaya Baterai: 50%`; warna = '#fef3c7';
+  } else {
+    statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
+    pesan = `❌ LEWAT GARANSI >${GARANSI_BATERAI_SETENGAH_BULAN} BULAN (Bulan ke-${selisih}). Biaya Baterai: Full`; warna = '#fee2e2';
+  }
+  if (infoKlaim) { infoKlaim.style.display = 'block'; infoKlaim.textContent = pesan; infoKlaim.style.background = warna; }
+}
+
+// === KAS & KEUANGAN ===
+async function simpanKasManual() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  if (!checkRequired(['kasNominal', 'kasKet'])) return flash('Lengkapi nominal & keterangan', 'err');
+  const nominal = num('kasNominal'), ket = txt('kasKet');
+  const metode = $('kasMetode').value, jenis = $('kasJenis').value;
+  const tgl = $('kasTgl')?.value || tglLokal();
+  if (nominal <= 0) return flash('Nominal tidak valid', 'err');
+  try {
+    // waktu mengikuti tanggal yang dipilih agar masuk laporan bulan yang benar
+    const waktu = tgl === tglLokal() ? nowISO() : new Date(tgl + 'T12:00:00').toISOString();
+    await catatKas({ waktu, jenis, metode, nominal, keterangan: ket, sumber: 'manual', bank_id: getBankId('kasBank', metode) });
+    await catatLog('KAS_MANUAL', `Input kas ${jenis} - ${ket} (${rp(nominal)})`);
+    flash('Kas dicatat');
+    ['kasNominal', 'kasKet'].forEach(x => { $(x).value = ''; });
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function tambahBank() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  if (!checkRequired(['bankNama'])) return flash('Nama bank wajib', 'err');
+  try {
+    await dbOk(supabaseClient.from('bank').insert([{ id: genId('BNK'), nama: txt('bankNama'), no: txt('bankNo'), saldo_awal: num('bankSaldoAwal') }]));
+    await catatLog('TAMBAH_REKENING', 'Menambah rekening bank: ' + txt('bankNama'));
+    flash('Rekening ditambahkan');
+    ['bankNama', 'bankNo', 'bankSaldoAwal'].forEach(x => { if ($(x)) $(x).value = ''; });
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function editBank(id) {
+  if (!isAdmin()) return flash('Akses ditolak', 'err');
+  const b = db.bank.find(x => x.id === id);
+  if (!b) return;
+  const input = prompt(`Masukkan Saldo Awal baru untuk ${b.nama} (Rp):`, b.saldo_awal);
+  if (input === null) return;
+  const saldo = +input;
+  if (isNaN(saldo)) return flash('Nominal tidak valid', 'err');
+  try {
+    await dbOk(supabaseClient.from('bank').update({ saldo_awal: saldo }).eq('id', id));
+    await catatLog('EDIT_BANK', `Mengubah saldo awal ${b.nama} menjadi ${rp(saldo)}`);
+    flash('Saldo Awal berhasil diperbarui');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function hapusBank(id) {
+  if (!isAdmin() || !confirm('Hapus rekening bank ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('bank').delete().eq('id', id));
+    await catatLog('HAPUS_BANK', 'Menghapus rekening ID: ' + id);
+    flash('Rekening berhasil dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+const saldoBankSistem = b => {
+  const masuk = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'masuk').reduce((s, k) => s + k.nominal, 0);
+  const keluar = db.kas.filter(k => k.bank_id === b.id && k.jenis === 'keluar').reduce((s, k) => s + k.nominal, 0);
+  return (b.saldo_awal || 0) + masuk - keluar;
+};
+
+async function rekonsiliasiBank(id) {
+  if (!isAdmin()) return flash('Akses ditolak', 'err');
+  const b = db.bank.find(x => x.id === id);
+  if (!b) return;
+  const saldoSistem = saldoBankSistem(b);
+  const inputSaldo = prompt(`REKONSILIASI BANK ${b.nama}\n\nSaldo Sistem: ${rp(saldoSistem)}\n\nMasukkan Saldo Aktual (sesuai m-banking/ATM):`);
+  if (inputSaldo === null) return;
+  const saldoAktual = +inputSaldo;
+  if (isNaN(saldoAktual)) return flash('Nominal tidak valid', 'err');
+  const selisih = saldoAktual - saldoSistem;
+  if (selisih === 0) return flash('Rekonsiliasi selesai. Saldo sudah sesuai 100%.', 'ok');
+
+  const alasan = prompt(`Selisih: ${selisih > 0 ? '+' : ''}${rp(selisih)}\n\nMasukkan alasan penyesuaian (contoh: Bunga Bank, Biaya Admin, Koreksi Transfer):`);
+  if (!alasan) return flash('Alasan penyesuaian wajib diisi', 'err');
+  const jenis = selisih > 0 ? 'masuk' : 'keluar', nominal = Math.abs(selisih);
+  try {
+    await catatKas({ jenis, metode: 'transfer', nominal, keterangan: `Penyesuaian Rekonsiliasi ${b.nama}: ${alasan}`, sumber: 'rekonsiliasi', bank_id: b.id });
+    await catatLog('REKONSILIASI_BANK', `${b.nama}: ${jenis} ${rp(nominal)} - ${alasan}`);
+    flash(`Rekonsiliasi berhasil. Saldo disesuaikan ${selisih > 0 ? '+' : ''}${rp(selisih)}`, 'ok');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function simpanKasKecilKasir() {
+  const jenis = $('kkJenis').value, nominal = num('kkNominal'), ket = txt('kkKet');
+  if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
+  if (!ket) return flash('Keterangan wajib diisi', 'err');
+  try {
+    await catatKas({ jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' });
+    await catatLog('KAS_KECIL', `Input ${jenis} - ${ket} (${rp(nominal)})`);
+    flash('Kas kecil dicatat');
+    ['kkNominal', 'kkKet'].forEach(x => { $(x).value = ''; });
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function hapusKas(id) {
+  if (!isAdmin()) return flash('Akses ditolak. Hanya Admin/Pemilik yang bisa menghapus.', 'err');
+  if (!confirm('⚠️ Yakin ingin menghapus riwayat kas ini?\n\nTindakan ini menghapus data secara permanen dan mempengaruhi total saldo.')) return;
+  try {
+    const k = db.kas.find(x => x.id === id);
+    await dbOk(supabaseClient.from('kas').delete().eq('id', id));
+    await catatLog('HAPUS_KAS', `Menghapus kas ${id}${k ? ` (${k.jenis} ${rp(k.nominal)} - ${k.keterangan})` : ''}`);
+    flash('Transaksi kas berhasil dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus: ' + e.message, 'err'); }
+}
+
+// === SETTINGS ===
+async function simpanSetting(data, aksi, detail, pesan) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa mengubah pengaturan.', 'err');
+  try {
+    await dbOk(supabaseClient.from('settings').upsert({ id: 'toko', ...data }));
+    await catatLog(aksi, detail);
+    flash(pesan);
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menyimpan: ' + e.message, 'err'); }
+}
+const simpanToko = () => simpanSetting({ nama: txt('tkNama'), telp: txt('tkTelp'), alamat: txt('tkAlamat'), footer: txt('tkFooter'), syarat: txt('tkSyarat'), syarat_singkat: txt('tkSyaratSingkat') }, 'SETTING', 'Mengubah Identitas Toko', 'Identitas disimpan');
+const simpanMDR = () => simpanSetting({
+  mdr_cc_bca: num('setMdrCcBca'), mdr_cc_vm: num('setMdrCcVm'), mdr_cc_amex: num('setMdrCcAmex'),
+  mdr_dc_bca: num('setMdrDcBca'), mdr_dc_lain: num('setMdrDcLain'), mdr_dc_maestro: num('setMdrDcMaestro'),
+  mdr_qris_besar: num('setMdrQrisBesar'), mdr_transfer: num('setMdrTransfer')
+}, 'SETTING_MDR', 'Mengubah pengaturan MDR', 'Pengaturan MDR disimpan');
+const simpanGaransiServis = () => simpanSetting({ garansi_servis_bulan: num('setGaransiServisBulan') }, 'SETTING_GARANSI', 'Mengubah garansi servis default', 'Garansi servis disimpan');
+const simpanAturanDiskon = () => simpanSetting({ diskon_persen: num('setDiskonPersen'), diskon_nominal: num('setDiskonNominal') }, 'SETTING_DISKON', 'Mengubah aturan diskon', 'Aturan diskon disimpan');
+
+function isiFormSetting(paksa = false) {
+  const s = db.settings;
+  if (!s) return;
+  const isi = (id, val) => { const el = $(id); if (el && (paksa || el !== document.activeElement)) el.value = val; };
+  isi('tkNama', s.nama || ''); isi('tkTelp', s.telp || ''); isi('tkAlamat', s.alamat || ''); isi('tkFooter', s.footer || '');
+  isi('tkSyarat', s.syarat || TOKO_DEFAULT.syarat); isi('tkSyaratSingkat', s.syarat_singkat || TOKO_DEFAULT.syaratSingkat);
+  isi('setGaransiServisBulan', s.garansi_servis_bulan ?? 3);
+  isi('setMdrCcBca', s.mdr_cc_bca ?? 1.5); isi('setMdrCcVm', s.mdr_cc_vm ?? 2); isi('setMdrCcAmex', s.mdr_cc_amex ?? 3.25);
+  isi('setMdrDcBca', s.mdr_dc_bca ?? 0.15); isi('setMdrDcLain', s.mdr_dc_lain ?? 1); isi('setMdrDcMaestro', s.mdr_dc_maestro ?? 2);
+  isi('setMdrQrisBesar', s.mdr_qris_besar ?? 0.7); isi('setMdrTransfer', s.mdr_transfer ?? 0);
+  isi('setDiskonPersen', s.diskon_persen ?? 10); isi('setDiskonNominal', s.diskon_nominal ?? 20000);
+}
+
+// === LABEL & MDR ===
+function labelMetode(m) {
+  const labels = {
+    tunai: 'Tunai', transfer: 'Transfer', qris: 'QRIS', hutang: 'Hutang',
+    edc_cc_bca: 'BCA Card', edc_cc_vm: 'Visa/Master/JCB', edc_cc_amex: 'Amex',
+    edc_dc_bca: 'Debit BCA', edc_dc_lain: 'Debit Bank Lain', edc_dc_maestro: 'Maestro'
+  };
+  return labels[m] || m;
+}
+
+function hitungMDR(total, metode) {
+  if (!metode || metode === 'tunai' || metode === 'hutang') return 0;
+  const s = db.settings || {};
+  const v = (k, def) => (s[k] === null || s[k] === undefined || s[k] === '') ? def : +s[k];   // nilai 0 tetap dihormati
+  const pct = (k, def) => Math.round(total * v(k, def) / 100);
+  switch (metode) {
+    case 'transfer': return v('mdr_transfer', 0);
+    case 'qris': return total <= 100000 ? 0 : pct('mdr_qris_besar', 0.7);
+    case 'edc_cc_bca': return pct('mdr_cc_bca', 1.5);
+    case 'edc_cc_vm': return pct('mdr_cc_vm', 2);
+    case 'edc_cc_amex': return pct('mdr_cc_amex', 3.25);
+    case 'edc_dc_bca': return pct('mdr_dc_bca', 0.15);
+    case 'edc_dc_lain': return pct('mdr_dc_lain', 1);
+    case 'edc_dc_maestro': return pct('mdr_dc_maestro', 2);
+    default: return 0;
+  }
+}
+
+function cetakHTML(html) {
+  const win = window.open('', '_blank');
+  if (!win) return alert('BROWSER MEMBLOKIR POP-UP!\n\nSilakan izinkan pop-up (Always allow pop-ups) di pengaturan browser untuk situs ini.');
+  win.document.open(); win.document.write(html); win.document.close();
+  setTimeout(() => { win.focus(); win.print(); }, 800);
+}
+
+// === AUDIT LOG & AUDIT STOK ===
+async function catatLog(aksi, detail) {
+  if (!supabaseClient) return;
+  const { error } = await supabaseClient.from('audit_log').insert([{
+    id: genId('LOG'), waktu: nowISO(),
+    user_name: sessionStorage.getItem('ta_user') || 'guest',
+    role: sessionStorage.getItem('ta_role') || 'guest', aksi, detail
+  }]);
+  if (error) console.error('❌ GAGAL SIMPAN AUDIT LOG:', error.message);
+}
+
+function renderAuditLog() {
+  const el = $('listAuditLog'); if (!el) return;
+  const q = txt('cariAuditLog').toLowerCase();
+  let list = db.auditLog || [];
+  if (q) list = list.filter(l => (l.user_name || '').toLowerCase().includes(q) || (l.aksi || '').toLowerCase().includes(q));
+  if (filterAuditUser === 'admin') list = list.filter(l => l.role === 'admin' || l.role === 'pemilik');
+  else if (filterAuditUser === 'kasir') list = list.filter(l => l.role === 'kasir');
+  el.innerHTML = list.length ? list.map(l => `
+    <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:4px;">
+        <strong>${new Date(l.waktu).toLocaleString('id-ID')}</strong>
+        <span class="badge ${l.role === 'admin' || l.role === 'pemilik' ? 'danger' : 'proses'}">${esc(l.user_name)} (${esc(l.role)})</span>
+      </div>
+      <span style="color:#0284c7; font-weight:bold;">${esc(l.aksi)}</span>: ${esc(l.detail)}
+    </div>`).join('') : '<div class="empty">Belum ada aktivitas.</div>';
+}
+
+function renderAuditGlobal() {
+  const el = $('listAuditGlobal'); if (!el) return;
+  const q = txt('cariAudit').toLowerCase();
+  const all = [
+    ...db.produk.map(p => ({ tipe: 'produk', id: p.id, nama: p.nama, sistem: p.stok })),
+    ...db.sparePart.map(s => ({ tipe: 'sparepart', id: s.id, nama: s.nama, sistem: s.stok })),
+    ...db.stokBaterai.map(b => ({ tipe: 'baterai', id: b.id, nama: b.tipe, sistem: b.stok }))
+  ];
+  const filtered = all.filter(x => !q || x.nama.toLowerCase().includes(q));
+  if (!filtered.length) { el.innerHTML = '<div class="empty" style="padding:20px">Barang tidak ditemukan</div>'; return; }
+
+  const badgeOf = t => t === 'produk' ? '<span class="badge proses" style="font-size:9px">JAM</span>' : (t === 'sparepart' ? '<span class="badge warn" style="font-size:9px">PART</span>' : '<span class="badge ok" style="font-size:9px">BAT</span>');
+  el.innerHTML = `<table style="margin:0;"><thead style="position:sticky;top:0;z-index:1;background:#f8fafc"><tr><th>Tipe</th><th>Nama Barang</th><th>Stok Sistem</th><th style="width:80px">Fisik</th></tr></thead><tbody>` +
+    filtered.map(item => {
+      const key = `${item.tipe}_${item.id}`;
+      const val = tempAuditData[key] !== undefined ? tempAuditData[key] : '';
+      return `<tr><td>${badgeOf(item.tipe)}</td><td><strong>${esc(item.nama)}</strong></td><td style="text-align:center; font-weight:bold;">${item.sistem}</td><td><input type="number" min="0" id="auditFisik_${esc(key)}" value="${val}" placeholder="-" oninput="updateAuditGlobal('${esc(key)}', this.value)" style="width:100%;padding:6px;text-align:center;font-weight:bold;border:1px solid #cbd5e1;border-radius:4px;"></td></tr>`;
+    }).join('') + '</tbody></table>';
+}
+
+function updateAuditGlobal(key, val) {
+  if (val === '') delete tempAuditData[key]; else tempAuditData[key] = +val;
+}
+
+async function simpanAuditGlobal() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  const catatan = txt('auditCatatanMassal');
+  if (!catatan) return flash('Catatan audit wajib diisi', 'err');
+  const keys = Object.keys(tempAuditData);
+  if (!keys.length) return flash('Belum ada stok fisik yang diisi', 'err');
+
+  let itemBerubah = 0;
+  try {
+    for (const key of keys) {
+      const i = key.indexOf('_');
+      const tipe = key.slice(0, i), id = key.slice(i + 1);
+      const fisik = Math.floor(tempAuditData[key]);
+      if (isNaN(fisik) || fisik < 0) throw new Error('Stok fisik tidak valid pada ' + key);
+
+      let item, tabel;
+      if (tipe === 'produk') { item = db.produk.find(x => x.id === id); tabel = 'produk'; }
+      else if (tipe === 'sparepart') { item = db.sparePart.find(x => x.id === id); tabel = 'sparepart'; }
+      else { item = db.stokBaterai.find(x => x.id === id); tabel = 'stok_baterai'; }
+      if (!item) continue;
+
+      const sistem = item.stok, hargaBeli = item.harga_beli || 0, selisih = fisik - sistem;
+      if (selisih === 0) continue;
+      itemBerubah++;
+      await dbOk(supabaseClient.from(tabel).update({ stok: fisik }).eq('id', id));
+      await dbOk(supabaseClient.from('audit_barang').insert([{
+        id: genId('AUD'), waktu: nowISO(), tipe, nama_produk: item.nama || item.tipe,
+        stok_sistem: sistem, stok_fisik: fisik, selisih, harga_beli: hargaBeli, nilai_selisih: selisih * hargaBeli,
+        catatan, user_name: sessionStorage.getItem('ta_user') || 'admin'
+      }]));
+    }
+    await catatLog('AUDIT_STOK', `Audit stok: ${itemBerubah} barang disesuaikan. ${catatan}`);
+    flash(`Audit selesai. ${itemBerubah} barang disesuaikan.`, 'ok');
+    tempAuditData = {};
+    $('auditCatatanMassal').value = ''; $('cariAudit').value = '';
+    tarikSemuaData();
+  } catch (e) { flash('Gagal audit: ' + e.message, 'err'); tarikSemuaData(); }
+}
+
+function filterKas(v) { filterKasJenis = v; render(); }
+function filterServis(v) { filterServisStatus = v; render(); }
+function filterAudit(v) { filterAuditUser = v; render(); }
+
+// === SCAN BARCODE, FOTO, CETAK BARCODE ===
+function playBeep() {
+  try {
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if (!AC) return;
+    const ctx = new AC(), osc = ctx.createOscillator(), gain = ctx.createGain();
+    osc.type = 'sine'; osc.frequency.setValueAtTime(800, ctx.currentTime);
+    gain.gain.setValueAtTime(0.1, ctx.currentTime);
+    osc.connect(gain); gain.connect(ctx.destination);
+    osc.start(); osc.stop(ctx.currentTime + 0.1);
+    osc.onended = () => ctx.close();
+  } catch (e) { console.log('Audio error:', e); }
+}
+
+async function scanBarcode(targetId, mode = 'input') {
+  scanTarget = targetId; scanMode = mode;
+  if (!('BarcodeDetector' in window)) return alert('Browser tidak mendukung scan kamera. Gunakan Chrome Android.');
+  try {
+    stopScan();
+    scanStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+    const video = $('scanVideo');
+    video.srcObject = scanStream;
+    await video.play();
+    $('scanArea').style.display = 'flex';
+    const detector = new BarcodeDetector({ formats: ['code_128', 'code_39', 'ean_13', 'ean_8', 'qr_code', 'upc_a', 'upc_e'] });
+    scanInterval = setInterval(async () => {
+      try {
+        const codes = await detector.detect(video);
+        if (!codes.length) return;
+        playBeep();
+        const nilai = codes[0].rawValue;
+        stopScan();
+        if (scanMode === 'kasir') prosesBarcodeKasir(nilai);
+        else { $(scanTarget).value = nilai; flash('Barcode: ' + nilai); }
+      } catch (e) { }
+    }, 500);
+  } catch (e) { stopScan(); alert('Tidak bisa akses kamera: ' + e.message); }
+}
+
+function stopScan() {
+  if (scanInterval) clearInterval(scanInterval);
+  if (scanStream) scanStream.getTracks().forEach(t => t.stop());
+  const area = $('scanArea'); if (area) area.style.display = 'none';
+  scanStream = null; scanInterval = null;
+}
+
+function prosesBarcodeKasir(barcode) {
+  const p = db.produk.find(x => x.barcode === barcode);
+  if (!p) return flash(`❌ Produk dengan barcode [${barcode}] tidak terdaftar!`, 'err');
+  if (p.stok < 1) return flash(`❌ Stok ${p.nama} habis!`, 'err');
+  const existing = cart.find(c => c.id === p.id);
+  if (existing) {
+    if (existing.qty + 1 > p.stok) return flash('Stok tidak mencukupi!', 'err');
+    existing.qty += 1;
+  } else cart.push({ id: p.id, nama: p.nama, harga: p.harga_jual, qty: 1 });
+  renderCart();
+  flash(`✅ ${p.nama} dimasukkan ke keranjang`);
+}
+
+function resizeImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = new Image();
+      img.onload = () => {
+        const canvas = document.createElement('canvas'); const MAX = 200;
+        let w = img.width, h = img.height;
+        if (w > h && w > MAX) { h *= MAX / w; w = MAX; } else if (h > MAX) { w *= MAX / h; h = MAX; }
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve(canvas.toDataURL('image/jpeg', 0.5));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function scanFotoAI() {
+  const fileInput = $('pFoto');
+  if (!fileInput.files || !fileInput.files.length) return flash('Pilih foto produk terlebih dahulu', 'err');
+  if (typeof Tesseract === 'undefined') return flash('Library OCR belum dimuat', 'err');
+  const loading = $('loadingAI');
+  if (loading) loading.style.display = 'flex';
+  flash('Memproses gambar dengan AI...', 'ok');
+  try {
+    const worker = await Tesseract.createWorker('ind+eng');
+    const ret = await worker.recognize(fileInput.files[0]);
+    const text = ret.data.text.trim();
+    await worker.terminate();
+    if (!text) return flash('AI tidak menemukan teks.', 'err');
+    const lines = text.split('\n').filter(l => l.trim().length > 2);
+    if (lines.length) $('pNama').value = lines[0].substring(0, 50);
+    const merek = ['SEIKO', 'CASIO', 'ALBA', 'ROLEX', 'G-SHOCK', 'TISSOT', 'FOSSIL', 'CURREN', 'ORIENT', 'CITIZEN'].find(m => text.toUpperCase().includes(m));
+    if (merek) $('pMerek').value = merek;
+    flash('AI berhasil membaca teks!');
+  } catch (e) { flash('Gagal memproses gambar', 'err'); }
+  finally { if (loading) loading.style.display = 'none'; }
+}
+
+const labelBarcodeScript = nilai => JSON.stringify(nilai).replace(/</g, '\\u003c');
+
+function cetakBarcode(id) {
+  const p = db.produk.find(x => x.id === id); if (!p) return;
+  const nilai = p.barcode || ('PRD' + p.id);
+  const win = window.open('', '_blank');
+  if (!win) return alert('Pop-up diblokir browser. Izinkan pop-up untuk mencetak barcode.');
+  win.document.write(`<html><head><title>Print Barcode</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    <style>@page{size:50mm 30mm;margin:2mm}body{text-align:center;font-family:sans-serif;padding:0;margin:0;display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh}h4{margin:0;font-size:10px;white-space:nowrap;overflow:hidden}p{margin:2px 0;font-size:9px}</style>
+    </head><body>
+      <h4>${esc(p.nama)}</h4><p>Rp ${(p.harga_jual || 0).toLocaleString('id-ID')}</p><svg id="barcode"></svg>
+      <script>
+        JsBarcode("#barcode", ${labelBarcodeScript(nilai)}, { format: "CODE128", width: 1.2, height: 35, displayValue: true, fontSize: 10, margin: 0 });
+        window.onload = function() { setTimeout(function() { window.print(); window.close(); }, 500); }
+      <\/script></body></html>`);
+  win.document.close();
+}
+
+function toggleAllProduk(source) { document.querySelectorAll('.chk-barcode').forEach(cb => cb.checked = source.checked); }
+
+function cetakBarcodeMassal() {
+  const ids = Array.from(document.querySelectorAll('.chk-barcode:checked')).map(cb => cb.value);
+  if (!ids.length) return alert('Pilih minimal 1 produk dengan mencentang kotaknya!');
+  const labels = ids.map(id => {
+    const p = db.produk.find(x => x.id === id); if (!p) return '';
+    return `<div class="label-box">
+      <div style="font-size:10px;font-weight:bold;text-overflow:ellipsis;overflow:hidden;white-space:nowrap;width:100%;text-align:center;">${esc(p.nama)}</div>
+      <div style="font-size:9px;margin-bottom:2px;">Rp ${(p.harga_jual || 0).toLocaleString('id-ID')}</div>
+      <svg class="barcode-svg" data-value="${esc(p.barcode || ('PRD' + p.id))}"></svg></div>`;
+  }).join('');
+  const win = window.open('', '_blank');
+  if (!win) return alert('Pop-up diblokir browser. Izinkan pop-up untuk mencetak barcode.');
+  win.document.write(`<html><head><title>Cetak Barcode Massal</title>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"><\/script>
+    <style>@page{size:A4;margin:5mm}body{margin:0;padding:0;display:flex;flex-wrap:wrap;align-content:flex-start;gap:2mm}.label-box{width:50mm;height:30mm;border:1px dashed #ccc;display:flex;flex-direction:column;align-items:center;justify-content:center;page-break-inside:avoid;box-sizing:border-box;padding:2mm}</style>
+    </head><body>${labels}
+    <script>
+      document.querySelectorAll('.barcode-svg').forEach(function(svg) {
+        JsBarcode(svg, svg.getAttribute('data-value'), { format: "CODE128", width: 1.2, height: 35, displayValue: true, fontSize: 10, margin: 0 });
+      });
+      window.onload = function() { setTimeout(function() { window.print(); window.close(); }, 500); }
+    <\/script></body></html>`);
+  win.document.close();
+}
+
+// === E-WARRANTY & WHATSAPP ===
+async function generateDigitalWarranty(id, tipe) {
+  if (typeof html2canvas === 'undefined') return flash('Library html2canvas belum dimuat', 'err');
+  const toko = getToko();
+  let expiryDate, title, customer, productName, serviceId, startDate;
+  const fmt = d => new Date(d).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' });
+  if (tipe === 'servis') {
+    const data = db.servis.find(x => x.id === id);
+    if (!data || !data.tgl_garansi_servis_sampai) return flash('Garansi servis tidak valid', 'err');
+    expiryDate = fmt(data.tgl_garansi_servis_sampai);
+    startDate = new Date(data.tgl_selesai || data.waktu).toLocaleDateString('id-ID');
+    title = data.is_klaim ? 'KLAIM GARANSI SERVIS' : 'GARANSI SERVIS';
+    customer = data.customer; productName = data.produk; serviceId = data.id;
+  } else {
+    const data = db.baterai.find(x => x.id === id);
+    if (!data) return flash('Data baterai tidak valid', 'err');
+    expiryDate = fmt(data.tgl_expired);
+    startDate = new Date(data.tgl_ganti).toLocaleDateString('id-ID');
+    title = 'GARANSI BATERAI'; customer = data.customer; productName = data.produk; serviceId = data.id;
+  }
+  const cardHTML = `<div class="warranty-card" id="warrantyCardRender"><div class="wc-header"><div><h3 class="wc-title">${esc(title)}</h3><div style="font-size:16px;font-weight:700;margin-top:4px;color:#fff;">${esc(toko.nama)}</div></div><div class="wc-id">${esc(serviceId)}</div></div><div class="wc-body"><div class="wc-row"><span class="wc-label">Pelanggan</span><span class="wc-value">${esc(customer)}</span></div><div class="wc-row"><span class="wc-label">Produk / Jam</span><span class="wc-value">${esc(productName)}</span></div><div class="wc-row"><span class="wc-label">Tanggal Mulai</span><span class="wc-value">${esc(startDate)}</span></div><div class="wc-expiry"><div class="wc-expiry-label">Berlaku Sampai</div><div class="wc-expiry-date">${esc(expiryDate)}</div></div></div><div class="wc-footer"><div>${esc(toko.alamat)}</div><div>WA: ${esc(toko.telp)}</div></div></div>`;
+  let wrapper = $('premiumCardWrapper');
+  if (!wrapper) { wrapper = document.createElement('div'); wrapper.id = 'premiumCardWrapper'; document.body.appendChild(wrapper); }
+  wrapper.innerHTML = cardHTML;
+  try {
+    flash('Membuat kartu digital...', 'ok');
+    const canvas = await html2canvas(wrapper.firstElementChild, { scale: 2, backgroundColor: null, useCORS: true });
+    const imgData = canvas.toDataURL('image/png');
+    const link = document.createElement('a'); link.download = `Garansi_${serviceId}.png`; link.href = imgData; link.click();
+    const win = window.open();
+    if (win) {
+      win.document.write(`<body style="margin:0;display:flex;justify-content:center;align-items:center;background:#1e293b;height:100vh;flex-direction:column;"><img src="${imgData}" style="max-width:90%;max-height:80vh;border-radius:12px;"><p style="color:#fff;font-family:sans-serif;margin-top:20px;">Gambar otomatis terunduh.</p></body>`);
+      win.document.close();
+    }
+    flash('Kartu digital berhasil dibuat!', 'ok');
+  } catch (e) { flash('Gagal membuat gambar', 'err'); }
+}
+
+function openWA(hp, text) {
+  let phone = waPhone(hp);
+  if (phone.startsWith('8')) phone = '62' + phone;
+  if (!phone || phone === '62' || phone.length < 9) return alert('Nomor HP tidak valid.');
+  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text || '')}`, '_blank');
+}
+
+function shareStrukDigital(trxId) {
+  const t = db.jual.find(x => x.id === trxId); if (!t) return;
+  const toko = getToko(), garis = '=========================';
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*NOTA PENJUALAN*\n${garis}\n*No:* ${t.id}\nTanggal: ${new Date(t.waktu).toLocaleString('id-ID')}\nPembeli: ${t.cust_nama || '-'}\n${garis}\n*DAFTAR BELANJA*\n`;
+  (t.items || []).forEach(i => { text += `- ${i.nama}\n  ${i.qty} x ${rp(i.harga)} = ${rp(i.qty * i.harga)}\n`; });
+  text += `${garis}\nSubtotal : ${rp(t.subtotal)}\n`;
+  if (t.diskon > 0) text += `Diskon   : -${rp(t.diskon)}\n`;
+  if (t.poin_dipakai > 0) text += `Tukar Poin: -${rp(t.poin_dipakai * NILAI_POIN)}\n`;
+  text += `*TOTAL    : ${rp(t.total)}*\nBayar    : ${rp(t.bayar)}\nKembali  : ${rp(t.kembali)}\n${garis}\n`;
+  if (toko.syarat_singkat) text += `*SYARAT & KETENTUAN:*\n${toko.syarat_singkat}\n${garis}\n`;
+  text += `${toko.footer}\n_Simpan pesan ini sebagai bukti pembelian_`;
+  openWA(t.cust_hp, text);
+}
+
+function waServisSelesai(id) {
+  const s = db.servis.find(x => x.id === id); if (!s || !s.telp) return;
+  const toko = getToko(), garis = '=========================';
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*UPDATE SERVIS*\n${garis}\nPelanggan: ${s.customer}\nBarang: ${s.produk}\n*No:* ${s.id}\nStatus Saat Ini: *${s.status.toUpperCase()}*\n${garis}\n`;
+  text += `🔍 *Pantau status servis Anda secara real-time di sini:*\n${linkLacak('id', s.id)}\n${garis}\n`;
+  if (s.paid) text += 'Status Pembayaran: *LUNAS*\n';
+  else if (s.sisa > 0) text += `Sisa Tagihan: *${rp(s.sisa)}*\n`;
+  text += `\n${toko.footer}`;
+  openWA(s.telp, text);
+}
+
+function waServisMasuk(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s || !s.telp) return alert('Nomor HP tidak ada');
+  const toko = getToko(), garis = '=========================';
+  const text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\n${garis}\n*TANDA TERIMA SERVIS*\n${garis}\nHalo *${s.customer}*, jam Anda telah kami terima.\n\n*No Servis:* ${s.id}\n*Barang:* ${s.produk}\n*Keluhan:* ${s.keluhan || '-'}\n\n*⚠️ KONDISI AWAL (Telah Dicek):*\n_${s.kondisi_fisik || 'Normal / Tidak ada catatan'}._\n\nMohon simpan pesan ini. Jika ada kondisi yang tidak tercatat, segera hubungi kami.\n\n🔍 *Lacak status servis:*\n${linkLacak('id', s.id)}\n${garis}\n${toko.footer}`;
+  openWA(s.telp, text);
+}
+
+function waReminderBaterai(id) {
+  const b = db.baterai.find(x => x.id === id); if (!b || !b.telp) return;
+  const toko = getToko();
+  const sisaHari = Math.ceil((new Date(b.tgl_expired + 'T23:59:59') - new Date()) / 86400000);
+  openWA(b.telp, `*${toko.nama.toUpperCase()}*\nGaransi Baterai ${b.produk} (${b.tipe})\nBerakhir: ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}\nStatus: ${sisaHari < 0 ? 'HABIS' : 'Sisa ' + sisaHari + ' hari'}`);
+}
+
+function waAdminLaporan() {
+  const toko = getToko();
+  if (!toko.telp) return flash('Isi No WA Toko di menu Setting terlebih dahulu', 'err');
+  const today = new Date().toDateString();
+  const hariIni = w => w && new Date(w).toDateString() === today;
+
+  const trxHari = db.jual.filter(t => hariIni(t.waktu));
+  const omzetJual = trxHari.reduce((s, t) => s + t.total, 0);
+  const servisHari = db.servis.filter(s => hariIni(s.tgl_selesai));
+  const omzetServis = servisHari.reduce((s, t) => s + (t.biaya_pelanggan || 0), 0);
+  const batHari = db.baterai.filter(b => hariIni(b.waktu));
+  const omzetBat = batHari.reduce((s, b) => s + (b.biaya || 0), 0);
+  const totalOmzet = omzetJual + omzetServis + omzetBat;
+  const mdrHari = db.kas.filter(k => k.sumber === 'mdr' && hariIni(k.waktu)).reduce((s, k) => s + (k.nominal || 0), 0);
+
+  const piutang = db.servis.filter(s => !s.paid && s.sisa > 0);
+  const piutangTotal = piutang.reduce((s, t) => s + t.sisa, 0);
+  const servisAktif = db.servis.filter(s => s.status === 'antri' || s.status === 'proses').length;
+  const prodLow = db.produk.filter(p => p.stok <= 2);
+  const spLow = db.sparePart.filter(s => s.stok <= s.min_stok);
+  const batLow = db.stokBaterai.filter(b => b.stok <= b.min_stok);
+
+  const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const jam = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  const garis = '=========================', tipis = '-------------------------';
+
+  let text = `*${toko.nama.toUpperCase()}*\n${garis}\n*LAPORAN HARIAN*\n${tgl}\nDikirim: ${jam}\n${garis}\n*OMZET HARI INI*\n${tipis}\n`;
+  text += `- Penjualan Jam : ${rp(omzetJual)}\n  (${trxHari.length} transaksi)\n`;
+  text += `- Servis selesai: ${rp(omzetServis)}\n  (${servisHari.length} servis)\n`;
+  text += `- Baterai       : ${rp(omzetBat)}\n  (${batHari.length} ganti)\n${tipis}\n*TOTAL: ${rp(totalOmzet)}*\n`;
+  if (mdrHari > 0) text += `Biaya Bank (MDR): -${rp(mdrHari)}\nNet Diterima    : ${rp(totalOmzet - mdrHari)}\n`;
+  text += `${garis}\n*STATUS TOKO*\n${tipis}\nServis Aktif: ${servisAktif}\nPiutang Servis: ${rp(piutangTotal)} (${piutang.length} nota)\n${garis}\n`;
+  if (prodLow.length || spLow.length || batLow.length) {
+    text += `*⚠️ STOK MENIPIS*\n${tipis}\n`;
+    if (prodLow.length) text += `Produk: ${prodLow.map(p => p.nama + ' (' + p.stok + ')').join(', ')}\n`;
+    if (spLow.length) text += `Part: ${spLow.map(s => s.nama + ' (' + s.stok + ')').join(', ')}\n`;
+    if (batLow.length) text += `Baterai: ${batLow.map(b => b.tipe + ' (' + b.stok + ')').join(', ')}\n`;
+    text += `${garis}\n`;
+  }
+  text += `${toko.footer}\n_Laporan otomatis dari Sistem Toko_`;
+  openWA(toko.telp, text);
+}
+
+// === NOTA & KARTU ===
+const CSS_STRUK = `@page{margin:0}body{font-family:'Courier New',monospace;font-size:11px;width:58mm;margin:auto;padding:4px}.c{text-align:center}.b{font-weight:bold}hr{border:none;border-top:1px dashed #000;margin:4px 0}table{width:100%}`;
+const blokQR = (link, label) => `<div class="c" style="margin-top:8px;"><div style="font-size:9px;margin-bottom:2px;">${label}</div><img src="${qrUrl(link)}" width="80" height="80" alt="QR Code"></div><div class="c" style="font-size:9px;margin-top:5px;word-break:break-all;"><b>${esc(link)}</b></div>`;
+
+function cetakNotaServis(id) {
+  const s = db.servis.find(x => x.id === id); if (!s) return;
+  const toko = getToko();
+  const partsList = [
+    ...(s.parts || []).map(p => `- ${esc(p.nama)} x${p.qty} = ${rp(p.harga * p.qty)}`),
+    ...(s.baterai || []).map(b => `- ${esc(b.nama)} x${b.qty} = ${rp(b.harga * b.qty)}`)
+  ].join('<br>') || '<i>(tanpa spare part)</i>';
+  const kondisiHTML = (s.kondisi_fisik && s.kondisi_fisik !== '-') ? `<div style="font-size:9px;margin:2px 0;"><b>Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</div>` : '';
+
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c">${esc(toko.alamat)}</div><div class="c b">NOTA SERVIS</div><hr>
+  <div>No: ${esc(s.id)}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr>
+  <div>Produk: ${esc(s.produk)}</div><div>Keluhan: ${esc(s.keluhan || '-')}</div>${kondisiHTML}<hr>
+  <div class="b">Spare Part:</div><div>${partsList}</div><hr>
+  <table><tr><td>Jasa</td><td style="text-align:right">${rp(s.jasa || 0)}</td></tr><tr><td>Spare part</td><td style="text-align:right">${rp(s.total_parts || 0)}</td></tr><tr><td>Baterai</td><td style="text-align:right">${rp(s.total_baterai || 0)}</td></tr><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${rp(s.biaya_pelanggan)}</td></tr></table><hr>
+  ${blokQR(linkLacak('id', s.id), 'Scan untuk lacak status servis:')}
+  <div class="c" style="margin-top:4px">Simpan nota ini</div></body></html>`);
+}
+
+function cetakNotaGabunganServis(groupId) {
+  const toko = getToko();
+  const list = db.servis.filter(s => s.group_id === groupId);
+  if (!list.length) return;
+  const totalBiaya = list.reduce((s, x) => s + (x.biaya_pelanggan || 0), 0);
+  const totalSisa = list.reduce((s, x) => s + (x.sisa || 0), 0);
+  const itemsHTML = list.map((s, idx) => `
+      <div style="margin-bottom:6px;font-size:10px;border-bottom:1px dotted #ccc;padding-bottom:4px;">
+        <b>${idx + 1}. ${esc(s.produk)}</b><br>No: ${esc(s.id)} | Keluhan: ${esc(s.keluhan || '-')}<br>
+        Biaya: Rp ${(s.biaya_pelanggan || 0).toLocaleString('id-ID')}</div>`).join('');
+
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c b">NOTA SERVIS GABUNGAN</div><hr>
+  <div>Pelanggan: ${esc(list[0].customer)}</div><div>No HP: ${esc(list[0].telp)}</div><div>Tgl: ${new Date().toLocaleString('id-ID')}</div><hr>
+  <div class="b">Daftar Barang (${list.length} item):</div>${itemsHTML}<hr>
+  <table><tr><td class="b">TOTAL BIAYA</td><td class="b" style="text-align:right">Rp ${totalBiaya.toLocaleString('id-ID')}</td></tr>
+  <tr><td class="b">SISA TAGIHAN</td><td class="b" style="text-align:right">Rp ${totalSisa.toLocaleString('id-ID')}</td></tr></table><hr>
+  ${blokQR(linkLacak('group_id', groupId), 'Scan untuk lacak semua servis:')}
+  <div class="c" style="margin-top:6px">Simpan nota ini</div></body></html>`);
+}
+
+function cetakStrukGabunganBaterai(listData, nama, telp, totalBiaya) {
+  const toko = getToko();
+  const itemsHTML = listData.map((b, idx) => `<tr>
+        <td style="font-size:10px;padding:2px 0;">${idx + 1}. ${esc(b.produk)}</td>
+        <td style="font-size:10px;text-align:center;">${esc(b.tipe)}</td>
+        <td style="font-size:10px;text-align:right;">${(b.biaya || 0).toLocaleString('id-ID')}</td></tr>`).join('');
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}</style></head><body>
+  <div class="c b" style="font-size:12px">${esc(toko.nama)}</div><div class="c b">STRUK BATERAI</div><hr>
+  <div>Pelanggan: ${esc(nama)}</div><div>Tgl: ${new Date().toLocaleDateString('id-ID')}</div><hr>
+  <table><tr><th style="text-align:left;font-size:10px">Jam</th><th style="font-size:10px">Baterai</th><th style="text-align:right;font-size:10px">Harga</th></tr>${itemsHTML}</table><hr>
+  <table><tr><td class="b">TOTAL (${listData.length} item)</td><td class="b" style="text-align:right">Rp ${totalBiaya.toLocaleString('id-ID')}</td></tr></table><hr>
+  <div class="c" style="font-size:9px;">Garansi baterai s/d ${new Date(listData[0].tgl_expired).toLocaleDateString('id-ID')}<br><br>${esc(toko.footer)}</div></body></html>`);
+}
+
+function cetakKartuBaterai(id) {
+  const b = db.baterai.find(x => x.id === id);
+  if (!b) return flash('Data baterai tidak ditemukan', 'err');
+  const toko = getToko();
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}body{text-align:center}</style></head><body>
+  <div class="b" style="font-size:12px">KARTU GARANSI BATERAI</div><div class="b">${esc(toko.nama)}</div><hr>
+  <div style="text-align:left">No: ${esc(b.id)}<br>Pelanggan: ${esc(b.customer)}<br>Jam: ${esc(b.produk)}<br>Baterai: ${esc(b.tipe)}<br>Tgl Ganti: ${new Date(b.tgl_ganti).toLocaleDateString('id-ID')}<br><span class="b">Garansi s/d: ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}</span></div><hr>
+  <div class="b">Simpan kartu ini</div></body></html>`);
+}
+
+function cetakKartuGaransiServis(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s || !s.tgl_garansi_servis_sampai) return flash('Belum ada garansi', 'err');
+  const toko = getToko();
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}body{text-align:center}</style></head><body>
+  <div class="b" style="font-size:12px">KARTU GARANSI SERVIS</div><div class="b">${esc(toko.nama)}</div><hr>
+  <div style="text-align:left">No: ${esc(s.id)}<br>Pelanggan: ${esc(s.customer)}<br>Jam: ${esc(s.produk)}<br>Selesai: ${new Date(s.tgl_selesai || s.waktu).toLocaleDateString('id-ID')}<br><span class="b">Garansi s/d: ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')}</span></div><hr>
+  <div class="b">Simpan kartu ini</div></body></html>`);
+}
+
+function cetakStrukServis(id) {
+  const s = db.servis.find(x => x.id === id); if (!s) return;
+  const toko = getToko();
+  const partsHTML = [
+    ...(s.parts || []).map(p => `<tr><td>${esc(p.nama)} x${p.qty}</td><td style="text-align:right">${(p.qty * p.harga).toLocaleString('id-ID')}</td></tr>`),
+    ...(s.baterai || []).map(b => `<tr><td>Baterai ${esc(b.nama)} x${b.qty}</td><td style="text-align:right">${(b.qty * b.harga).toLocaleString('id-ID')}</td></tr>`)
+  ].join('') || '<tr><td colspan="2"><i>-</i></td></tr>';
+
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}table{font-size:11px}</style></head><body>
+  <div class="c b">${esc(toko.nama)}</div><div class="c b">STRUK SERVIS</div><hr>
+  <div>No: ${esc(s.id)}</div><div>${new Date(s.waktu).toLocaleString('id-ID')}</div><div>Pelanggan: ${esc(s.customer)}</div><hr>
+  <div>${esc(s.produk)}</div><hr>
+  <table><tr><td>Jasa</td><td style="text-align:right">${(s.jasa || 0).toLocaleString('id-ID')}</td></tr>${partsHTML}</table><hr>
+  <table><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${(s.biaya_pelanggan || 0).toLocaleString('id-ID')}</td></tr><tr><td class="b">SISA</td><td class="b" style="text-align:right">${(s.sisa || 0).toLocaleString('id-ID')}</td></tr></table><hr>
+  ${blokQR(linkLacak('id', s.id), 'Scan untuk lacak status & garansi:')}
+  <div class="c" style="margin-top:6px">${s.paid ? 'LUNAS' : 'BELUM LUNAS'}<br><br>${esc(toko.footer)}</div></body></html>`);
+}
+
+// === PELANGGAN ===
+function showCustomerHistoryById(id) {
+  const p = db.pelanggan.find(x => x.id === id);
+  if (p) showCustomerHistory(p.nama, p.telp);
+}
+
+const cocokPelanggan = (hp, nama, telp, namaCari) => (hp && telp && telp !== '-' && hp === telp) || (nama && nama.toLowerCase() === (namaCari || '').toLowerCase());
+
+function showCustomerHistory(nama, telp) {
+  $('modalCustName').textContent = `Riwayat: ${nama}`;
+  const el = $('modalCustContent');
+  const allTrx = [
+    ...db.jual.filter(t => cocokPelanggan(t.cust_hp, t.cust_nama, telp, nama)).map(t => ({ tgl: t.waktu, tipe: 'Jual', ket: `${(t.items || []).length} item`, total: t.total })),
+    ...db.servis.filter(t => cocokPelanggan(t.telp, t.customer, telp, nama)).map(t => ({ tgl: t.waktu, tipe: 'Servis', ket: t.keluhan || t.produk, total: t.biaya_pelanggan })),
+    ...db.baterai.filter(t => cocokPelanggan(t.telp, t.customer, telp, nama)).map(t => ({ tgl: t.waktu, tipe: 'Baterai', ket: t.produk, total: t.biaya }))
+  ].sort((a, b) => new Date(b.tgl) - new Date(a.tgl));
+  el.innerHTML = allTrx.length
+    ? `<table><thead><tr><th>Tanggal</th><th>Transaksi</th><th>Total</th></tr></thead><tbody>` + allTrx.map(t => `<tr><td>${new Date(t.tgl).toLocaleDateString('id-ID')}</td><td><b>${t.tipe}</b><br><small>${esc(t.ket)}</small></td><td>${rp(t.total)}</td></tr>`).join('') + '</tbody></table>'
+    : '<div class="empty">Belum ada riwayat.</div>';
+  $('customerModal').style.display = 'block';
+}
+
+function waPelanggan(id) {
+  const p = db.pelanggan.find(x => x.id === id);
+  if (p) openWA(p.telp, '');
+}
+
+async function hapusPelanggan(id) {
+  if (!isAdmin() || !confirm('Hapus pelanggan ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('pelanggan').delete().eq('id', id));
+    await catatLog('HAPUS_PELANGGAN', 'Menghapus pelanggan ID: ' + id);
+    flash('Pelanggan dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+// === SPAREPART ===
+async function tambahSparePart() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  if (!checkRequired(['spNama'])) return flash('Lengkapi kolom wajib', 'err');
+  const nama = txt('spNama'), kategori = $('spKat').value, stokInput = Math.max(0, Math.floor(num('spStok')));
+  const existing = db.sparePart.find(sp => sp.nama.toLowerCase() === nama.toLowerCase());
+  try {
+    if (existing) {
+      const stokBaru = await ubahStok('sparepart', existing.id, stokInput);
+      flash(`Stok ${nama} ditambahkan (Total: ${stokBaru})`);
+    } else {
+      await dbOk(supabaseClient.from('sparepart').insert([{
+        id: genId('SP'), nama, kategori, harga_beli: num('spBeli'), harga_jual: num('spJual'),
+        stok: stokInput, min_stok: num('spMin'), updated_at: nowISO()
+      }]));
+      flash('Sparepart baru ditambahkan');
+    }
+    await catatLog('TAMBAH_SPAREPART', 'Simpan sparepart: ' + nama);
+    ['spNama', 'spBeli', 'spJual'].forEach(id => { $(id).value = ''; });
+    $('spStok').value = 0;
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menyimpan: ' + e.message, 'err'); }
+}
+
+async function editSparePart(id) {
+  if (!isAdmin()) return flash('Akses ditolak', 'err');
+  const sp = db.sparePart.find(x => x.id === id); if (!sp) return;
+  const nama = prompt('Nama Sparepart:', sp.nama); if (nama === null) return;
+  const beli = prompt('Harga Beli:', sp.harga_beli); if (beli === null) return;
+  const jual = prompt('Harga Jual:', sp.harga_jual); if (jual === null) return;
+  const min = prompt('Min Stok:', sp.min_stok); if (min === null) return;
+  try {
+    await dbOk(supabaseClient.from('sparepart').update({ nama: nama.trim() || sp.nama, harga_beli: +beli || 0, harga_jual: +jual || 0, min_stok: +min || 0 }).eq('id', id));
+    await catatLog('EDIT_SPAREPART', 'Mengubah data sparepart: ' + (nama.trim() || sp.nama));
+    flash('Sparepart diperbarui');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+async function hapusSparePart(id) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus', 'err');
+  if (!confirm('Hapus sparepart ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('sparepart').delete().eq('id', id));
+    await catatLog('HAPUS_SPAREPART', 'Menghapus sparepart ID: ' + id);
+    flash('Sparepart dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus! Sparepart ini mungkin sudah dipakai di transaksi servis.', 'err'); }
+}
+
+// === SUPPLIER ===
+async function simpanSupplier() {
+  if (!isAdmin()) return flash('Akses ditolak', 'err');
+  if (!checkRequired(['supNama'])) return flash('Nama wajib diisi', 'err');
+  const id = txt('supId');
+  const data = { nama: txt('supNama'), hp: txt('supHp'), alamat: txt('supAlamat'), catatan: txt('supCatatan') };
+  try {
+    if (id) await dbOk(supabaseClient.from('supplier').update(data).eq('id', id));
+    else await dbOk(supabaseClient.from('supplier').insert([{ id: genId('SUP'), ...data }]));
+    await catatLog('SUPPLIER', 'Simpan data supplier: ' + data.nama);
+    ['supId', 'supNama', 'supHp', 'supAlamat', 'supCatatan'].forEach(x => { $(x).value = ''; });
+    flash('Disimpan');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+function editSupplier(id) {
+  if (!isAdmin()) return flash('Akses ditolak', 'err');
+  const s = db.supplier.find(x => x.id === id); if (!s) return;
+  $('supId').value = s.id; $('supNama').value = s.nama; $('supHp').value = s.hp || '';
+  $('supAlamat').value = s.alamat || ''; $('supCatatan').value = s.catatan || '';
+  window.scrollTo(0, 0);
+}
+
+async function hapusSupplier(id) {
+  if (!isAdmin() || !confirm('Hapus supplier ini?')) return;
+  try {
+    await dbOk(supabaseClient.from('supplier').delete().eq('id', id));
+    await catatLog('HAPUS_SUPPLIER', 'Hapus supplier ID: ' + id);
+    flash('Dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal: ' + e.message, 'err'); }
+}
+
+// === LAPORAN ===
+function hitungLaporan() {
+  const now = new Date(), bln = now.getMonth(), thn = now.getFullYear();
+  const bulanIni = w => { if (!w) return false; const d = new Date(w); return d.getMonth() === bln && d.getFullYear() === thn; };
+  const jualBln = db.jual.filter(t => bulanIni(t.waktu));
+  const servisBln = db.servis.filter(s => bulanIni(s.tgl_selesai));
+  const batBln = db.baterai.filter(b => bulanIni(b.tgl_ganti));
+  const kasBln = db.kas.filter(k => bulanIni(k.waktu));
+  const jumlah = (arr, f) => arr.reduce((s, x) => s + (f(x) || 0), 0);
+
+  const penJual = jumlah(jualBln, t => t.total);
+  const penServis = jumlah(servisBln, s => s.biaya_pelanggan);
+  const penBat = jumlah(batBln, b => b.biaya);
+  const penLain = jumlah(kasBln.filter(k => ['kas_kecil', 'rekonsiliasi'].includes(k.sumber) && k.jenis === 'masuk'), k => k.nominal);
+
+  let hppJual = 0, hppServis = 0, hppBat = 0;
+  jualBln.forEach(t => (t.items || []).forEach(i => { const p = db.produk.find(x => x.id === i.produk_id); if (p) hppJual += (p.harga_beli || 0) * i.qty; }));
+  servisBln.forEach(s => {
+    (s.parts || []).forEach(p => { const sp = db.sparePart.find(x => x.id === p.part_id); if (sp) hppServis += (sp.harga_beli || 0) * p.qty; });
+    (s.baterai || []).forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.baterai_id); if (sb) hppServis += (sb.harga_beli || 0) * b.qty; });
+  });
+  batBln.forEach(b => { const sb = db.stokBaterai.find(x => x.id === b.sb_id); if (sb) hppBat += (sb.harga_beli || 0); });
+
+  const bebanMdr = jumlah(kasBln.filter(k => k.sumber === 'mdr'), k => k.nominal);
+  const bebanKasKecil = jumlah(kasBln.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar'), k => k.nominal);
+  const bebanLain = jumlah(kasBln.filter(k => k.sumber === 'rekonsiliasi' && k.jenis === 'keluar'), k => k.nominal);
+
+  const omzet = penJual + penServis + penBat;
+  const totalPendapatan = omzet + penLain;
+  const totalHpp = hppJual + hppServis + hppBat;
+  const totalBeban = bebanMdr + bebanKasKecil + bebanLain;
+  return {
+    kasBln, penJual, penServis, penBat, penLain, omzet, totalPendapatan,
+    hppJual, hppServis, hppBat, totalHpp, bebanMdr, bebanKasKecil, bebanLain, totalBeban,
+    labaKotorOmzet: omzet - totalHpp, labaKotor: totalPendapatan - totalHpp, labaBersih: totalPendapatan - totalHpp - totalBeban
+  };
+}
+
+function gantiTabLaporan(tab) {
+  ['laba_rugi', 'neraca', 'arus_kas'].forEach(t => {
+    if ($('konten_' + t)) $('konten_' + t).style.display = (t === tab) ? 'block' : 'none';
+    if ($('tab_' + t)) $('tab_' + t).className = (t === tab) ? 'btn-sm blue' : 'btn-sm ghost';
+  });
+}
+
+function hitungLaporanKeuangan() {
+  const L = hitungLaporan();
+  const set = (id, val) => { const el = $(id); if (el) el.textContent = rp(val); };
+
+  // Laba Rugi
+  set('lr_pen_jual', L.penJual); set('lr_pen_servis', L.penServis); set('lr_pen_baterai', L.penBat); set('lr_pen_lain', L.penLain);
+  set('lr_total_pendapatan', L.totalPendapatan);
+  set('lr_hpp_produk', L.hppJual); set('lr_hpp_part', L.hppServis); set('lr_hpp_baterai', L.hppBat);
+  set('lr_total_hpp', L.totalHpp); set('lr_laba_kotor', L.labaKotor);
+  set('lr_beban_mdr', L.bebanMdr); set('lr_beban_kas_kecil', L.bebanKasKecil); set('lr_beban_lain', L.bebanLain);
+  set('lr_total_beban', L.totalBeban); set('lr_laba_bersih', L.labaBersih);
+
+  // Neraca
+  const net = f => db.kas.filter(f).reduce((s, k) => s + (k.jenis === 'masuk' ? k.nominal : -k.nominal), 0);
+  const kasTunai = net(k => k.metode === 'tunai');
+  // Seluruh transaksi non-tunai dianggap masuk rekening (agar yang belum dikaitkan ke bank tetap terhitung)
+  const saldoBank = db.bank.reduce((s, b) => s + (b.saldo_awal || 0), 0) + net(k => k.metode !== 'tunai');
+  const piutang = db.servis.filter(s => !s.paid && s.sisa > 0).reduce((s, t) => s + t.sisa, 0);
+  let persediaan = 0;
+  db.produk.forEach(p => persediaan += p.stok * (p.harga_beli || 0));
+  db.sparePart.forEach(sp => persediaan += sp.stok * (sp.harga_beli || 0));
+  db.stokBaterai.forEach(sb => persediaan += sb.stok * (sb.harga_beli || 0));
+  const totalAset = kasTunai + saldoBank + piutang + persediaan;
+  const hutang = db.pembelian.filter(p => p.status === 'hutang').reduce((s, p) => s + p.total, 0);
+  // Ekuitas = Aset - Kewajiban (modal awal belum dicatat terpisah, jadi neraca selalu seimbang secara otomatis)
+  const ekuitas = totalAset - hutang;
+  set('nr_kas_tunai', kasTunai); set('nr_saldo_bank', saldoBank); set('nr_piutang', piutang); set('nr_persediaan', persediaan);
+  set('nr_total_aset', totalAset); set('nr_hutang', hutang); set('nr_total_kewajiban', hutang);
+  set('nr_ekuitas', ekuitas); set('nr_total_pasiva', hutang + ekuitas);
+
+  // Arus Kas (berdasarkan uang yang benar-benar masuk/keluar bulan ini)
+  const sum = f => L.kasBln.filter(f).reduce((s, k) => s + k.nominal, 0);
+  const sumberOps = ['jual', 'servis', 'baterai'], sumberRestock = ['pembelian', 'pelunasan_hutang'];
+  const masukOps = sum(k => k.jenis === 'masuk' && sumberOps.includes(k.sumber));
+  const masukLain = sum(k => k.jenis === 'masuk' && !sumberOps.includes(k.sumber));
+  const keluarMdr = sum(k => k.jenis === 'keluar' && k.sumber === 'mdr');
+  const keluarRestock = sum(k => k.jenis === 'keluar' && sumberRestock.includes(k.sumber));
+  const keluarOps = sum(k => k.jenis === 'keluar' && k.sumber !== 'mdr' && !sumberRestock.includes(k.sumber));
+  const totalMasuk = masukOps + masukLain, totalKeluar = keluarMdr + keluarRestock + keluarOps;
+  set('ak_masuk_operasional', masukOps); set('ak_masuk_lain', masukLain); set('ak_total_masuk', totalMasuk);
+  set('ak_keluar_mdr', keluarMdr); set('ak_keluar_operasional', keluarOps); set('ak_keluar_restock', keluarRestock);
+  set('ak_total_keluar', totalKeluar); set('ak_arus_bersih', totalMasuk - totalKeluar);
+}
+
+// === RENDER UI ===
+function setSelect(id, html) {
+  const el = $(id); if (!el) return;
+  const prev = el.value;
+  el.innerHTML = html;
+  if (prev && Array.from(el.options).some(o => o.value === prev && !o.disabled)) el.value = prev;
+}
+const setHTML = (id, html) => { const el = $(id); if (el) el.innerHTML = html; };
+const setVal = (id, val) => { const el = $(id); if (el) el.value = val; };
+const jam = w => new Date(w).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+
+function render() {
+  if (!$('selProduk')) return;
+  const today = new Date().toDateString();
+
+  // 1. User & menu
+  const homeUser = $('homeUser');
+  if (homeUser) homeUser.innerHTML = `Login sebagai: <b>${esc(sessionStorage.getItem('ta_user') || 'Guest')}</b> (${esc((getRole() || 'guest').toUpperCase())})`;
+  const menuAdmin = $('menuAdmin'); if (menuAdmin) menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
+
+  // 2. Dropdown
+  const optBank = '<option value="">-- pilih rekening --</option>' + (db.bank || []).map(b => `<option value="${esc(b.id)}">${esc(b.nama)}${b.no ? ' (' + esc(b.no) + ')' : ''}</option>`).join('');
+  ['kasBank', 'bankKasir', 'bankDp', 'bankBaterai'].forEach(id => setSelect(id, optBank));
+  setSelect('selProduk', db.produk.filter(p => p.stok > 0).map(p => `<option value="${esc(p.id)}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option value="">Tidak ada stok</option>');
+  setSelect('selSparePart', '<option value="">-- pilih --</option>' + db.sparePart.map(sp => `<option value="${esc(sp.id)}" ${sp.stok === 0 ? 'disabled' : ''}>${esc(sp.nama)} - stok ${sp.stok}</option>`).join(''));
+  const optBat = '<option value="">-- pilih --</option>' + db.stokBaterai.map(sb => `<option value="${esc(sb.id)}" ${sb.stok === 0 ? 'disabled' : ''}>${esc(sb.tipe)} - stok ${sb.stok}</option>`).join('');
+  setSelect('selBateraiServis', optBat);
+  setSelect('bTipeSel', optBat);
+  if ($('rsItem')) updateRsItem();
+
+  // 3. Produk
+  setHTML('listProduk', db.produk.length ? `
+    <div style="margin-bottom:10px;"><button class="btn-sm ok" onclick="cetakBarcodeMassal()" style="padding:8px 12px; font-weight:bold;">🖨️ Cetak Barcode Terpilih</button></div>
+    <table><thead><tr><th style="width:30px;"><input type="checkbox" id="checkAllProduk" onclick="toggleAllProduk(this)"></th><th>Produk</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr></thead><tbody>` +
+    db.produk.map(p => `<tr>
+      <td><input type="checkbox" class="chk-barcode" value="${esc(p.id)}"></td>
+      <td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek || '')}</small></td>
+      <td>${rp(p.harga_jual)}</td><td>${p.stok}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-sm blue" onclick="editProduk('${esc(p.id)}')">Edit</button>
+        <button class="btn-sm warn" onclick="cetakBarcode('${esc(p.id)}')">Barcode</button>
+        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusProduk('${esc(p.id)}')">Hapus</button>` : ''}
+      </td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
+
+  // 4. Sparepart
+  const cariSp = txt('cariSp').toLowerCase();
+  const listSp = db.sparePart.filter(sp => !cariSp || (sp.nama || '').toLowerCase().includes(cariSp) || (sp.kategori || '').toLowerCase().includes(cariSp));
+  setHTML('listSparePart', listSp.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` +
+    listSp.map(sp => `<tr>
+      <td><strong>${esc(sp.nama)}</strong><br><small style="color:#64748b">${esc(sp.kategori)}</small></td>
+      <td style="color:${sp.stok <= sp.min_stok ? '#dc2626' : 'inherit'}; font-weight:${sp.stok <= sp.min_stok ? '700' : '400'};">${sp.stok}</td>
+      <td>${rp(sp.harga_jual)}${isPemilik() ? `<br><small style="color:#64748b">beli ${rp(sp.harga_beli)}</small>` : ''}</td>
+      <td style="white-space:nowrap">
+        ${isAdmin() ? `<button class="btn-sm blue" onclick="editSparePart('${esc(sp.id)}')">Edit</button>` : ''}
+        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusSparePart('${esc(sp.id)}')">Hapus</button>` : ''}
+      </td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada sparepart</div>');
+
+  // 5. Stok baterai
+  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` +
+    db.stokBaterai.map(sb => `<tr><td>${esc(sb.tipe)}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td>
+      <td style="white-space:nowrap"><button class="btn-sm blue" onclick="editStokBaterai('${esc(sb.id)}')">Edit</button>
+      ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusStokBaterai('${esc(sb.id)}')">Hapus</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
+
+  // 6. Servis
+  const srv = db.servis.filter(s => !filterServisStatus || s.status === filterServisStatus);
+  setHTML('listServis', srv.length ? srv.map(s => {
+    const id = esc(s.id);
+    const btnBayar = (!s.paid && s.sisa > 0) ? `<button class="btn-sm ok" onclick="bayarSisaServis('${id}')">Bayar Sisa</button>` : '';
+    const btnStruk = s.paid ? `<button class="btn-sm blue" onclick="cetakStrukServis('${id}')">Struk</button>` : '';
+    const btnKartu = s.tgl_garansi_servis_sampai ? `<button class="btn-sm blue" onclick="cetakKartuGaransiServis('${id}')">Kartu</button><button class="btn-sm ok" onclick="generateDigitalWarranty('${id}', 'servis')">📸 E-Warranty</button>` : '';
+    const btnKlaim = bisaKlaimGaransi(s) ? `<button class="btn-sm warn" onclick="mulaiKlaimGaransi('${id}')">Klaim (${MAX_KLAIM_SERVIS - (s.klaim_count || 0)}x)</button>` : '';
+    return `<div class="servis-item ${esc(s.status)}"><h4>${id} - ${esc(s.customer)} <span class="badge ${esc(s.status)}">${esc(s.status.toUpperCase())}</span></h4>
+      <p>Barang: ${esc(s.produk)}</p>
+      ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<p style="color:#dc2626; font-size:11px; margin-top:2px;"><b>⚠️ Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</p>` : ''}
+      <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
+      ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button class="btn-sm blue" onclick="ubahStatusServis('${id}')">Status</button>
+        <button class="btn-sm ghost" onclick="cetakNotaServis('${id}')">Nota</button>
+        ${s.telp ? `<button class="btn-sm ok" onclick="waServisMasuk('${id}')">WA Terima</button>` : ''}
+        ${btnBayar}${btnStruk}${btnKartu}${btnKlaim}
+        ${s.telp ? `<button class="btn-sm warn" onclick="waServisSelesai('${id}')">WA</button>` : ''}
+        ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusServis('${id}')">Hapus</button>` : ''}
+      </div></div>`;
+  }).join('') : '<div class="empty">Tidak ada servis</div>');
+  if ($('hasilCekGaransi')) renderCekGaransi();
+
+  // 7. Riwayat baterai
+  const cariB = txt('bCari').toLowerCase();
+  const listB = db.baterai.filter(b => !cariB || (b.customer || '').toLowerCase().includes(cariB) || (b.telp || '').includes(cariB) || (b.produk || '').toLowerCase().includes(cariB))
+    .sort((a, b) => new Date(a.tgl_expired) - new Date(b.tgl_expired));
+  setHTML('listBaterai', listB.length ? listB.map(b => {
+    const sisa = Math.ceil((new Date(b.tgl_expired + 'T23:59:59') - new Date()) / 86400000);
+    let cls = 'ok', label = 'AKTIF';
+    if (sisa < 0) { cls = 'danger'; label = 'EXPIRED'; } else if (sisa <= 30) { cls = 'warn'; label = 'HAMPIR HABIS'; }
+    const id = esc(b.id);
+    return `<div class="bat-item ${cls}">
+      <div style="display:flex;justify-content:space-between;align-items:center"><strong>${esc(b.customer)}</strong><span class="badge ${cls}">${label}${sisa >= 0 ? ' (' + sisa + ' hr)' : ''}</span></div>
+      <div style="font-size:12px;color:#475569;margin-top:2px">Barang: ${esc(b.produk)} - Baterai: ${esc(b.tipe)}<br>Tgl: ${new Date(b.tgl_ganti).toLocaleDateString('id-ID')} s/d ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}<br>Biaya: ${rp(b.biaya)} ${b.telp ? '- Telp: ' + esc(b.telp) : ''}</div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        ${b.telp ? `<button class="btn-sm warn" onclick="waReminderBaterai('${id}')">WA</button>` : ''}
+        <button class="btn-sm blue" onclick="cetakKartuBaterai('${id}')">Kartu</button>
+        <button class="btn-sm ok" onclick="generateDigitalWarranty('${id}', 'baterai')">📸 E-Warranty</button>
+        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusBaterai('${id}')">Hapus</button>` : ''}
+      </div></div>`;
+  }).join('') : '<div class="empty">Belum ada data</div>');
+
+  // 8. Transaksi & kas kecil hari ini
+  const trxHariIni = db.jual.filter(t => new Date(t.waktu).toDateString() === today);
+  setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => `<tr><td>${jam(t.waktu)}</td><td>${(t.items || []).length} item<br><small>${esc(labelMetode(t.metode || 'tunai'))}</small></td><td>${rp(t.total)}</td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="cetakStruk('${esc(t.id)}')">Cetak</button><button class="btn-sm ok" onclick="shareStrukDigital('${esc(t.id)}')">WA</button></td></tr>`).join('') : '<tr><td colspan="4" class="empty">Belum ada transaksi</td></tr>');
+
+  const listKK = db.kas.filter(k => k.sumber === 'kas_kecil' && new Date(k.waktu).toDateString() === today).slice(0, 10);
+  setHTML('listKasKecilKasir', listKK.length ? `<table><thead><tr><th>Jam</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>` +
+    listKK.map(k => `<tr><td>${jam(k.waktu)}</td><td>${esc(k.keterangan)}</td><td style="color:${k.jenis === 'masuk' ? '#16a34a' : '#dc2626'};font-weight:bold;">${k.jenis === 'masuk' ? '📥' : '📤'} ${rp(k.nominal)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada catatan kas kecil hari ini.</div>');
+
+  // 9. Kas & bank
+  const net = f => db.kas.filter(f).reduce((s, k) => s + (k.jenis === 'masuk' ? k.nominal : -k.nominal), 0);
+  const saldoTunai = net(k => k.metode === 'tunai'), saldoTotal = net(() => true);
+  if ($('kasTunai')) {
+    $('kasTunai').textContent = rp(saldoTunai);
+    $('kasNonTunai').textContent = rp(saldoTotal - saldoTunai);
+    $('kasTotal').textContent = rp(saldoTotal);
+  }
+  let kasList = db.kas;
+  if (filterKasJenis === 'masuk' || filterKasJenis === 'keluar') kasList = db.kas.filter(k => k.jenis === filterKasJenis);
+  else if (Object.keys(DAFTAR_METODE).map(k => DAFTAR_METODE[k]).includes(filterKasJenis)) kasList = db.kas.filter(k => k.metode === filterKasJenis);
+  setHTML('listKas', kasList.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px;display:flex;justify-content:space-between;align-items:center;">
+    <div>${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}</div>
+    <div><b style="color:${k.jenis === 'masuk' ? 'green' : 'red'}; margin-right:10px;">${rp(k.nominal)}</b>
+    ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusKas('${esc(k.id)}')" style="padding:2px 6px;font-size:10px;">X</button>` : ''}</div></div>`).join('') || '<div class="empty">Tidak ada data</div>');
+
+  setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo Awal</th><th>Saldo Saat Ini</th><th>Aksi</th></tr></thead><tbody>` +
+    db.bank.map(b => `<tr><td><strong>${esc(b.nama)}</strong></td><td>${esc(b.no || '-')}</td><td>${rp(b.saldo_awal)}</td>
+      <td style="font-weight:bold;color:#0284c7">${rp(saldoBankSistem(b))}</td>
+      <td><div style="display:flex; flex-wrap:wrap; gap:5px;">${isAdmin() ? `
+        <button class="btn-sm warn" onclick="rekonsiliasiBank('${esc(b.id)}')" style="font-size:11px;">🔄 Rekon</button>
+        <button class="btn-sm blue" onclick="editBank('${esc(b.id)}')" style="font-size:11px;">Edit</button>
+        <button class="btn-sm danger" onclick="hapusBank('${esc(b.id)}')" style="font-size:11px;">Hapus</button>` : ''}</div></td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
+
+  // 10. Supplier & hutang
+  setHTML('listSupplier', db.supplier.length ? `<table><thead><tr><th>Nama</th><th>Kontak</th><th>Aksi</th></tr></thead><tbody>` +
+    db.supplier.map(s => `<tr><td><strong>${esc(s.nama)}</strong><br><small>${esc(s.catatan || '')}</small></td><td>${esc(s.hp || '-')}<br><small>${esc(s.alamat || '')}</small></td>
+      <td style="white-space:nowrap"><button class="btn-sm blue" onclick="editSupplier('${esc(s.id)}')">Edit</button>${isAdmin() ? `<button class="btn-sm danger" onclick="hapusSupplier('${esc(s.id)}')">Hapus</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada supplier</div>');
+
+  const hutang = db.pembelian.filter(p => p.status === 'hutang');
+  setHTML('listHutang', hutang.length ? `<table><thead><tr><th>ID</th><th>Supplier</th><th>Total</th><th>Aksi</th></tr></thead><tbody>` +
+    hutang.map(p => `<tr><td>${esc(p.id)}<br><small>${new Date(p.waktu).toLocaleDateString('id-ID')}</small></td><td>${esc(p.supplier_nama)}</td><td>${rp(p.total)}</td>
+      <td>${isAdmin() ? `<button class="btn-sm ok" onclick="lunasiHutang('${esc(p.id)}')">Lunas</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Tidak ada hutang</div>');
+
+  // 11. Pelanggan
+  const cariP = txt('cariPelanggan').toLowerCase();
+  const listP = (db.pelanggan || []).filter(p => !cariP || (p.nama || '').toLowerCase().includes(cariP) || (p.telp || '').includes(cariP));
+  setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No HP</th><th>Total Belanja</th><th></th></tr></thead><tbody>` +
+    listP.map(p => {
+      const cocok = (hp, nama) => cocokPelanggan(hp, nama, p.telp, p.nama);
+      const total = db.jual.filter(t => cocok(t.cust_hp, t.cust_nama)).reduce((s, t) => s + t.total, 0)
+        + db.servis.filter(t => cocok(t.telp, t.customer)).reduce((s, t) => s + (t.biaya_pelanggan || 0), 0)
+        + db.baterai.filter(t => cocok(t.telp, t.customer)).reduce((s, t) => s + (t.biaya || 0), 0);
+      return `<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.telp || '-')}</td><td>${rp(total)}<br><small style="color:#f59e0b">⭐ ${p.poin || 0} Poin</small></td>
+        <td style="white-space:nowrap"><button class="btn-sm blue" onclick="showCustomerHistoryById('${esc(p.id)}')">Riwayat</button>
+        ${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="waPelanggan('${esc(p.id)}')">WA</button>` : ''}
+        ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${esc(p.id)}')">Hapus</button>` : ''}</td></tr>`;
+    }).join('') + '</tbody></table>' : '<div class="empty">Belum ada data pelanggan</div>');
+
+  // 12. Laporan
+  const L = hitungLaporan();
+  if ($('lapOmzet')) {
+    $('lapOmzet').textContent = rp(L.omzet); $('lapServis').textContent = rp(L.penServis);
+    $('lapBat').textContent = rp(L.penBat); $('lapLabaKotor').textContent = rp(L.labaKotorOmzet);
+    $('lapPiutang').textContent = rp(db.servis.filter(s => !s.paid && s.sisa > 0).reduce((s, t) => s + t.sisa, 0));
+  }
+  setVal('lrOmzet', rp(L.omzet)); setVal('lrHpp', '-' + rp(L.totalHpp)); setVal('lrLabaKotor', rp(L.labaKotorOmzet));
+  setVal('lrBebanKasKecil', '-' + rp(L.bebanKasKecil)); setVal('lrBebanMdr', '-' + rp(L.bebanMdr));
+  setVal('lrPendapatanLain', '+' + rp(L.penLain)); setVal('lrLabaBersih', rp(L.labaBersih));
+  if ($('lr_laba_bersih')) hitungLaporanKeuangan();
+
+  // 13. Setting, audit
+  isiFormSetting();
+  if ($('listAuditGlobal')) renderAuditGlobal();
+  const elAudit = $('listAuditBarang');
+  if (elAudit) {
+    elAudit.innerHTML = (db.auditBarang || []).slice(0, 15).map(a => `
+      <div style="font-size:12px; border-bottom:1px solid #eee; padding:8px 0;">
+        <div style="display:flex; justify-content:space-between;"><b>${new Date(a.waktu).toLocaleDateString('id-ID')}</b>
+        <span class="badge ${a.user_name === 'admin' || a.user_name === 'pemilik' ? 'danger' : 'proses'}">${esc((a.user_name || 'user').toUpperCase())}</span></div>
+        ${esc(a.tipe ? a.tipe.toUpperCase() : 'ITEM')} - ${esc(a.nama_produk)}<br>
+        Sistem: ${a.stok_sistem} | Fisik: ${a.stok_fisik} | <span style="color:${a.selisih < 0 ? '#dc2626' : '#16a34a'};font-weight:bold;">Selisih: ${a.selisih} Qty</span><br>
+        <span style="font-size:11px; color:${a.nilai_selisih < 0 ? '#dc2626' : '#16a34a'};">Nilai: ${a.nilai_selisih < 0 ? '- ' : '+ '}${rp(Math.abs(a.nilai_selisih || 0))} (HPP: ${rp(a.harga_beli || 0)})</span><br>
+        <small>Ket: ${esc(a.catatan)}</small></div>`).join('') || '<div class="empty">Belum ada riwayat audit.</div>';
+  }
+  if ($('listAuditLog')) renderAuditLog();
+}
+
+function updateRsItem() {
+  const tipe = $('rsTipe').value, sel = $('rsItem');
+  if (!sel) return;
+  const prev = sel.value;
+  let opts = '<option value="">-- pilih --</option>';
+  if (tipe === 'produk') opts += db.produk.map(p => `<option value="${esc(p.id)}">${esc(p.nama)}</option>`).join('');
+  if (tipe === 'sparepart') opts += db.sparePart.map(p => `<option value="${esc(p.id)}">${esc(p.nama)}</option>`).join('');
+  if (tipe === 'baterai') opts += db.stokBaterai.map(p => `<option value="${esc(p.id)}">${esc(p.tipe)}</option>`).join('');
+  sel.innerHTML = opts;
+  if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+}
+
+const toggleWrap = (wrapId, selectId, kecuali = ['tunai']) => { const w = $(wrapId), s = $(selectId); if (w && s) w.style.display = kecuali.includes(s.value) ? 'none' : 'grid'; };
+function toggleKasBank() { toggleWrap('wrapKasBank', 'kasMetode'); }
+function toggleBankKasir() { toggleWrap('wrapBankKasir', 'metodeBayar'); }
+function toggleBankDp() { toggleWrap('wrapBankDp', $('metodeDpGroup') ? 'metodeDpGroup' : 'metodeDp'); }
+function toggleBankBaterai() { toggleWrap('wrapBankBaterai', 'metodeBaterai', ['tunai', 'hutang']); }
+
+function statusGaransiServis(s) {
+  if (!s.tgl_garansi_servis_sampai) return null;
+  const sisa = Math.ceil((new Date(s.tgl_garansi_servis_sampai + 'T23:59:59') - new Date()) / 86400000);
+  if (sisa < 0) return { cls: 'danger', label: 'GARANSI HABIS', sisa };
+  if (sisa <= 14) return { cls: 'warn', label: `GARANSI ${sisa}hr`, sisa };
+  return { cls: 'ok', label: `GARANSI ${sisa}hr`, sisa };
+}
+
+function renderCekGaransi() {
+  const el = $('hasilCekGaransi'); if (!el) return;
+  const q = txt('cariGaransi').toLowerCase();
+  if (!q) { el.innerHTML = '<div class="empty">Ketik untuk mencari garansi</div>'; return; }
+  const list = db.servis.filter(s => s.tgl_garansi_servis_sampai && (s.id.toLowerCase().includes(q) || (s.customer || '').toLowerCase().includes(q) || (s.telp || '').includes(q) || (s.produk || '').toLowerCase().includes(q)))
+    .sort((a, b) => new Date(b.tgl_garansi_servis_sampai) - new Date(a.tgl_garansi_servis_sampai));
+  el.innerHTML = list.length ? list.map(s => {
+    const st = statusGaransiServis(s), id = esc(s.id);
+    const klaimInfo = s.klaim_count > 0 ? ` - ${s.klaim_count}x klaim` : '';
+    return `<div class="bat-item ${st.cls}" style="margin-bottom:6px"><div style="display:flex;justify-content:space-between;align-items:center"><strong>${esc(s.customer)}</strong><span class="badge ${st.cls}">${st.label}</span></div>
+      <div style="font-size:12px;color:#475569;margin-top:2px">${id} - ${esc(s.produk)}<br>Selesai: ${new Date(s.tgl_selesai || s.waktu).toLocaleDateString('id-ID')} - <b>Garansi s/d: ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')}</b>${klaimInfo}<br>Telp: ${esc(s.telp || '-')}</div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap"><button class="btn-sm blue" onclick="cetakKartuGaransiServis('${id}')">Kartu</button><button class="btn-sm ok" onclick="generateDigitalWarranty('${id}', 'servis')">📸 E-Warranty</button>${s.telp ? `<button class="btn-sm warn" onclick="waServisSelesai('${id}')">WA</button>` : ''}</div></div>`;
+  }).join('') : '<div class="empty">Tidak ditemukan</div>';
+}
+
+// === DIAGNOSA SISTEM (jalankan: auditSistem() di Console) ===
+async function auditSistem() {
+  const laporan = { fungsiHilang: [], htmlHilang: [], tabelError: [] };
+  const fungsiWajib = ['login', 'logout', 'bukaMenu', 'flash', 'render', 'tarikSemuaData', 'catatLog', 'simpanProduk', 'hapusProduk', 'editProduk', 'prosesRestock', 'addCart', 'hapusCart', 'prosesBayar', 'renderCart', 'addPartServis', 'hapusPartServis', 'renderServisCart', 'addBateraiServis', 'hapusBateraiServis', 'renderBateraiServisCart', 'simpanSemuaServis', 'bayarSisaServis', 'ubahStatusServis', 'hapusServis', 'addBateraiCart', 'hapusBateraiCart', 'renderBateraiCart', 'simpanBaterai', 'pilihBaterai', 'tambahStokBaterai', 'hapusBaterai', 'simpanKasManual', 'simpanKasKecilKasir', 'tambahBank', 'simpanToko', 'simpanMDR', 'simpanGaransiServis', 'simpanAturanDiskon', 'renderAuditGlobal', 'simpanAuditGlobal', 'renderAuditLog', 'filterKas', 'filterServis', 'filterAudit', 'waAdminLaporan', 'formatNama', 'cekPoinPelanggan', 'hitungMDR', 'labelMetode', 'cetakKartuBaterai', 'lunasiHutang'];
+  fungsiWajib.forEach(f => { try { if (typeof eval(f) !== 'function') laporan.fungsiHilang.push(f); } catch (e) { laporan.fungsiHilang.push(f); } });
+
+  const htmlWajib = ['loginOverlay', 'loginUser', 'pinInput', 'homeUser', 'menuAdmin', 'selProduk', 'qty', 'cartList', 'cartTotal', 'metodeBayar', 'bayar', 'custNama', 'custHp', 'infoPoin', 'tukarPoin', 'tipeDiskon', 'nilaiDiskon', 'sNama', 'sProduk', 'sGaransi', 'sJasa', 'sParentId', 'selSparePart', 'cartServisList', 'cartServisTotal', 'selBateraiServis', 'cartBateraiServisList', 'cartBateraiServisTotal', 'sDpGroup', 'metodeDpGroup', 'listServis', 'cariGaransi', 'hasilCekGaransi', 'bNama', 'bProduk', 'bTipeSel', 'cartBateraiList', 'displayTotalBaterai', 'metodeBaterai', 'listStokBaterai', 'listBaterai', 'bCari', 'sbTipe', 'sbStok', 'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'listProduk', 'spNama', 'listSparePart', 'supNama', 'listSupplier', 'listHutang', 'kasTunai', 'kasNonTunai', 'kasTotal', 'listKas', 'listBank', 'kasNominal', 'kasKet', 'listPelanggan', 'cariPelanggan', 'lapOmzet', 'lapServis', 'lapBat', 'lapLabaKotor', 'lr_laba_bersih', 'lr_total_pendapatan', 'nr_total_aset', 'ak_arus_bersih', 'tkNama', 'tkTelp', 'setMdrCcBca', 'setMdrDcBca', 'listAuditLog', 'listAuditGlobal', 'listAuditBarang', 'auditCatatanMassal', 'msg'];
+  htmlWajib.forEach(id => { if (!$(id)) laporan.htmlHilang.push(id); });
+
+  const tabelWajib = ['settings', 'produk', 'sparepart', 'stok_baterai', 'jual', 'jual_items', 'servis', 'servis_parts', 'servis_baterai', 'baterai', 'kas', 'pelanggan', 'bank', 'supplier', 'pembelian', 'audit_barang', 'audit_log'];
+  for (const tabel of tabelWajib) {
+    try {
+      const { error } = await supabaseClient.from(tabel).select('id').limit(1);
+      if (error) laporan.tabelError.push(`${tabel}: ${error.message}`);
+    } catch (e) { laporan.tabelError.push(`${tabel}: Gagal akses`); }
+  }
+  console.log('=== HASIL AUDIT SISTEM ===');
+  console.log('Fungsi hilang:', laporan.fungsiHilang.length ? laporan.fungsiHilang : 'aman');
+  console.log('Elemen HTML hilang:', laporan.htmlHilang.length ? laporan.htmlHilang : 'aman');
+  console.log('Tabel error:', laporan.tabelError.length ? laporan.tabelError : 'aman');
+  alert(`=== AUDIT SISTEM ===\n\nFungsi hilang: ${laporan.fungsiHilang.length}\nElemen HTML hilang: ${laporan.htmlHilang.length}\nTabel error: ${laporan.tabelError.length}\n\nBuka Console (F12) untuk detail.`);
+}
+
+// === INISIALISASI ===
+async function inisialisasi() {
+  $('pinInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
+  $('pFoto')?.addEventListener('change', async e => {
+    tempFotoBase64 = e.target.files.length ? await resizeImage(e.target.files[0]) : '';
+  });
+  // Hitung ulang klaim baterai saat data pelanggan/produk/tanggal berubah
+  ['bNama', 'bProduk', 'bHp', 'bTgl'].forEach(id => $(id)?.addEventListener('change', () => cekKlaimBaterai(txt('bNama'))));
+  // Total kasir & poin diperbarui saat input berubah
+  ['tipeDiskon', 'nilaiDiskon', 'tukarPoin', 'metodeBayar'].forEach(id => $(id)?.addEventListener('input', updateTotalKasir));
+
+  if (typeof supabaseClient === 'undefined' || !supabaseClient) return;
+  // Sesi dicek ke server; role dibentuk ulang dari akun yang sedang login (bukan dari sessionStorage)
+  const { data } = await supabaseClient.auth.getSession();
+  const sesi = data?.session;
+  if (!sesi) { sessionStorage.clear(); $('loginOverlay')?.classList.remove('hidden'); return; }
+  const username = (sesi.user.email || '').split('@')[0];
+  sessionStorage.setItem('ta_logged', '1');
+  sessionStorage.setItem('ta_user', username);
+  sessionStorage.setItem('ta_role', tentukanRole(sesi.user, username));
+  $('loginOverlay')?.classList.add('hidden');
+  applyRoleUI();
+  await tarikSemuaData();
+  setupRealtime();
+}
+inisialisasi();
