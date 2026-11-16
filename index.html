@@ -2229,7 +2229,6 @@ async function hapusStokBaterai(id) {
 
   const telp = document.getElementById('bHp').value.trim();
   
-  // Ambil tanggal dari form. Jika kosong, otomatis pakai tanggal HARI INI
   let tglInputStr = document.getElementById('bTgl').value;
   if(!tglInputStr) {
     tglInputStr = new Date().toISOString().slice(0,10);
@@ -2238,12 +2237,11 @@ async function hapusStokBaterai(id) {
 
   const infoKlaim = document.getElementById('infoKlaimBaterai');
 
-  // CARI RIWAYAT: Nama/HP SAMA **DAN** NAMA PRODUK SAMA
   const riwayat = db.baterai
     .filter(b => {
       const matchCustomer = b.customer.toLowerCase() === nama.toLowerCase() || (telp && b.telp === telp);
       const matchProduk = b.produk.toLowerCase() === produkInput;
-      return matchCustomer && matchProduk; // Harus keduanya cocok!
+      return matchCustomer && matchProduk;
     })
     .sort((a, b) => new Date(b.tgl_ganti) - new Date(a.tgl_ganti));
 
@@ -2281,11 +2279,11 @@ async function hapusStokBaterai(id) {
       infoKlaim.style.background = warnaBg;
     }
   } else {
-    // Jika nama ada tapi produk tidak cocok (misal: Budi bawa Alba padahal riwayatnya Seiko)
     statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
     if (infoKlaim) infoKlaim.style.display = 'none';
   }
-}
+} // <-- PASTIKAN KURUNG KURAWAL PENUTUP INI ADA DI AKHIR FUNGSI
+
   
 // === KAS & KEUANGAN ===
 async function simpanKasManual(){
