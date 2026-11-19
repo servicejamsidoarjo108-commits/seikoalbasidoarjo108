@@ -89,6 +89,7 @@
     const rincian = [
       ['Jasa Servis', item.jasa], ['Spare Part', item.total_parts], ['Baterai', item.total_baterai]
     ].filter(r => (r[1] || 0) > 0).map(r => `<div class="row"><span class="label">${r[0]}</span><span class="value">${rp(r[1])}</span></div>`).join('');
+    const barisDp = (item.dp || 0) > 0 ? `<div class="row"><span class="label">DP (sudah dibayar)</span><span class="value">${rp(item.dp)}</span></div>` : '';
 
     return `<div class="item" style="border-left-color:${st.warna}">
       <div class="head"><span class="judul">${index + 1}. ${esc(item.produk)}</span><span class="badge ${kelasBadge}">${esc(st.label)}</span></div>
@@ -98,6 +99,7 @@
       <div style="margin-top:6px;border-top:1px dashed #cbd5e1;padding-top:6px;">
         ${rincian}
         <div class="row"><span class="label">Biaya</span><span class="value">${rp(item.biaya_pelanggan)}</span></div>
+        ${barisDp}
         <div class="row"><span class="label">Pembayaran</span><span class="${lunas ? 'lunas' : 'sisa'}">${lunas ? 'LUNAS' : 'Sisa ' + rp(item.sisa)}</span></div>
         ${garansi ? `<div class="row"><span class="label">Garansi s/d</span><span class="value">${esc(garansi)}</span></div>` : ''}
       </div>
