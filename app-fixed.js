@@ -181,7 +181,7 @@ function tentukanRole(authUser, username) {
 function applyRoleUI() {
   const r = getRole();
   pasangUIHitungStok();
-  if ($('btnHitungStok')) $('btnHitungStok').style.display = ['kasir', 'admin', 'pemilik'].includes(r) ? 'block' : 'none';
+  aturTombolHitungStok();
   const boleh = MENU_BY_ROLE[r] || [];
   SEMUA_MENU.forEach(m => {
     const b = document.querySelector(`button[onclick="bukaMenu('${m}')"]`);
@@ -387,6 +387,7 @@ function bukaMenu(tabId) {
   const btnBack = document.querySelector('main > div > button[onclick="bukaMenu(\'home\')"]');
   if (btnBack) btnBack.parentElement.style.display = (tabId === 'home') ? 'none' : 'block';
   window.scrollTo(0, 0);
+  aturTombolHitungStok(tabId);
   render();
   if (tabId === 'setting') isiFormSetting(true);
 }
@@ -2511,31 +2512,43 @@ function pasangUIHitungStok() {
   const btn = document.createElement('button');
   btn.id = 'btnHitungStok';
   btn.innerText = '📋 Hitung Stok';
-  btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:9000;padding:12px 16px;border-radius:999px;background:#0284c7;color:#fff;border:none;font-weight:700;box-shadow:0 4px 10px rgba(0,0,0,.25);display:none;';
+  btn.style.cssText = 'position:fixed;right:14px;bottom:14px;z-index:900;padding:10px 14px;border-radius:999px;background:#0284c7;color:#fff;border:none;font-weight:700;font-size:13px;box-shadow:0 4px 10px rgba(0,0,0,.25);display:none;';
   btn.onclick = bukaHitungStok;
   document.body.appendChild(btn);
 
+  // Semua warna ditulis eksplisit (bukan mewarisi tema gelap aplikasi),
+  // supaya teks selalu terbaca di kartu putih ini.
   const ov = document.createElement('div');
   ov.id = 'overlayHitungStok';
-  ov.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,.55);z-index:9100;';
+  ov.style.cssText = 'display:none;position:fixed;inset:0;background:rgba(15,23,42,.65);z-index:9100;';
   ov.innerHTML = `
-    <div style="background:#fff;max-width:480px;margin:5vh auto;border-radius:12px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;">
+    <div style="background:#ffffff;color:#0f172a;max-width:480px;width:calc(100% - 24px);margin:5vh auto;border-radius:12px;max-height:90vh;display:flex;flex-direction:column;overflow:hidden;box-sizing:border-box;">
       <div style="padding:14px 16px;border-bottom:1px solid #e2e8f0;display:flex;justify-content:space-between;align-items:center;">
-        <b>📋 Hitung Stok Fisik</b>
-        <button onclick="tutupHitungStok()" style="border:none;background:none;font-size:18px;cursor:pointer;">✕</button>
+        <b style="color:#0f172a;font-size:16px;">📋 Hitung Stok Fisik</b>
+        <button onclick="tutupHitungStok()" style="border:none;background:#f1f5f9;color:#0f172a;font-size:16px;cursor:pointer;width:32px;height:32px;border-radius:8px;">✕</button>
       </div>
-      <div style="padding:10px 16px;font-size:12px;color:#64748b;">
-        Hitung barang di rak lalu isi jumlahnya di sini. <b>Hasil ini hanya draft</b>
-        untuk dicocokkan Admin/Pemilik -- jumlahnya tidak langsung mengubah stok.
+      <div style="padding:10px 16px;font-size:12px;color:#475569;">
+        Hitung barang di rak lalu isi jumlahnya di sini. <b style="color:#0f172a">Hasil ini hanya draft</b>
+        untuk dicocokkan Admin/Pemilik &mdash; jumlahnya tidak langsung mengubah stok.
       </div>
-      <input id="cariHitungStok" placeholder="Cari nama barang..." oninput="renderHitungStokInput()"
-        style="margin:0 16px 10px;padding:10px;border:1px solid #cbd5e1;border-radius:8px;">
+      <div style="padding:0 16px 10px;">
+        <input id="cariHitungStok" placeholder="Cari nama barang..." oninput="renderHitungStokInput()"
+          style="width:100%;box-sizing:border-box;padding:10px;border:1px solid #cbd5e1;border-radius:8px;background:#ffffff;color:#0f172a;font-size:14px;">
+      </div>
       <div id="listHitungStokInput" style="flex:1;overflow-y:auto;padding:0 16px;"></div>
       <div style="padding:12px 16px;border-top:1px solid #e2e8f0;">
-        <button onclick="kirimHitungStok()" style="width:100%;padding:12px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-weight:700;">Kirim Hasil Hitung</button>
+        <button onclick="kirimHitungStok()" style="width:100%;padding:12px;background:#16a34a;color:#ffffff;border:none;border-radius:8px;font-weight:700;font-size:15px;">Kirim Hasil Hitung</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
+}
+
+// Tombol mengambang hanya tampil di Menu Utama supaya tidak menutupi
+// tombol lain (mis. "Simpan Servis" di bagian bawah layar).
+function aturTombolHitungStok(tabId) {
+  const btn = $('btnHitungStok'); if (!btn) return;
+  const aktif = tabId !== undefined ? tabId === 'home' : !!$('home')?.classList.contains('active');
+  btn.style.display = (aktif && ['kasir', 'admin', 'pemilik'].includes(getRole())) ? 'block' : 'none';
 }
 
 function bukaHitungStok() {
@@ -2547,20 +2560,24 @@ function bukaHitungStok() {
   $('cariHitungStok').value = '';
   renderHitungStokInput();
   $('overlayHitungStok').style.display = 'block';
+  if ($('btnHitungStok')) $('btnHitungStok').style.display = 'none';
 }
-function tutupHitungStok() { $('overlayHitungStok').style.display = 'none'; }
+function tutupHitungStok() { $('overlayHitungStok').style.display = 'none'; aturTombolHitungStok(); }
 
 function renderHitungStokInput() {
   const q = txt('cariHitungStok').toLowerCase();
   const list = dataHitungStok.filter(x => !q || x.nama.toLowerCase().includes(q));
-  const badgeOf = t => t === 'produk' ? 'JAM' : (t === 'sparepart' ? 'PART' : 'BAT');
-  $('listHitungStokInput').innerHTML = list.length ? list.map(x => `
+  const label = t => t === 'produk' ? ['JAM', '#dbeafe', '#1e40af'] : (t === 'sparepart' ? ['PART', '#fef3c7', '#92400e'] : ['BAT', '#dcfce7', '#166534']);
+  $('listHitungStokInput').innerHTML = list.length ? list.map(x => {
+    const [teks, bg, fg] = label(x.tipe);
+    return `
     <div style="display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f1f5f9;">
-      <span class="badge proses" style="font-size:9px">${badgeOf(x.tipe)}</span>
-      <div style="flex:1;font-size:13px;">${esc(x.nama)}</div>
+      <span style="font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;background:${bg};color:${fg};">${teks}</span>
+      <div style="flex:1;font-size:13px;color:#0f172a;">${esc(x.nama)}</div>
       <input type="number" min="0" placeholder="-" data-tipe="${x.tipe}" data-id="${esc(x.id)}"
-        style="width:70px;padding:6px;text-align:center;border:1px solid #cbd5e1;border-radius:6px;">
-    </div>`).join('') : '<div class="empty" style="padding:16px">Tidak ditemukan</div>';
+        style="width:70px;padding:6px;text-align:center;border:1px solid #cbd5e1;border-radius:6px;background:#ffffff;color:#0f172a;font-size:14px;">
+    </div>`;
+  }).join('') : '<div style="padding:16px;color:#64748b;text-align:center;">Tidak ditemukan</div>';
 }
 
 async function kirimHitungStok() {
