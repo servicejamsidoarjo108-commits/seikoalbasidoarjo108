@@ -353,8 +353,28 @@ async function muatAuditDraftHariIni() {
 // database (audit_draft/modal_barang) tipe baterai selalu 'stok_baterai'.
 const tipeDb = t => t === 'baterai' ? 'stok_baterai' : t;
 
-// === AMBIL DATA DARI CLOUD ===
-async function tarikSemuaData() {
+// === CACHE FOTO PRODUK (agar tidak ditarik ulang tiap refresh & hemat egress) ===
+let produkFotoCache = {};
+let fotoSudahDimuat = false;
+
+// Helper paginasi otomatis agar >1.000 baris tetap terambil penuh
+async function ambilSemuaHalaman(tabel, select = '*', urut = null, asc = true, pageSize = 1000) {
+  let semua = [], from = 0;
+  while (true) {
+    let q = supabaseClient.from(tabel).select(select).range(from, from + pageSize - 1);
+    if (urut) q = q.order(urut, { ascending: asc });
+    const { data, error } = await q;
+    if (error) return { data: null, error };
+    const rows = data || [];
+    semua = semua.concat(rows);
+    if (rows.length < pageSize) break;
+    from += pageSize;
+  }
+  return { data: semua, error: null };
+}
+
+// === AMBIL DATA DARI CLOUD (HEMAT EGRESS + DUKUNG >1.000 PRODUK) ===
+async function tarikSemuaData(muatFoto = false) {
   if (!supabaseClient) return;
   try {
     const ambil = (tabel, select = '*', urut, asc = true, limit) => {
@@ -363,20 +383,25 @@ async function tarikSemuaData() {
       if (limit) q = q.limit(limit);
       return q;
     };
-    // Kolom harga_beli SENGAJA tidak ikut diambil di sini -- modal barang disimpan
-    // terpisah di tabel modal_barang dan hanya dimuat untuk admin/pemilik (lihat
-    // muatModalBarang di bawah), supaya kasir tidak pernah menerimanya ke browser.
-    const KOLOM_PRODUK = 'id,nama,merek,barcode,harga_jual,stok,foto,updated_at';
+    const perluFoto = muatFoto || !fotoSudahDimuat;
+    const KOLOM_PRODUK = perluFoto
+      ? 'id,nama,merek,barcode,harga_jual,stok,foto,updated_at'
+      : 'id,nama,merek,barcode,harga_jual,stok,updated_at';
     const KOLOM_SPAREPART = 'id,nama,kategori,harga_jual,stok,min_stok,updated_at';
     const KOLOM_BATERAI = 'id,tipe,harga_jual,stok,min_stok,updated_at';
     const hasil = await Promise.all([
       supabaseClient.from('settings').select('*').eq('id', 'toko').maybeSingle(),
-      ambil('produk', KOLOM_PRODUK, 'nama'), ambil('sparepart', KOLOM_SPAREPART, 'nama'), ambil('stok_baterai', KOLOM_BATERAI, 'tipe'),
-      ambil('jual', '*, jual_items(*)', 'waktu', false),
-      ambil('servis', '*, servis_parts(*), servis_baterai(*)', 'waktu', false),
-      ambil('baterai', '*', 'waktu', false), ambil('kas', '*', 'waktu', false),
-      ambil('pelanggan'), ambil('bank'), ambil('supplier'),
-      ambil('pembelian', '*', 'waktu', false), ambil('audit_barang', '*', 'waktu', false),
+      ambilSemuaHalaman('produk', KOLOM_PRODUK, 'nama'),
+      ambilSemuaHalaman('sparepart', KOLOM_SPAREPART, 'nama'),
+      ambilSemuaHalaman('stok_baterai', KOLOM_BATERAI, 'tipe'),
+      ambil('jual', '*, jual_items(*)', 'waktu', false, 500),
+      ambil('servis', '*, servis_parts(*), servis_baterai(*)', 'waktu', false, 500),
+      ambil('baterai', '*', 'waktu', false, 500),
+      ambil('kas', '*', 'waktu', false, 1000),
+      ambilSemuaHalaman('pelanggan', '*', 'nama'),
+      ambil('bank'), ambil('supplier'),
+      ambil('pembelian', '*', 'waktu', false, 300),
+      ambil('audit_barang', '*', 'waktu', false, 300),
       ambil('audit_log', '*', 'waktu', false, 500),
       ambil('beban_tetap', '*', 'nama')
     ]);
@@ -385,7 +410,14 @@ async function tarikSemuaData() {
     const pakai = (r, lama) => (r.error ? lama : (r.data || []));
 
     if (set.data) db.settings = set.data;
-    db.produk = pakai(p, db.produk);
+    const prodBaru = pakai(p, db.produk);
+    if (perluFoto && !p.error) {
+      fotoSudahDimuat = true;
+      prodBaru.forEach(x => { if (x.foto) produkFotoCache[x.id] = x.foto; });
+    } else {
+      prodBaru.forEach(x => { if (!x.foto && produkFotoCache[x.id]) x.foto = produkFotoCache[x.id]; });
+    }
+    db.produk = prodBaru;
     db.sparePart = pakai(sp, db.sparePart);
     db.stokBaterai = pakai(sb, db.stokBaterai);
     db.jual = j.error ? db.jual : (j.data || []).map(x => ({ ...x, items: x.jual_items || [] }));
@@ -407,6 +439,25 @@ async function tarikSemuaData() {
 // === REAL-TIME SYNC ===
 function jadwalRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(tarikSemuaData, 800); }
 
+async function daftarkanSesiTunggal(userId) {
+  if (!userId || !supabaseClient) return;
+  try {
+    // Cabut refresh token di perangkat lain (bawaan Supabase v2)
+    await supabaseClient.auth.signOut({ scope: 'others' });
+  } catch (_) { }
+  const token = genId('SES');
+  sessionStorage.setItem('ta_session_token', token);
+  sessionStorage.setItem('ta_uid', userId);
+  try {
+    await supabaseClient.from('sesi_aktif').upsert({
+      user_id: userId,
+      session_token: token,
+      device_info: (navigator.userAgent || '').slice(0, 120),
+      updated_at: nowISO()
+    });
+  } catch (e) { console.warn('Tabel sesi_aktif belum dibuat (jalankan migrasi_sesi_aktif.sql):', e.message); }
+}
+
 function setupRealtime() {
   if (!supabaseClient) return;
   if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
@@ -414,6 +465,20 @@ function setupRealtime() {
   ['produk', 'sparepart', 'stok_baterai', 'jual', 'servis', 'baterai', 'kas', 'pelanggan'].forEach(t => {
     realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: t }, jadwalRefresh);
   });
+  // Pantau sesi_aktif: jika perangkat lain login dengan akun ini, langsung tendang!
+  const uid = sessionStorage.getItem('ta_uid');
+  if (uid) {
+    realtimeChannel.on('postgres_changes', {
+      event: '*', schema: 'public', table: 'sesi_aktif', filter: `user_id=eq.${uid}`
+    }, payload => {
+      const baru = payload?.new?.session_token;
+      const lokal = sessionStorage.getItem('ta_session_token');
+      if (baru && lokal && baru !== lokal) {
+        alert('⚠️ Akun ini baru saja login di perangkat lain.\nAnda akan dikeluarkan demi keamanan.');
+        logout(true);
+      }
+    });
+  }
   realtimeChannel.subscribe();
 }
 
@@ -436,9 +501,11 @@ async function login() {
     sessionStorage.setItem('ta_logged', '1');
     sessionStorage.setItem('ta_user', user);
     sessionStorage.setItem('ta_role', tentukanRole(data.user, user));
+    await daftarkanSesiTunggal(data.user?.id);
 
     if (btn) btn.textContent = 'Memuat Data...';
-    await tarikSemuaData();
+    fotoSudahDimuat = false;
+    await tarikSemuaData(true);
     setupRealtime();
     await catatLog('LOGIN', 'Berhasil masuk sistem');
 
@@ -454,9 +521,10 @@ async function login() {
   }
 }
 
-async function logout() {
+async function logout(paksa = false) {
   if (supabaseClient) {
-    await catatLog('LOGOUT', 'User keluar dari sistem');
+    if (!paksa) await catatLog('LOGOUT', 'User keluar dari sistem');
+    fotoSudahDimuat = false; produkFotoCache = {};
     if (realtimeChannel) supabaseClient.removeChannel(realtimeChannel);
     realtimeChannel = null;
     await supabaseClient.auth.signOut();
@@ -484,7 +552,7 @@ function bukaMenu(tabId) {
   window.scrollTo(0, 0);
   aturTombolHitungStok(tabId);
   render();
-  if (tabId === 'setting') { isiFormSetting(true); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); } }
+  if (tabId === 'setting') { isiFormSetting(true); muatPrefApiSetting(); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); } }
 }
 
 // === PRODUK & STOK ===
@@ -526,8 +594,9 @@ async function simpanProduk() {
       flash('Produk baru ditambahkan');
     }
     await catatLog('PRODUK', (id ? 'Edit' : 'Tambah/Restock') + ' produk: ' + nama);
+    const adaFotoBaru = !!tempFotoBase64;
     resetFormProduk();
-    tarikSemuaData();
+    tarikSemuaData(adaFotoBaru);
   } catch (e) { flash('Gagal menyimpan produk: ' + e.message, 'err'); }
 }
 
@@ -914,9 +983,11 @@ function renderKeranjangServis() {
   if (!cartServisGabungan.length) {
     if (card) card.style.display = 'none';
     if (cardBayar) cardBayar.style.display = 'none';
+    if ($('srvEmptyHint')) $('srvEmptyHint').style.display = 'block';
     if ($('sTotalBiayaDisplay')) $('sTotalBiayaDisplay').innerText = 'Rp 0';
     return;
   }
+  if ($('srvEmptyHint')) $('srvEmptyHint').style.display = 'none';
   if (card) card.style.display = 'block';
   if (cardBayar) cardBayar.style.display = 'block';
   if (list) {
@@ -1245,8 +1316,10 @@ function renderBateraiCart() {
     if (cardList) cardList.style.display = 'none';
     if (cardBayar) cardBayar.style.display = 'none';
     if (stickyBar) stickyBar.style.display = 'none';
+    if ($('batEmptyHint')) $('batEmptyHint').style.display = 'block';
     return;
   }
+  if ($('batEmptyHint')) $('batEmptyHint').style.display = 'none';
   if (cardList) cardList.style.display = 'block';
   if (cardBayar) cardBayar.style.display = 'block';
   if (stickyBar) stickyBar.style.display = 'flex';
@@ -1613,6 +1686,19 @@ function hitungMDR(total, metode) {
 }
 
 function cetakHTML(html) {
+  // Jika mode Printer Thermal Bluetooth aktif & terhubung, cetak langsung via ESC/POS
+  if (localStorage.getItem('ta_bt_aktif') === '1' && btCharacteristic) {
+    const teks = htmlKeTeksStruk(html);
+    btPrintText(teks).then(ok => {
+      if (ok) flash('🖨️ Struk dicetak via Bluetooth');
+      else cetakViaBrowser(html);
+    }).catch(() => cetakViaBrowser(html));
+    return;
+  }
+  cetakViaBrowser(html);
+}
+
+function cetakViaBrowser(html) {
   const win = window.open('', '_blank');
   if (!win) return alert('BROWSER MEMBLOKIR POP-UP!\n\nSilakan izinkan pop-up (Always allow pop-ups) di pengaturan browser untuk situs ini.');
   win.document.open(); win.document.write(html); win.document.close();
@@ -1931,10 +2017,31 @@ async function generateDigitalWarranty(id, tipe) {
   } catch (e) { flash('Gagal membuat gambar', 'err'); }
 }
 
-function openWA(hp, text) {
+async function openWA(hp, text) {
   let phone = waPhone(hp);
   if (phone.startsWith('8')) phone = '62' + phone;
   if (!phone || phone === '62' || phone.length < 9) return alert('Nomor HP tidak valid.');
+
+  // Jika WhatsApp Gateway API (Fonnte/Custom) aktif & token terisi, kirim otomatis di latar belakang
+  const apiAktif = localStorage.getItem('ta_wa_api_aktif') === '1';
+  const apiUrl = (localStorage.getItem('ta_wa_api_url') || '').trim();
+  const apiToken = (localStorage.getItem('ta_wa_api_token') || '').trim();
+  if (apiAktif && apiUrl && apiToken && text) {
+    try {
+      flash('📤 Mengirim pesan WA via API...', 'ok');
+      const res = await fetch(apiUrl, {
+        method: 'POST',
+        headers: { 'Authorization': apiToken, 'Content-Type': 'application/json' },
+        body: JSON.stringify({ target: phone, message: text })
+      });
+      if (res.ok) {
+        flash('✅ Pesan WA terkirim otomatis via API!');
+        return;
+      }
+    } catch (e) {
+      console.warn('WA API gagal, fallback ke wa.me:', e);
+    }
+  }
   window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text || '')}`, '_blank');
 }
 
@@ -2666,6 +2773,7 @@ function render() {
   if ($('listAuditLog')) renderAuditLog();
   if ($('listSemuaStok') && isPemilik()) renderSemuaStok();
   if ($('listLaporanAuditRingkas') && isPemilik()) renderLaporanAuditRingkas();
+  if ($('listForecastStok')) renderForecastStok();
   renderQuickUI();
 }
 
@@ -3972,4 +4080,197 @@ function backupSemuaJSON() {
   unduhFile(`Backup_Lengkap_TokoSeiko108_${tglLokal()}.json`, JSON.stringify(payload, null, 2), 'application/json');
   catatLog('BACKUP_FULL', 'Mengunduh backup lengkap JSON');
   flash('Backup penuh (.json) berhasil diunduh!');
+}
+
+
+// ==========================================================
+//  FITUR V9: POS SERVIS/BATERAI, BLUETOOTH PRINTER, WA API, FORECASTING
+// ==========================================================
+
+// 1. GRID METODE PEMBAYARAN SERVIS & BATERAI
+function pilihMetodeServis(metode) {
+  const sel = $('metodeDpGroup'); if (sel) sel.value = metode;
+  document.querySelectorAll('#payMethodGridServis .pay-btn').forEach(b => b.classList.toggle('active', b.dataset.metode === metode));
+  toggleBankDp(); updateTotalGroupServis();
+}
+
+function pilihMetodeBaterai(metode) {
+  const sel = $('metodeBaterai'); if (sel) sel.value = metode;
+  document.querySelectorAll('#payMethodGridBaterai .pay-btn').forEach(b => b.classList.toggle('active', b.dataset.metode === metode));
+  toggleBankBaterai(); updateTotalBaterai();
+}
+
+// 2. WEB BLUETOOTH THERMAL PRINTER (58mm ESC/POS)
+let btDevice = null, btCharacteristic = null;
+const BT_SERVICE_UUIDS = [
+  '000018f0-0000-1000-8000-00805f9b34fb',
+  'e7810a71-73ae-499d-8c15-faa9aef0c3f2',
+  '49535343-fe7d-4ae5-8fa9-9fafd205e455'
+];
+
+function updateBtStatus(teks, ok = false) {
+  const el = $('btStatusText'); if (!el) return;
+  el.textContent = teks;
+  el.style.color = ok ? '#15803d' : '#b91c1c';
+}
+
+async function btConnect() {
+  if (!navigator.bluetooth) return alert('Browser tidak mendukung Web Bluetooth. Gunakan Google Chrome di Android atau PC.');
+  try {
+    updateBtStatus('Mencari printer Bluetooth...', false);
+    btDevice = await navigator.bluetooth.requestDevice({
+      acceptAllDevices: true,
+      optionalServices: BT_SERVICE_UUIDS
+    });
+    btDevice.addEventListener('gattserverdisconnected', () => {
+      btCharacteristic = null;
+      updateBtStatus('Status: Printer terputus', false);
+    });
+    const server = await btDevice.gatt.connect();
+    let foundChar = null;
+    for (const svcUuid of BT_SERVICE_UUIDS) {
+      try {
+        const svc = await server.getPrimaryService(svcUuid);
+        const chars = await svc.getCharacteristics();
+        foundChar = chars.find(c => c.properties.write || c.properties.writeWithoutResponse);
+        if (foundChar) break;
+      } catch (_) { }
+    }
+    if (!foundChar) throw new Error('Karakteristik tulis ESC/POS tidak ditemukan pada printer ini.');
+    btCharacteristic = foundChar;
+    updateBtStatus(`✅ Terhubung: ${btDevice.name || 'Printer Thermal'}`, true);
+    flash('Printer Bluetooth terhubung!');
+  } catch (e) {
+    updateBtStatus('Status: Gagal menghubungkan (' + e.message + ')', false);
+    flash('Gagal konek Bluetooth: ' + e.message, 'err');
+  }
+}
+
+async function btPrintText(text) {
+  if (!btCharacteristic) return false;
+  const enc = new TextEncoder();
+  const initCmd = new Uint8Array([0x1B, 0x40]); // ESC @ (reset printer)
+  const body = enc.encode(text + '\n\n\n');
+  const full = new Uint8Array(initCmd.length + body.length);
+  full.set(initCmd, 0); full.set(body, initCmd.length);
+
+  // Kirim per potongan 100 byte agar buffer Bluetooth tidak meluap
+  const CHUNK = 100;
+  for (let i = 0; i < full.length; i += CHUNK) {
+    const slice = full.slice(i, i + CHUNK);
+    if (btCharacteristic.properties.writeWithoutResponse) {
+      await btCharacteristic.writeValueWithoutResponse(slice);
+    } else {
+      await btCharacteristic.writeValue(slice);
+    }
+  }
+  return true;
+}
+
+async function btTestPrint() {
+  if (!btCharacteristic) return flash('Hubungkan printer Bluetooth dulu', 'err');
+  const toko = getToko();
+  const teks = `${toko.nama}\n${toko.alamat}\n================================\nTES CETAK PRINTER BLUETOOTH\nTgl: ${new Date().toLocaleString('id-ID')}\nStatus: BERHASIL TERHUBUNG!\n================================`;
+  try {
+    await btPrintText(teks);
+    flash('✅ Tes cetak dikirim ke printer!');
+  } catch (e) { flash('Gagal mencetak: ' + e.message, 'err'); }
+}
+
+function htmlKeTeksStruk(html) {
+  const div = document.createElement('div');
+  div.innerHTML = html.replace(/<style[\s\S]*?<\/style>/gi, '').replace(/<hr[^>]*>/gi, '\n--------------------------------\n').replace(/<br\s*\/?>/gi, '\n').replace(/<\/div>|<\/tr>|<\/p>/gi, '\n').replace(/<\/td>/gi, '  ');
+  return (div.textContent || div.innerText || '').replace(/\n{3,}/g, '\n\n').trim();
+}
+
+function simpanPrefBT() {
+  localStorage.setItem('ta_bt_aktif', $('chkPakaiBT')?.checked ? '1' : '0');
+  flash($('chkPakaiBT')?.checked ? 'Mode Cetak Bluetooth AKTIF' : 'Mode Cetak Browser AKTIF');
+}
+
+// 3. WHATSAPP GATEWAY API (FONNTE / CUSTOM)
+function muatPrefApiSetting() {
+  if ($('chkPakaiBT')) $('chkPakaiBT').checked = localStorage.getItem('ta_bt_aktif') === '1';
+  if ($('waApiUrl')) $('waApiUrl').value = localStorage.getItem('ta_wa_api_url') || 'https://api.fonnte.com/send';
+  if ($('waApiToken')) $('waApiToken').value = localStorage.getItem('ta_wa_api_token') || '';
+  if ($('waApiAktif')) $('waApiAktif').checked = localStorage.getItem('ta_wa_api_aktif') === '1';
+}
+
+function simpanWaApiConfig() {
+  localStorage.setItem('ta_wa_api_url', txt('waApiUrl'));
+  localStorage.setItem('ta_wa_api_token', txt('waApiToken'));
+  localStorage.setItem('ta_wa_api_aktif', $('waApiAktif')?.checked ? '1' : '0');
+  flash('Pengaturan WhatsApp API disimpan!');
+}
+
+async function tesWaApi() {
+  const toko = getToko();
+  if (!toko.telp) return flash('Isi No WA Toko di Identitas Toko dulu', 'err');
+  await openWA(toko.telp, `Tes koneksi WA API dari *${toko.nama}* berhasil! (${new Date().toLocaleString('id-ID')})`);
+}
+
+// 4. FORECASTING STOK (PREDIKSI STOK HABIS 30 HARI TERAKHIR)
+function renderForecastStok() {
+  const el = $('listForecastStok'); if (!el) return;
+  const batas30 = Date.now() - (30 * 86400000);
+  const keluarMap = {}; // key: tipe_id -> qty keluar 30 hari terakhir
+  const addKeluar = (key, qty) => { keluarMap[key] = (keluarMap[key] || 0) + (Number(qty) || 0); };
+
+  (db.jual || []).filter(t => t.waktu && new Date(t.waktu).getTime() >= batas30).forEach(t => {
+    (t.items || []).forEach(i => addKeluar('produk_' + i.produk_id, i.qty));
+  });
+  (db.servis || []).filter(s => s.waktu && new Date(s.waktu).getTime() >= batas30).forEach(s => {
+    (s.parts || []).forEach(p => addKeluar('sparepart_' + p.part_id, p.qty));
+    (s.baterai || []).forEach(b => addKeluar('baterai_' + b.baterai_id, b.qty));
+  });
+  (db.baterai || []).filter(b => b.waktu && new Date(b.waktu).getTime() >= batas30).forEach(b => {
+    if (b.sb_id) addKeluar('baterai_' + b.sb_id, 1);
+  });
+
+  const semua = [
+    ...db.produk.map(p => ({ key: 'produk_' + p.id, label: 'JAM', cls: 'proses', nama: p.nama, stok: p.stok || 0, min: 2 })),
+    ...db.sparePart.map(sp => ({ key: 'sparepart_' + sp.id, label: 'PART', cls: 'warn', nama: sp.nama, stok: sp.stok || 0, min: sp.min_stok ?? 2 })),
+    ...db.stokBaterai.map(sb => ({ key: 'baterai_' + sb.id, label: 'BAT', cls: 'ok', nama: 'Baterai ' + sb.tipe, stok: sb.stok || 0, min: sb.min_stok ?? 5 }))
+  ];
+
+  const hasil = semua.map(item => {
+    const keluar30 = keluarMap[item.key] || 0;
+    const perHari = keluar30 / 30;
+    const estimasiHari = perHari > 0 ? Math.floor(item.stok / perHari) : (item.stok <= item.min ? 0 : 999);
+    const targetStok30 = Math.max(item.min * 2, Math.ceil(keluar30 * 1.2));
+    const saranBeli = Math.max(0, targetStok30 - item.stok);
+    return { ...item, keluar30, estimasiHari, saranBeli };
+  })
+  .filter(x => x.keluar30 > 0 || x.stok <= x.min)
+  .sort((a, b) => a.estimasiHari - b.estimasiHari)
+  .slice(0, 15);
+
+  if (!hasil.length) {
+    el.innerHTML = '<div class="empty">Belum cukup data transaksi 30 hari terakhir untuk prediksi stok.</div>';
+    return;
+  }
+
+  el.innerHTML = hasil.map(x => {
+    const kritis = x.estimasiHari <= 7;
+    const waspada = !kritis && x.estimasiHari <= 14;
+    const badgeSt = kritis ? '<span class="badge danger">🚨 KRITIS</span>' : (waspada ? '<span class="badge warn">⚠️ SEGERA RESTOCK</span>' : '<span class="badge ok">✅ AMAN</span>');
+    const teksHari = x.estimasiHari >= 999 ? '> 90 hari' : (x.stok === 0 ? 'HABIS' : `~${x.estimasiHari} hari lagi`);
+    return `<div class="item-card ${kritis ? 'low-stock' : ''}">
+      <div class="ic-head">
+        <div>
+          <span class="badge ${x.cls}" style="margin-right:4px;">${x.label}</span>${badgeSt}
+          <div class="ic-title" style="margin-top:4px;">${esc(x.nama)}</div>
+        </div>
+        <div class="ic-stock ${kritis ? 'low' : ''}">Stok: ${x.stok}</div>
+      </div>
+      <div class="ic-grid">
+        <div class="ic-cell"><span class="ic-lbl">Keluar (30 Hari)</span><span class="ic-val">${x.keluar30} unit</span></div>
+        <div class="ic-cell"><span class="ic-lbl">Estimasi Habis</span><span class="ic-val ${kritis ? 'danger' : ''}">${teksHari}</span></div>
+        <div class="ic-cell" style="grid-column:span 2;border-top:1px dashed #cbd5e1;padding-top:6px;flex-direction:row;justify-content:space-between;align-items:center;">
+          <span class="ic-lbl">Rekomendasi Beli (Stok 30 Hari)</span>
+          <span class="ic-val ok">${x.saranBeli > 0 ? '+' + x.saranBeli + ' unit' : 'Cukup'}</span>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
