@@ -298,6 +298,140 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
 }
 .stat .num { white-space: nowrap; font-size: 17px; }
 
+
+/* === UPGRADE UI V8 (OPSI A: PUTIH BERSIH + NAVY & EMAS PROFESIONAL) === */
+:root {
+  --bg: #f1f5f9;
+  --card-bg: #ffffff;
+  --navy: #0f1f3d;
+  --navy-light: #1e3a6d;
+  --gold: #f59e0b;
+  --gold-dark: #b45309;
+  --p: #0f1f3d;
+  --p-dark: #1e3a6d;
+}
+header {
+  background: linear-gradient(135deg, #0f1f3d 0%, #172e5a 100%);
+  border-bottom: 3px solid #f59e0b;
+  padding: 12px 16px;
+}
+.hdr-wrap {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 10px; flex-wrap: wrap; max-width: 1120px; margin: auto;
+}
+.hdr-brand { display: flex; align-items: center; gap: 10px; }
+.hdr-logo-icon {
+  width: 40px; height: 40px; border-radius: 50%;
+  border: 2px solid #f59e0b; background: rgba(245,158,11,0.12);
+  display: flex; align-items: center; justify-content: center;
+  color: #fbbf24; font-size: 20px; flex-shrink: 0;
+}
+.hdr-title { font-size: 17px; font-weight: 800; color: #fbbf24; letter-spacing: .5px; line-height: 1.2; }
+.hdr-sub { font-size: 12px; color: #cbd5e1; font-weight: 500; }
+.hdr-right { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.hdr-avatar {
+  width: 32px; height: 32px; border-radius: 50%;
+  background: #fbbf24; color: #0f1f3d; font-weight: 800; font-size: 13px;
+  display: inline-flex; align-items: center; justify-content: center;
+}
+.hdr-clock { font-size: 12px; color: #e2e8f0; background: rgba(255,255,255,0.08); padding: 4px 10px; border-radius: 999px; }
+
+main { max-width: 1120px; }
+
+/* POS KASIR 2-KOLOM (PC/TABLET) -> 1-KOLOM (HP) */
+.pos-layout {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 14px;
+  align-items: start;
+}
+@media (max-width: 820px) {
+  .pos-layout { grid-template-columns: 1fr; }
+}
+.pos-prod-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(155px, 1fr));
+  gap: 10px;
+  max-height: 540px;
+  overflow-y: auto;
+  padding: 2px;
+}
+.pos-prod-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-radius: 12px;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  text-align: center;
+  transition: 0.15s;
+}
+.pos-prod-card:hover { border-color: #f59e0b; box-shadow: 0 4px 12px rgba(15,31,61,0.1); }
+.pos-prod-img {
+  width: 100%; height: 110px; object-fit: contain;
+  border-radius: 8px; background: #f8fafc; margin-bottom: 8px;
+}
+.pos-prod-placeholder {
+  width: 100%; height: 110px; border-radius: 8px;
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 38px; color: #0f1f3d; margin-bottom: 8px;
+}
+.pos-prod-name { font-size: 14px; font-weight: 800; color: #0f1f3d; line-height: 1.25; margin-bottom: 2px; }
+.pos-prod-merek { font-size: 12px; color: #64748b; margin-bottom: 4px; }
+.pos-prod-price { font-size: 15px; font-weight: 800; color: #b45309; margin-bottom: 6px; }
+.pos-prod-btn {
+  background: #0f1f3d; color: #fbbf24; border: 1.5px solid #0f1f3d;
+  padding: 8px; border-radius: 8px; font-size: 13px; font-weight: 700; width: 100%;
+}
+.pos-prod-btn:hover { background: #1e3a6d; }
+
+/* GRID TOMBOL METODE PEMBAYARAN */
+.pay-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pay-btn {
+  background: #f8fafc; color: #0f1f3d; border: 1.5px solid #cbd5e1;
+  padding: 10px 8px; min-height: 46px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; display: flex; align-items: center;
+  justify-content: center; gap: 6px; transition: 0.15s;
+}
+.pay-btn.active {
+  background: #fbbf24; color: #0f1f3d; border-color: #d97706;
+  box-shadow: 0 2px 8px rgba(245,158,11,0.35);
+}
+.btn-bayar-gold {
+  background: linear-gradient(135deg, #f59e0b 0%, #fbbf24 100%);
+  color: #0f1f3d; border: 2px solid #d97706;
+  padding: 15px; min-height: 54px; border-radius: 12px;
+  font-size: 18px; font-weight: 900; width: 100%; letter-spacing: .5px;
+  box-shadow: 0 4px 12px rgba(245,158,11,0.3);
+}
+.btn-bayar-gold:hover { background: #f59e0b; }
+
+.checkout-summary {
+  background: #f8fafc; border: 1.5px solid #cbd5e1; border-radius: 10px;
+  padding: 12px; margin: 10px 0;
+}
+.cs-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 4px; color: #334155; }
+.cs-row.total { font-size: 18px; font-weight: 900; color: #0f1f3d; border-top: 1.5px dashed #cbd5e1; padding-top: 8px; margin-top: 6px; }
+
+/* GAYA TIKET SERVIS (WATCH CARE SERVICE) */
+.ticket-id-pill {
+  background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
+  padding: 3px 10px; border-radius: 999px; font-size: 12px; font-weight: 800; font-family: monospace;
+}
+.status-pill-btn {
+  padding: 8px 14px; min-height: 40px; border-radius: 999px;
+  border: 1.5px solid #cbd5e1; background: #ffffff; color: #0f1f3d;
+  font-size: 14px; font-weight: 700; white-space: nowrap;
+}
+.status-pill-btn.active { background: #0f1f3d; color: #fbbf24; border-color: #0f1f3d; }
+
 </style>
 </head>
 <body>
@@ -312,9 +446,22 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
 </div>
 
 <header>
-  <h1>⌚ Toko Seiko Alba Sidoarjo 108
-    <span><button type="button" onclick="toggleFontBesar()" style="background:#f59e0b;color:#0f172a;border:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:800;margin-right:8px;">🔍 Huruf Besar</button><span id="userInfo">👤</span> · <span onclick="logout()" style="cursor:pointer;text-decoration:underline">🔓 Logout</span></span>
-  </h1>
+  <div class="hdr-wrap">
+    <div class="hdr-brand">
+      <div class="hdr-logo-icon"><i class="fa-solid fa-clock"></i></div>
+      <div>
+        <div class="hdr-title">TOKO SEIKO ALBA 108</div>
+        <div class="hdr-sub">Point of Sale · Watch Care Service</div>
+      </div>
+    </div>
+    <div class="hdr-right">
+      <span class="hdr-clock" id="liveClock">-</span>
+      <button type="button" onclick="toggleFontBesar()" style="background:#fbbf24;color:#0f1f3d;border:none;border-radius:8px;padding:6px 10px;font-size:12px;font-weight:800;">🔍 Huruf Besar</button>
+      <span class="hdr-avatar" id="userAvatar">US</span>
+      <span id="userInfo" style="color:#ffffff;font-weight:700;font-size:13px;">👤</span>
+      <button type="button" onclick="logout()" style="background:rgba(255,255,255,0.14);color:#fff;border:1px solid rgba(255,255,255,0.25);border-radius:8px;padding:6px 10px;font-size:12px;font-weight:700;">🔓 Logout</button>
+    </div>
+  </div>
 </header>
 
 <main>
@@ -351,100 +498,128 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
 <div style="margin-bottom:10px"><button class="btn-sm ghost" onclick="bukaMenu('home')">⬅️ Menu Utama</button></div>
 
 <section id="kasir">
-  <div class="card"><h3>Tambah ke Keranjang</h3>
-  <div class="row">
-    <div>
-      <label>Produk</label>
-      <!-- TAMBAHKAN align-items: center; DI SINI -->
-      <div style="display:flex; gap:6px; align-items: center;">
-        <select id="selProduk" style="flex:1;"></select>
-        <!-- TOMBOL SCAN KASIR -->
-        <button class="btn blue" onclick="scanBarcode('', 'kasir')" style="width:auto; height:42px; padding:0 15px; font-size:18px; display:flex; align-items:center; justify-content:center;" title="Scan Barcode">📷</button>
-      </div>
-    </div>
-    <div><label>Qty</label><div class="qty-stepper"><button type="button" onclick="ubahQty('qty',-1)">−</button><input type="number" id="qty" value="1" min="1"><button type="button" onclick="ubahQty('qty',1)">+</button></div></div>
+  <!-- BAR ATAS KASIR: SHIFT CLOSING -->
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="font-size:18px;font-weight:900;color:#0f1f3d;">🛒 Kasir &amp; Penjualan Jam</div>
+    <button type="button" class="btn-sm warn" onclick="bukaShiftClosing()" style="background:#0f1f3d;color:#fbbf24;border:1.5px solid #f59e0b;padding:10px 14px;">🔐 Tutup Kasir (Shift Closing)</button>
   </div>
-  <button class="btn" onclick="addCart()" style="margin-top:10px;">+ Tambah Manual</button>
-</div>
 
-<div class="card"><h3>Keranjang</h3><div id="cartList"><div class="empty">Belum ada item</div></div><div class="cart-total"><span>Total</span><span id="cartTotal">Rp 0</span></div></div>
-  <div class="card"><h3>Pembayaran</h3>
-    <div class="row">
-      <div><label>Tipe Diskon</label><select id="tipeDiskon" onchange="updateTotalKasir()"><option value="nominal">Nominal (Rp)</option><option value="persen">Persen (%)</option></select></div>
-      <div><label>Nilai Diskon</label><input type="number" id="nilaiDiskon" value="0" min="0" oninput="updateTotalKasir()"></div>
+  <!-- LAYOUT POS 2 KOLOM (KIRI: KATALOG PRODUK, KANAN: KERANJANG & BAYAR) -->
+  <div class="pos-layout">
+    <!-- KOLOM KIRI: KATALOG PRODUK BERGAMBAR -->
+    <div class="card">
+      <h3>⌚ Pilih Produk Jam</h3>
+      <div style="display:flex;gap:8px;margin-bottom:10px;align-items:center;">
+        <input id="cariKasirProduk" placeholder="🔍 Cari nama jam / merek..." oninput="renderKasirProdukGrid()" style="flex:1;">
+        <button type="button" class="btn blue" onclick="scanBarcode('', 'kasir')" style="width:auto;padding:0 14px;min-height:46px;" title="Scan Barcode">📷 Scan</button>
+      </div>
+      <div id="kasirProdukGrid" class="pos-prod-grid"></div>
+
+      <!-- Fallback dropdown + stepper (tetap ada untuk input manual cepat / kompatibilitas) -->
+      <details style="margin-top:12px;border-top:1px dashed #cbd5e1;padding-top:10px;">
+        <summary style="font-size:13px;font-weight:700;color:#475569;cursor:pointer;">⚙️ Tambah Manual lewat Daftar Dropdown</summary>
+        <div class="row" style="margin-top:8px;">
+          <div><label>Produk</label><select id="selProduk"></select></div>
+          <div><label>Qty</label><div class="qty-stepper"><button type="button" onclick="ubahQty('qty',-1)">−</button><input type="number" id="qty" value="1" min="1"><button type="button" onclick="ubahQty('qty',1)">+</button></div></div>
+        </div>
+        <button class="btn" onclick="addCart()" style="margin-top:6px;">+ Tambah ke Keranjang</button>
+      </details>
     </div>
-    <div class="tap-group">
-      <button type="button" class="tap-btn" onclick="setDiskonCepat('nominal',0)">Tanpa Diskon</button>
-      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',5)">Diskon 5%</button>
-      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',10)">Diskon 10%</button>
-      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',10000)">Potong 10rb</button>
-      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',20000)">Potong 20rb</button>
-    </div>
-   <div class="row">
-  <div>
-        <label>Nama Pembeli</label>
-    <input id="custNama" list="dlPelanggan" placeholder="Pilih / ketik nama" onblur="isiHpPelanggan('custNama','custHp');cekPoinPelanggan(this.value)" oninput="isiHpPelanggan('custNama','custHp');cekPoinPelanggan(this.value)">
-  </div>
-  <div>
-    <label>No HP</label>
-    <input id="custHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Opsional">
-  </div>
-</div>
-<div class="row">
-  <div>
-    <label>Tukar Poin (1 Poin = Rp 100)</label>
-    <input type="number" id="tukarPoin" value="0" min="0" oninput="updateTotalKasir()">
-  </div>
-  <div>
-    <label>Sisa Poin Pelanggan</label>
-    <input id="infoPoin" readonly value="0">
-  </div>
-</div>
-    
-    <div class="row">
-      <div>
-        <label>Metode Pembayaran</label>
-        <!-- METODE BAYAR BARU (KASIR) -->
-        <select id="metodeBayar" onchange="toggleBankKasir();updateTotalKasir()">
+
+    <!-- KOLOM KANAN: KERANJANG & CHECKOUT -->
+    <div class="card" style="border:2px solid #0f1f3d;">
+      <h3>🛍️ Keranjang / Checkout</h3>
+      <div id="cartList"><div class="empty">Belum ada item dipilih</div></div>
+
+      <div style="margin-top:12px;border-top:1.5px solid #e2e8f0;padding-top:10px;">
+        <label>Metode Pembayaran (Tinggal Pencet)</label>
+        <div class="pay-grid" id="payMethodGrid">
+          <button type="button" class="pay-btn active" data-metode="tunai" onclick="pilihMetodeKasir('tunai')">💵 Cash</button>
+          <button type="button" class="pay-btn" data-metode="qris" onclick="pilihMetodeKasir('qris')">📱 QRIS</button>
+          <button type="button" class="pay-btn" data-metode="transfer" onclick="pilihMetodeKasir('transfer')">🏦 Transfer</button>
+          <button type="button" class="pay-btn" data-metode="edc_dc_bca" onclick="pilihMetodeKasir('edc_dc_bca')">💳 Debit BCA</button>
+          <button type="button" class="pay-btn" data-metode="edc_dc_lain" onclick="pilihMetodeKasir('edc_dc_lain')">💳 Debit Lain</button>
+          <button type="button" class="pay-btn" data-metode="edc_cc_bca" onclick="pilihMetodeKasir('edc_cc_bca')">💳 CC BCA</button>
+          <button type="button" class="pay-btn" data-metode="edc_cc_vm" onclick="pilihMetodeKasir('edc_cc_vm')">💳 Visa/Master</button>
+          <button type="button" class="pay-btn" data-metode="edc_cc_amex" onclick="pilihMetodeKasir('edc_cc_amex')">💳 Amex</button>
+        </div>
+        <!-- Select asli tetap sinkron di belakang layar -->
+        <select id="metodeBayar" onchange="syncTombolMetodeKasir();toggleBankKasir();updateTotalKasir()" style="display:none;">
           <option value="tunai">Tunai</option>
           <option value="transfer">Transfer</option>
           <option value="qris">QRIS</option>
-          <optgroup label="Kartu Kredit">
-            <option value="edc_cc_bca">BCA Card (1,5%)</option>
-            <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
-            <option value="edc_cc_amex">Amex (3,25%)</option>
-          </optgroup>
-          <optgroup label="Kartu Debit">
-            <option value="edc_dc_bca">BCA (0,15%)</option>
-            <option value="edc_dc_lain">Bank Lain (1%)</option>
-            <option value="edc_dc_maestro">Maestro (2%)</option>
-          </optgroup>
+          <option value="edc_cc_bca">BCA Card (1,5%)</option>
+          <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
+          <option value="edc_cc_amex">Amex (3,25%)</option>
+          <option value="edc_dc_bca">BCA (0,15%)</option>
+          <option value="edc_dc_lain">Bank Lain (1%)</option>
+          <option value="edc_dc_maestro">Maestro (2%)</option>
         </select>
-      </div>
-      <div><label>Garansi (hari)</label><input type="number" id="garansiHari" value="180"></div>
-    </div>
 
-    <div class="row" id="wrapBankKasir" style="display:none"><div><label>Rekening Tujuan / Settlement</label><select id="bankKasir"></select></div><div></div></div>
-    <div class="cart-total" id="mdrInfo" style="display:none;color:#dc2626;font-size:14px"><span>Biaya Bank (MDR)</span><span id="mdrValue">-Rp 0</span></div>
-    <div class="row"><div><label>Bayar (Rp)</label><input type="number" id="bayar" placeholder="0"></div><div></div></div>
-    <div class="tap-group">
-      <button type="button" class="tap-btn ok-tap" onclick="setBayarCepat('pas')">💵 Uang Pas</button>
-      <button type="button" class="tap-btn" onclick="setBayarCepat(50000)">50rb</button>
-      <button type="button" class="tap-btn" onclick="setBayarCepat(100000)">100rb</button>
-      <button type="button" class="tap-btn" onclick="setBayarCepat(200000)">200rb</button>
-      <button type="button" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
+        <div class="row" id="wrapBankKasir" style="display:none">
+          <div><label>Rekening Tujuan / Settlement</label><select id="bankKasir"></select></div>
+          <div></div>
+        </div>
+
+        <label>Diskon Cepat</label>
+        <div class="tap-group">
+          <button type="button" class="tap-btn" onclick="setDiskonCepat('nominal',0)">0</button>
+          <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',5)">5%</button>
+          <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',10)">10%</button>
+          <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',10000)">10rb</button>
+          <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',20000)">20rb</button>
+        </div>
+        <div class="row">
+          <div><label>Tipe Diskon</label><select id="tipeDiskon" onchange="updateTotalKasir()"><option value="nominal">Nominal (Rp)</option><option value="persen">Persen (%)</option></select></div>
+          <div><label>Nilai Diskon</label><input type="number" id="nilaiDiskon" value="0" min="0" oninput="updateTotalKasir()"></div>
+        </div>
+
+        <div class="row">
+          <div><label>Nama Pembeli</label><input id="custNama" list="dlPelanggan" placeholder="Pilih / ketik nama" onblur="isiHpPelanggan('custNama','custHp');cekPoinPelanggan(this.value)" oninput="isiHpPelanggan('custNama','custHp');cekPoinPelanggan(this.value)"></div>
+          <div><label>No HP</label><input id="custHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="Opsional"></div>
+        </div>
+        <div class="row">
+          <div><label>Tukar Poin (1 Poin = Rp 100)</label><input type="number" id="tukarPoin" value="0" min="0" oninput="updateTotalKasir()"></div>
+          <div><label>Sisa Poin / Garansi (hari)</label><div style="display:flex;gap:6px;"><input id="infoPoin" readonly value="0" style="width:45%;text-align:center;" title="Sisa Poin"><input type="number" id="garansiHari" value="180" style="width:55%;" title="Garansi (hari)"></div></div>
+        </div>
+
+        <!-- RINGKASAN PEMBAYARAN -->
+        <div class="checkout-summary">
+          <div id="cartTotal">Rp 0</div>
+          <div class="cs-row" id="mdrInfo" style="display:none;color:#b91c1c;font-weight:700;margin-top:6px;">
+            <span>Biaya Bank (MDR)</span><span id="mdrValue">-Rp 0</span>
+          </div>
+          <div class="cs-row" id="netTerimaInfo" style="display:none;color:#15803d;font-weight:800;">
+            <span>Bersih Diterima Toko</span><span id="netTerimaValue">Rp 0</span>
+          </div>
+        </div>
+
+        <div id="wrapTunaiKasir">
+          <label>Uang Dibayar (Rp)</label>
+          <input type="number" id="bayar" placeholder="0" style="margin-bottom:6px;font-weight:800;font-size:18px;">
+          <div class="tap-group">
+            <button type="button" class="tap-btn ok-tap" onclick="setBayarCepat('pas')">💵 Uang Pas</button>
+            <button type="button" class="tap-btn" onclick="setBayarCepat(50000)">50rb</button>
+            <button type="button" class="tap-btn" onclick="setBayarCepat(100000)">100rb</button>
+            <button type="button" class="tap-btn" onclick="setBayarCepat(200000)">200rb</button>
+            <button type="button" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
+          </div>
+        </div>
+
+        <button class="btn-bayar-gold" onclick="prosesBayar()">🔒 BAYAR &amp; CETAK STRUK</button>
+      </div>
     </div>
-    <button class="btn ok" onclick="prosesBayar()">Proses & Cetak Struk</button>
   </div>
 
-  <div class="card" id="cardKasKecilKasir">
+  <!-- KAS KECIL & TRANSAKSI HARI INI -->
+  <div class="card" id="cardKasKecilKasir" style="margin-top:14px;">
     <h3>📝 Kas Kecil (Maks. Rp500.000)</h3>
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:10px;text-align:center;">
-      <div><div style="font-size:11px;font-weight:700;color:#475569;">SALDO KAS KECIL</div><div id="kkSaldoTotal" style="font-size:16px;font-weight:800;color:#1d4ed8;">Rp 0</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:#475569;">SALDO KAS KECIL</div><div id="kkSaldoTotal" style="font-size:16px;font-weight:800;color:#0f1f3d;">Rp 0</div></div>
       <div><div style="font-size:11px;font-weight:700;color:#475569;">MASUK HARI INI</div><div id="kkMasukHari" style="font-size:15px;font-weight:800;color:#15803d;">Rp 0</div></div>
       <div><div style="font-size:11px;font-weight:700;color:#475569;">KELUAR HARI INI</div><div id="kkKeluarHari" style="font-size:15px;font-weight:800;color:#b91c1c;">Rp 0</div></div>
     </div>
-    <p style="font-size:12px;color:#64748b;margin-top:0">Untuk mencatat uang masuk (jasa potong rantai, dll) atau uang keluar (beli galon, dll).</p>
+    <p style="font-size:13px;color:#475569;margin-top:0">Catat uang masuk (potong rantai, dll) atau keluar (beli galon, dll).</p>
     <div class="tap-group">
       <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',15000,'Jasa potong rantai')">+ Potong Rantai 15rb</button>
       <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',20000,'Jasa potong rantai')">+ Potong Rantai 20rb</button>
@@ -638,12 +813,12 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
 
   <!-- 5. DAFTAR SERVIS (ANTRIAN) -->
   <div class="card"><h3>Daftar Servis</h3>
-    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
-      <button class="btn-sm ghost" onclick="filterServis('')">Semua</button>
-      <button class="btn-sm ghost" onclick="filterServis('antri')">Antri</button>
-      <button class="btn-sm ghost" onclick="filterServis('proses')">Proses</button>
-      <button class="btn-sm ghost" onclick="filterServis('selesai')">Selesai</button>
-      <button class="btn-sm ghost" onclick="filterServis('diambil')">Diambil</button>
+    <div id="srvFilterPills" style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
+      <button type="button" class="status-pill-btn active" data-st="" onclick="filterServis('')">Semua</button>
+      <button type="button" class="status-pill-btn" data-st="antri" onclick="filterServis('antri')">✔ Diterima</button>
+      <button type="button" class="status-pill-btn" data-st="proses" onclick="filterServis('proses')">⚙️ Dikerjakan</button>
+      <button type="button" class="status-pill-btn" data-st="selesai" onclick="filterServis('selesai')">✅ Selesai</button>
+      <button type="button" class="status-pill-btn" data-st="diambil" onclick="filterServis('diambil')">📦 Sudah Diambil</button>
     </div>
     <div id="listServis"></div>
   </div>
@@ -888,6 +1063,16 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
     <div class="card"><div class="lbl">Saldo Kas Kecil</div><div class="num" id="kasSaldoKecil" style="color:#1d4ed8">Rp 0</div></div>
   </div>
   
+  <div class="card" id="cardIsiKasKecilAdmin" style="border:2px solid #f59e0b;background:#fffbeb;">
+    <div style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div>
+        <div style="font-weight:800;color:#0f1f3d;font-size:15px;">💰 Isi Saldo / Top-Up Kas Kecil</div>
+        <div style="font-size:13px;color:#475569;">Khusus Admin/Pemilik — tanpa batas Rp 500.000 untuk modal awal atau isi ulang laci kas kecil.</div>
+      </div>
+      <button type="button" class="btn warn" onclick="bukaIsiKasKecilModal()" style="width:auto;min-width:190px;background:#0f1f3d;color:#fbbf24;">+ Isi Saldo Kas Kecil</button>
+    </div>
+  </div>
+
   <div class="card" id="cardInputKasAdmin">
     <h3>Rekening Bank & Kas Manual (Admin)</h3>
     <div id="listBank"></div>
@@ -952,12 +1137,41 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
     <p style="font-size:13px;color:#475569;margin-top:0">Ringkasan performa toko hari ini akan dikirim ke nomor WhatsApp Pemilik/Toko.</p>
     <button class="btn ok" onclick="waAdminLaporan()">Kirim Laporan Hari Ini ke WA</button>
   </div>
+
+  <div class="card" id="cardBackupData" style="border:2px solid #0f1f3d;">
+    <h3>💾 Backup &amp; Ekspor Data ke Excel (CSV)</h3>
+    <p style="font-size:13px;color:#475569;margin-top:0">Unduh arsip data toko agar bisa dibuka di Microsoft Excel atau disimpan sebagai cadangan pribadi.</p>
+    <div class="tap-group">
+      <button type="button" class="tap-btn ok-tap" onclick="exportCSV('jual')">📊 Excel Penjualan</button>
+      <button type="button" class="tap-btn ok-tap" onclick="exportCSV('servis')">🔧 Excel Servis</button>
+      <button type="button" class="tap-btn ok-tap" onclick="exportCSV('baterai')">🔋 Excel Baterai</button>
+      <button type="button" class="tap-btn ok-tap" onclick="exportCSV('kas')">💰 Excel Buku Kas</button>
+      <button type="button" class="tap-btn ok-tap" onclick="exportCSV('stok')">📦 Excel Semua Stok</button>
+      <button type="button" class="tap-btn ok-tap" onclick="exportCSV('pelanggan')">👥 Excel Pelanggan</button>
+    </div>
+    <button type="button" class="btn" onclick="backupSemuaJSON()" style="margin-top:8px;background:#0f1f3d;color:#fbbf24;">📦 Download Backup Penuh Semua Data (.json)</button>
+  </div>
 </section>
 
   <section id="keuangan">
   <div class="card">
-    <h3>💼 Laporan Keuangan (Bulan Ini)</h3>
-    <p style="font-size:12px;color:#64748b;margin-top:0">Laporan ini dihitung otomatis dari seluruh transaksi yang tercatat di sistem.</p>
+    <h3>💼 Laporan Keuangan</h3>
+    <div class="row" style="background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:10px;margin-bottom:12px;">
+      <div>
+        <label>Pilih Bulan</label>
+        <select id="keuFilterBulan" onchange="hitungLaporanKeuangan()">
+          <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+          <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+          <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+          <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+        </select>
+      </div>
+      <div>
+        <label>Pilih Tahun</label>
+        <select id="keuFilterTahun" onchange="hitungLaporanKeuangan()"></select>
+      </div>
+    </div>
+    <p id="keuPeriodeInfo" style="font-size:13px;color:#475569;margin-top:0;font-weight:600;">Menampilkan Laba Rugi &amp; Arus Kas sesuai periode terpilih (Neraca menampilkan posisi kumulatif saat ini).</p>
     
     <!-- TAB NAVIGASI -->
     <div style="display:flex; gap:5px; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px; overflow-x:auto;">
@@ -1179,6 +1393,6 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <!-- Logika aplikasi -->
-<script src="app-fixed-v7.js"></script>
+<script src="app-fixed-v8.js"></script>
 </body>
 </html>
