@@ -2354,17 +2354,36 @@ function render() {
   const qProd = txt('cariProduk').toLowerCase();
   const listProd = db.produk.filter(p => !qProd || (p.nama || '').toLowerCase().includes(qProd) || (p.merek || '').toLowerCase().includes(qProd) || (p.barcode || '').toLowerCase().includes(qProd));
   setHTML('listProduk', listProd.length ? `
-    <div style="margin-bottom:10px;"><button class="btn-sm ok" onclick="cetakBarcodeMassal()" style="padding:8px 12px; font-weight:bold;">🖨️ Cetak Barcode Terpilih</button></div>
-    <table><thead><tr><th style="width:30px;"><input type="checkbox" id="checkAllProduk" onclick="toggleAllProduk(this)"></th><th>Produk</th><th>Harga</th><th>Stok</th><th>Aksi</th></tr></thead><tbody>` +
-    listProd.map(p => `<tr>
-      <td><input type="checkbox" class="chk-barcode" value="${esc(p.id)}"></td>
-      <td><strong>${esc(p.nama)}</strong><br><small>${esc(p.merek || '')}</small></td>
-      <td>${rp(p.harga_jual)}</td><td>${p.stok}</td>
-      <td style="white-space:nowrap">
-        <button class="btn-sm blue" onclick="editProduk('${esc(p.id)}')">Edit</button>
-        <button class="btn-sm warn" onclick="cetakBarcode('${esc(p.id)}')">Barcode</button>
-        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusProduk('${esc(p.id)}')">Hapus</button>` : ''}
-      </td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada produk</div>');
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:15px;">
+        <input type="checkbox" id="checkAllProduk" onclick="toggleAllProduk(this)" style="width:20px;height:20px;"> Pilih Semua
+      </label>
+      <button class="btn-sm ok" onclick="cetakBarcodeMassal()">🖨️ Cetak Barcode Terpilih</button>
+    </div>` +
+    listProd.map(p => {
+      const low = (p.stok || 0) <= 2;
+      return `<div class="item-card ${low ? 'low-stock' : ''}">
+        <div class="ic-head">
+          <div style="display:flex;align-items:flex-start;gap:10px;">
+            <input type="checkbox" class="chk-barcode" value="${esc(p.id)}" style="width:20px;height:20px;margin-top:2px;flex-shrink:0;">
+            <div>
+              <div class="ic-title">${esc(p.nama)}</div>
+              ${p.merek ? `<div style="font-size:13px;color:#475569;font-weight:600;">${esc(p.merek)}</div>` : ''}
+            </div>
+          </div>
+          <div class="ic-stock ${low ? 'low' : ''}">Stok: ${p.stok}${low ? ' ⚠️' : ''}</div>
+        </div>
+        <div class="ic-grid" style="margin-bottom:10px;">
+          <div class="ic-cell"><span class="ic-lbl">Harga Jual</span><span class="ic-val">${rp(p.harga_jual)}</span></div>
+          <div class="ic-cell"><span class="ic-lbl">Barcode</span><span class="ic-val" style="font-size:13px;font-weight:600;color:#475569;">${esc(p.barcode || '-')}</span></div>
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <button class="btn-sm blue" onclick="editProduk('${esc(p.id)}')">✏️ Edit</button>
+          <button class="btn-sm warn" onclick="cetakBarcode('${esc(p.id)}')">🏷️ Barcode</button>
+          ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusProduk('${esc(p.id)}')">🗑️ Hapus</button>` : ''}
+        </div>
+      </div>`;
+    }).join('') : '<div class="empty">Belum ada produk</div>');
 
   // 4. Sparepart
   const cariSp = txt('cariSp').toLowerCase();
@@ -3240,24 +3259,27 @@ function renderSemuaStok() {
   else if (filterSemuaStokMode !== 'semua') list = list.filter(x => x.kat === filterSemuaStokMode);
   if (q) list = list.filter(x => x.nama.toLowerCase().includes(q) || x.barcode.toLowerCase().includes(q));
 
-  setHTML('listSemuaStok', list.length ? `
-    <table>
-      <thead>
-        <tr><th>Tipe</th><th>Nama Barang</th><th style="text-align:center">Stok</th><th style="text-align:right">Harga Beli</th><th style="text-align:right">Harga Jual</th><th style="text-align:right">Laba/Unit</th></tr>
-      </thead>
-      <tbody>` + list.map(x => {
-        const low = x.stok <= x.min;
-        const margin = x.jual - x.beli;
-        const cls = x.kat === 'produk' ? 'proses' : (x.kat === 'sparepart' ? 'warn' : 'ok');
-        return `<tr>
-          <td><span class="badge ${cls}">${x.label}</span></td>
-          <td><strong>${esc(x.nama)}</strong></td>
-          <td style="text-align:center;font-weight:800;color:${low ? '#b91c1c' : '#0f172a'}">${x.stok}${low ? ' ⚠️' : ''}</td>
-          <td style="text-align:right">${rp(x.beli)}</td>
-          <td style="text-align:right;font-weight:700">${rp(x.jual)}</td>
-          <td style="text-align:right;font-weight:700;color:${margin >= 0 ? '#15803d' : '#b91c1c'}">${rp(margin)}</td>
-        </tr>`;
-      }).join('') + '</tbody></table>' : '<div class="empty">Tidak ada barang ditemukan.</div>');
+  setHTML('listSemuaStok', list.length ? list.map(x => {
+    const low = x.stok <= x.min;
+    const margin = x.jual - x.beli;
+    const cls = x.kat === 'produk' ? 'proses' : (x.kat === 'sparepart' ? 'warn' : 'ok');
+    return `
+      <div class="item-card ${low ? 'low-stock' : ''}">
+        <div class="ic-head">
+          <div>
+            <span class="badge ${cls}" style="margin-bottom:4px;">${x.label}</span>
+            <div class="ic-title">${esc(x.nama)}</div>
+          </div>
+          <div class="ic-stock ${low ? 'low' : ''}">Stok: ${x.stok}${low ? ' ⚠️' : ''}</div>
+        </div>
+        <div class="ic-grid">
+          <div class="ic-cell"><span class="ic-lbl">Harga Beli</span><span class="ic-val">${rp(x.beli)}</span></div>
+          <div class="ic-cell"><span class="ic-lbl">Harga Jual</span><span class="ic-val">${rp(x.jual)}</span></div>
+          <div class="ic-cell"><span class="ic-lbl">Laba / Unit</span><span class="ic-val ${margin >= 0 ? 'ok' : 'danger'}">${rp(margin)}</span></div>
+          <div class="ic-cell"><span class="ic-lbl">Nilai Modal</span><span class="ic-val">${rp(x.stok * x.beli)}</span></div>
+        </div>
+      </div>`;
+  }).join('') : '<div class="empty">Tidak ada barang ditemukan.</div>');
 }
 
 function cetakSemuaStok() {
@@ -3313,17 +3335,27 @@ function renderLaporanAuditRingkas() {
   if ($('audRingkasKurang')) $('audRingkasKurang').textContent = `-${kurangQty} qty`;
   if ($('audRingkasLebih')) $('audRingkasLebih').textContent = `+${lebihQty} qty`;
 
-  setHTML('listLaporanAuditRingkas', list.length ? `
-    <table>
-      <thead><tr><th>Tanggal</th><th>Barang</th><th style="text-align:center">Sistem → Fisik</th><th style="text-align:center">Selisih</th><th style="text-align:right">Nilai (Rp)</th><th>Petugas</th></tr></thead>
-      <tbody>` + list.map(a => `<tr>
-        <td>${new Date(a.waktu).toLocaleDateString('id-ID')}</td>
-        <td><strong>${esc(a.nama_produk)}</strong><br><small style="color:#475569">${esc(a.catatan || '-')}</small></td>
-        <td style="text-align:center">${a.stok_sistem} → <b>${a.stok_fisik}</b></td>
-        <td style="text-align:center;font-weight:800;color:${a.selisih < 0 ? '#b91c1c' : '#15803d'}">${a.selisih > 0 ? '+' : ''}${a.selisih}</td>
-        <td style="text-align:right;font-weight:700;color:${(a.nilai_selisih || 0) < 0 ? '#b91c1c' : '#15803d'}">${(a.nilai_selisih || 0) < 0 ? '-' : '+'}${rp(Math.abs(a.nilai_selisih || 0))}</td>
-        <td>${esc((a.user_name || '-').toUpperCase())}</td>
-      </tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada data audit pada periode ini.</div>');
+  setHTML('listLaporanAuditRingkas', list.length ? list.map(a => {
+    const minus = a.selisih < 0;
+    const nilaiMinus = (a.nilai_selisih || 0) < 0;
+    return `
+      <div class="item-card ${minus ? 'audit-minus' : 'audit-plus'}">
+        <div class="ic-head">
+          <div>
+            <div style="font-size:12px;color:#475569;font-weight:600;">${new Date(a.waktu).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}</div>
+            <div class="ic-title">${esc(a.nama_produk)}</div>
+          </div>
+          <span class="badge ${a.user_name === 'admin' || a.user_name === 'pemilik' ? 'danger' : 'proses'}">${esc((a.user_name || '-').toUpperCase())}</span>
+        </div>
+        <div class="ic-grid">
+          <div class="ic-cell"><span class="ic-lbl">Sistem → Fisik</span><span class="ic-val">${a.stok_sistem} → ${a.stok_fisik}</span></div>
+          <div class="ic-cell"><span class="ic-lbl">Selisih</span><span class="ic-val ${minus ? 'danger' : 'ok'}">${a.selisih > 0 ? '+' : ''}${a.selisih} qty</span></div>
+          <div class="ic-cell" style="grid-column:span 2;"><span class="ic-lbl">Nilai Selisih</span><span class="ic-val ${nilaiMinus ? 'danger' : 'ok'}">${nilaiMinus ? '-' : '+'}${rp(Math.abs(a.nilai_selisih || 0))}</span></div>
+        </div>
+        <div class="ic-note"><b>Catatan:</b> ${esc(a.catatan || '-')}</div>
+        ${isPemilik() ? `<div style="margin-top:8px;text-align:right;"><button class="btn-sm danger" onclick="hapusAuditBarang('${esc(a.id)}')">🗑️ Hapus Riwayat Ini</button></div>` : ''}
+      </div>`;
+  }).join('') : '<div class="empty">Belum ada data audit pada periode ini.</div>');
 }
 
 function cetakKartuAudit() {
@@ -3470,4 +3502,17 @@ function renderQuickUI() {
     dl.innerHTML = (db.pelanggan || []).map(p => `<option value="${esc(p.nama)}">${esc(p.telp && p.telp !== '-' ? p.telp : '')}</option>`).join('');
   }
   renderQuickBateraiBtns();
+}
+
+
+async function hapusAuditBarang(id) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus riwayat audit', 'err');
+  const a = (db.auditBarang || []).find(x => x.id === id);
+  if (!confirm(`Hapus riwayat audit "${a ? a.nama_produk : id}"?\n\nCatatan: Ini hanya menghapus baris riwayat audit, tidak mengubah stok barang saat ini.`)) return;
+  try {
+    await dbOk(supabaseClient.from('audit_barang').delete().eq('id', id));
+    await catatLog('HAPUS_AUDIT', `Menghapus riwayat audit ${id}${a ? ` (${a.nama_produk}, selisih ${a.selisih})` : ''}`);
+    flash('Riwayat audit berhasil dihapus');
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menghapus riwayat audit: ' + e.message, 'err'); }
 }
