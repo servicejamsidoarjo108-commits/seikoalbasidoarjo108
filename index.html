@@ -15,55 +15,59 @@
 
 <style>
 :root {
-  --bg: #0b1120; /* Latar belakang Navy Gelap */
-  --card-bg: #1e293b; /* Latar belakang Kartu */
-  --p: #fbbf24; /* Warna Utama (Gold) */
-  --p-dark: #d97706; /* Gold Gelap */
-  --d: #0f172a; /* Darker Navy */
-  --m: #94a3b8; /* Teks Abu-abu */
-  --text-main: #f8fafc; /* Teks Utama Putih */
-  --ok: #16a34a; 
-  --w: #f59e0b; 
-  --dg: #dc2626; 
-  --border: #334155;
+  --bg: #f1f5f9;          /* Latar Terang Bersih (Ramah Mata Orang Tua) */
+  --card-bg: #ffffff;     /* Kartu Putih Kontras Tinggi */
+  --p: #1d4ed8;           /* Biru Tua Tegas (Mudah Dibaca) */
+  --p-dark: #1e40af;      /* Biru Lebih Gelap */
+  --d: #f8fafc;           /* Latar Input Terang */
+  --m: #475569;           /* Teks Sekunder Abu Tua (Kontras Tinggi) */
+  --text-main: #0f172a;   /* Teks Utama Hitam Pekat */
+  --ok: #15803d;          /* Hijau Tua */
+  --w: #b45309;           /* Oranye Tua */
+  --dg: #b91c1c;          /* Merah Tua */
+  --border: #cbd5e1;      /* Garis Tepi Jelas */
 }
 
 *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text-main);font-size:15px; padding-bottom: 90px;}
-header{position:sticky;top:0;z-index:10;background:var(--d);color:var(--text-main);padding:10px 14px;border-bottom:1px solid var(--border);}
-header h1{margin:0;font-size:15px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
-header h1 span{font-size:11px;color:var(--m);cursor:pointer;white-space:nowrap;}
-main{padding:14px;max-width:900px;margin:auto;}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:var(--text-main);font-size:16px;line-height:1.5;padding-bottom:100px;}
+body.font-xl{font-size:19px;}
+body.font-xl input, body.font-xl select, body.font-xl textarea, body.font-xl button{font-size:18px;}
+body.font-xl table{font-size:16px;}
+
+header{position:sticky;top:0;z-index:10;background:#1e3a8a;color:#ffffff;padding:12px 16px;border-bottom:3px solid #f59e0b;box-shadow:0 2px 8px rgba(0,0,0,.15);}
+header h1{margin:0;font-size:17px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+header h1 span{font-size:13px;color:#e2e8f0;cursor:pointer;white-space:nowrap;}
+main{padding:14px;max-width:960px;margin:auto;}
 section{display:none} section.active{display:block}
 
 /* KARTU */
-.card{background:var(--card-bg);border-radius:12px;padding:14px;box-shadow:0 4px 6px rgba(0,0,0,.2);margin-bottom:12px;border:1px solid var(--border);}
-h3{margin:0 0 10px;font-size:13px;color:var(--p);text-transform:uppercase;letter-spacing:.5px;}
+.card{background:var(--card-bg);border-radius:14px;padding:16px;box-shadow:0 2px 8px rgba(15,23,42,.08);margin-bottom:14px;border:1.5px solid var(--border);}
+h3{margin:0 0 12px;font-size:16px;color:var(--p);text-transform:uppercase;letter-spacing:.3px;border-bottom:2px solid #e2e8f0;padding-bottom:6px;}
 
 /* INPUT & FORM */
-input,select,textarea{padding:10px;border:1px solid var(--border);border-radius:8px;width:100%;font-size:14px;font-family:inherit;background:var(--d);color:var(--text-main);transition:border-color 0.2s;}
-input:focus,select:focus,textarea:focus{border-color:var(--p);outline:none;}
-input[readonly],input:disabled,select:disabled{background:#0f172a;color:#64748b;}
-label{font-size:12px;color:var(--m);display:block;margin-bottom:4px;}
+input,select,textarea{padding:12px 14px;border:1.5px solid #94a3b8;border-radius:10px;width:100%;font-size:16px;font-family:inherit;background:#ffffff;color:#0f172a;transition:border-color 0.2s;}
+input:focus,select:focus,textarea:focus{border-color:var(--p);outline:none;box-shadow:0 0 0 3px rgba(29,78,216,0.18);}
+input[readonly],input:disabled,select:disabled{background:#e2e8f0;color:#334155;font-weight:600;}
+label{font-size:14px;font-weight:600;color:#334155;display:block;margin-bottom:5px;}
 
-/* TOMBOL */
-button{cursor:pointer;font-family:inherit;font-size:14px;}
-.btn{background:var(--p);color:#0f172a;border:none;padding:11px 16px;border-radius:8px;font-weight:700;width:100%;transition:0.2s;}
-.btn:hover{background:#fcd34d;}
-.btn-sm{padding:6px 10px;font-size:12px;width:auto;border-radius:6px;border:none;color:#fff;font-weight:600;}
-.ok{background:var(--ok);color:#fff;} .danger{background:var(--dg);color:#fff;} .warn{background:var(--w);color:#fff;} .blue{background:#3b82f6;color:#fff;}
-.ghost{background:#334155;color:#e2e8f0;}
+/* TOMBOL BESAR & JELAS */
+button{cursor:pointer;font-family:inherit;font-size:16px;}
+.btn{background:var(--p);color:#ffffff;border:none;padding:13px 18px;min-height:48px;border-radius:10px;font-weight:700;width:100%;transition:0.2s;}
+.btn:hover{background:var(--p-dark);}
+.btn-sm{padding:9px 14px;min-height:38px;font-size:14px;width:auto;border-radius:8px;border:none;color:#fff;font-weight:700;}
+.ok{background:var(--ok);color:#fff;} .danger{background:var(--dg);color:#fff;} .warn{background:var(--w);color:#fff;} .blue{background:#2563eb;color:#fff;}
+.ghost{background:#e2e8f0;color:#0f172a;border:1px solid #94a3b8;}
 
 /* TABEL */
-table{width:100%;border-collapse:collapse;font-size:13px;}
-th,td{padding:9px 6px;border-bottom:1px solid var(--border);text-align:left;vertical-align:middle;color:var(--text-main);}
-th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);font-weight:600;}
+table{width:100%;border-collapse:collapse;font-size:15px;}
+th,td{padding:11px 8px;border-bottom:1.5px solid #cbd5e1;text-align:left;vertical-align:middle;color:#0f172a;}
+th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font-weight:700;}
 
 /* LAIN-LAIN */
-.stat{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;}
-.stat .card{margin:0;text-align:center;}
-.stat .num{font-size:16px;font-weight:700;color:var(--p);margin-top:4px;}
-.stat .lbl{font-size:10px;color:var(--m);text-transform:uppercase;line-height:1.3;}
+.stat{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:14px;}
+.stat .card{margin:0;text-align:center;background:#ffffff;border:1.5px solid #cbd5e1;}
+.stat .num{font-size:19px;font-weight:800;color:var(--p);margin-top:6px;}
+.stat .lbl{font-size:12px;font-weight:700;color:#475569;text-transform:uppercase;line-height:1.3;}
 
 /* --- UI/UX UPGRADE FORM SERVIS --- */
 /* Sticky Bottom Bar */
@@ -146,8 +150,8 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 
  /* --- STYLING KERANJANG SERVIS --- */
 .item-servis-cart {
-  background: #0f172a;
-  border: 1px solid var(--border);
+  background: #f8fafc;
+  border: 1.5px solid #cbd5e1;
   border-radius: 8px;
   padding: 10px;
   margin-bottom: 8px;
@@ -166,6 +170,68 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 #listProduk table, #listSparePart table, #listStokBaterai table {
   min-width: 500px; /* Memaksa tabel agar tidak gepeng */
 }
+
+/* --- KOMPONEN UI & LAYOUT YANG DILENGKAPI --- */
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+.row3 { display: grid; grid-template-columns: 2fr 1fr 56px; gap: 8px; margin-bottom: 10px; }
+@media (max-width: 520px) { .row { grid-template-columns: 1fr; } }
+
+.msg { display: none; padding: 10px 14px; border-radius: 8px; margin-bottom: 12px; font-size: 13px; font-weight: 600; }
+.msg.ok { display: block; background: #dcfce7; border: 2px solid #15803d; color: #14532d; font-size: 15px; }
+.msg.err { display: block; background: #fee2e2; border: 2px solid #b91c1c; color: #7f1d1d; font-size: 15px; }
+
+.input-error { border-color: var(--dg) !important; box-shadow: 0 0 0 2px rgba(220, 38, 38, 0.25); }
+.empty { text-align: center; color: var(--m); font-size: 13px; padding: 14px; }
+
+.badge { display: inline-block; padding: 2px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; letter-spacing: .3px; }
+.badge { font-size: 12px; padding: 3px 9px; }
+.badge.ok, .badge.selesai, .badge.diambil { background: #dcfce7; color: #14532d; border: 1px solid #16a34a; }
+.badge.warn, .badge.antri { background: #fef3c7; color: #78350f; border: 1px solid #d97706; }
+.badge.danger { background: #fee2e2; color: #7f1d1d; border: 1px solid #dc2626; }
+.badge.proses { background: #dbeafe; color: #1e3a8a; border: 1px solid #2563eb; }
+
+.cart-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
+.cart-total { display: flex; justify-content: space-between; align-items: center; padding-top: 10px; margin-top: 8px; border-top: 1px dashed var(--border); font-weight: 700; }
+
+.servis-item, .bat-item { background: var(--d); border: 1px solid var(--border); border-left: 4px solid var(--p); border-radius: 8px; padding: 10px 12px; margin-bottom: 8px; font-size: 13px; }
+.servis-item h4 { margin: 0 0 4px; font-size: 14px; display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+.servis-item p { margin: 2px 0; color: var(--m); font-size: 12px; }
+.servis-item.selesai, .servis-item.diambil, .bat-item.ok { border-left-color: var(--ok); }
+.servis-item.proses, .bat-item.warn { border-left-color: var(--w); }
+.bat-item.danger { border-left-color: var(--dg); }
+
+.modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 9500; padding: 16px; overflow-y: auto; }
+.modal-content { background: var(--card-bg); color: var(--text-main); border: 1px solid var(--border); border-radius: 12px; max-width: 480px; width: 100%; margin: 6vh auto; padding: 16px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+
+#scanArea { position: fixed; inset: 0; background: rgba(0,0,0,0.92); z-index: 9600; flex-direction: column; align-items: center; justify-content: center; gap: 12px; padding: 16px; }
+#scanArea video { width: 100%; max-width: 420px; border-radius: 12px; border: 2px solid var(--p); }
+#scanArea button { padding: 10px 24px; background: var(--dg); color: #fff; border: none; border-radius: 8px; font-weight: 700; }
+
+.loading-ai { display: none; align-items: center; gap: 8px; font-size: 12px; color: var(--p); margin-top: 6px; }
+.spinner { width: 14px; height: 14px; border: 2px solid var(--border); border-top-color: var(--p); border-radius: 50%; animation: spin 0.8s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+
+/* --- TOMBOL CEPAT (TAP-FIRST / TINGGAL PENCET) --- */
+.tap-group { display: flex; flex-wrap: wrap; gap: 6px; margin: 6px 0 10px; }
+.tap-btn {
+  background: #eff6ff; color: #1e3a8a; border: 1.5px solid #93c5fd;
+  padding: 8px 12px; min-height: 40px; border-radius: 10px;
+  font-size: 14px; font-weight: 700; cursor: pointer; transition: 0.15s;
+}
+.tap-btn:hover, .tap-btn:active { background: #1d4ed8; color: #ffffff; border-color: #1d4ed8; }
+.tap-btn.ok-tap { background: #dcfce7; color: #14532d; border-color: #86efac; }
+.tap-btn.ok-tap:hover { background: #15803d; color: #ffffff; }
+.tap-btn.warn-tap { background: #fef3c7; color: #78350f; border-color: #fcd34d; }
+.tap-btn.warn-tap:hover { background: #b45309; color: #ffffff; }
+.tap-btn.active-tap { background: #1d4ed8; color: #ffffff; border-color: #1e3a8a; }
+.qty-stepper { display: flex; gap: 6px; align-items: center; }
+.qty-stepper button {
+  width: 48px; height: 46px; border: none; border-radius: 10px;
+  background: #1d4ed8; color: #fff; font-size: 22px; font-weight: 800; flex-shrink: 0;
+}
+.qty-stepper input { text-align: center; font-weight: 800; font-size: 18px; }
+
 </style>
 </head>
 <body>
@@ -181,14 +247,15 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 
 <header>
   <h1>⌚ Toko Seiko Alba Sidoarjo 108
-    <span><span id="userInfo">👤</span> · <span onclick="logout()" style="cursor:pointer;text-decoration:underline">🔓 Logout</span></span>
+    <span><button type="button" onclick="toggleFontBesar()" style="background:#f59e0b;color:#0f172a;border:none;border-radius:6px;padding:4px 9px;font-size:12px;font-weight:800;margin-right:8px;">🔍 Huruf Besar</button><span id="userInfo">👤</span> · <span onclick="logout()" style="cursor:pointer;text-decoration:underline">🔓 Logout</span></span>
   </h1>
 </header>
 
 <main>
+<datalist id="dlPelanggan"></datalist>
 <section id="home" class="active">
   <div style="text-align:center;margin-bottom:20px">
-    <h2 style="margin:0;color:#f8fafc;font-size:20px">Selamat Datang <i class="fa-solid fa-hand" style="color:#f59e0b"></i></h2>
+    <h2 style="margin:0;color:#0f172a;font-size:22px">Selamat Datang <i class="fa-solid fa-hand" style="color:#f59e0b"></i></h2>
     <p style="color:#64748b;font-size:13px;margin-top:4px" id="homeUser">-</p>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
@@ -208,7 +275,9 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('kas')"><i class="fa-solid fa-money-bill-wave" style="font-size:32px;margin-bottom:8px"></i> Kas</button>
   <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('supplier')"><i class="fa-solid fa-store" style="font-size:32px;margin-bottom:8px"></i> Supplier</button>
   <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('keuangan')"><i class="fa-solid fa-file-invoice-dollar" style="font-size:32px;margin-bottom:8px"></i> Laporan Keuangan</button>
-  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('setting')"><i class="fa-solid fa-gear" style="font-size:32px;margin-bottom:8px"></i> Setting</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#eff6ff;color:#1e3a8a;border:2px solid #2563eb;font-size:16px" onclick="bukaMenu('semua_stok')"><i class="fa-solid fa-boxes-stacked" style="font-size:32px;margin-bottom:8px"></i> Semua Stok & Harga</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#fef3c7;color:#78350f;border:2px solid #d97706;font-size:16px" onclick="bukaMenu('laporan_audit')"><i class="fa-solid fa-clipboard-check" style="font-size:32px;margin-bottom:8px"></i> Laporan & Kartu Audit</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1.5px solid var(--border);font-size:16px" onclick="bukaMenu('setting')"><i class="fa-solid fa-gear" style="font-size:32px;margin-bottom:8px"></i> Setting</button>
 </div>
 </section>
 
@@ -227,7 +296,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
         <button class="btn blue" onclick="scanBarcode('', 'kasir')" style="width:auto; height:42px; padding:0 15px; font-size:18px; display:flex; align-items:center; justify-content:center;" title="Scan Barcode">📷</button>
       </div>
     </div>
-    <div><label>Qty</label><input type="number" id="qty" value="1" min="1"></div>
+    <div><label>Qty</label><div class="qty-stepper"><button type="button" onclick="ubahQty('qty',-1)">−</button><input type="number" id="qty" value="1" min="1"><button type="button" onclick="ubahQty('qty',1)">+</button></div></div>
   </div>
   <button class="btn" onclick="addCart()" style="margin-top:10px;">+ Tambah Manual</button>
 </div>
@@ -238,10 +307,17 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
       <div><label>Tipe Diskon</label><select id="tipeDiskon" onchange="updateTotalKasir()"><option value="nominal">Nominal (Rp)</option><option value="persen">Persen (%)</option></select></div>
       <div><label>Nilai Diskon</label><input type="number" id="nilaiDiskon" value="0" min="0" oninput="updateTotalKasir()"></div>
     </div>
+    <div class="tap-group">
+      <button type="button" class="tap-btn" onclick="setDiskonCepat('nominal',0)">Tanpa Diskon</button>
+      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',5)">Diskon 5%</button>
+      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',10)">Diskon 10%</button>
+      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',10000)">Potong 10rb</button>
+      <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',20000)">Potong 20rb</button>
+    </div>
    <div class="row">
   <div>
         <label>Nama Pembeli</label>
-    <input id="custNama" placeholder="Opsional" onblur="cekPoinPelanggan(this.value)" oninput="cekPoinPelanggan(this.value)">
+    <input id="custNama" list="dlPelanggan" placeholder="Pilih / ketik nama" onblur="isiHpPelanggan('custNama','custHp');cekPoinPelanggan(this.value)" oninput="isiHpPelanggan('custNama','custHp');cekPoinPelanggan(this.value)">
   </div>
   <div>
     <label>No HP</label>
@@ -285,12 +361,26 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <div class="row" id="wrapBankKasir" style="display:none"><div><label>Rekening Tujuan / Settlement</label><select id="bankKasir"></select></div><div></div></div>
     <div class="cart-total" id="mdrInfo" style="display:none;color:#dc2626;font-size:14px"><span>Biaya Bank (MDR)</span><span id="mdrValue">-Rp 0</span></div>
     <div class="row"><div><label>Bayar (Rp)</label><input type="number" id="bayar" placeholder="0"></div><div></div></div>
+    <div class="tap-group">
+      <button type="button" class="tap-btn ok-tap" onclick="setBayarCepat('pas')">💵 Uang Pas</button>
+      <button type="button" class="tap-btn" onclick="setBayarCepat(50000)">50rb</button>
+      <button type="button" class="tap-btn" onclick="setBayarCepat(100000)">100rb</button>
+      <button type="button" class="tap-btn" onclick="setBayarCepat(200000)">200rb</button>
+      <button type="button" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
+    </div>
     <button class="btn ok" onclick="prosesBayar()">Proses & Cetak Struk</button>
   </div>
 
   <div class="card" id="cardKasKecilKasir">
     <h3>📝 Catat Kas Kecil (Maks. Rp500.000)</h3>
     <p style="font-size:12px;color:#64748b;margin-top:0">Untuk mencatat uang masuk (jasa potong rantai, dll) atau uang keluar (beli galon, dll).</p>
+    <div class="tap-group">
+      <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',15000,'Jasa potong rantai')">+ Potong Rantai 15rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',20000,'Jasa potong rantai')">+ Potong Rantai 20rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',10000,'Ganti springbar / pen')">+ Springbar 10rb</button>
+      <button type="button" class="tap-btn warn-tap" onclick="setKasKecilCepat('keluar',20000,'Beli air galon')">- Beli Galon 20rb</button>
+      <button type="button" class="tap-btn warn-tap" onclick="setKasKecilCepat('keluar',25000,'Beli makan/minum')">- Makan/Minum 25rb</button>
+    </div>
     <div class="row">
       <div><label>Jenis</label><select id="kkJenis"><option value="masuk">📥 Masuk (Pendapatan)</option><option value="keluar">📤 Keluar (Pengeluaran)</option></select></div>
       <div><label>Nominal (Rp)</label><input type="number" id="kkNominal" placeholder="0" max="500000"></div>
@@ -408,8 +498,28 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   <div class="card"><h3>Input Servis</h3>
     <div id="klaimBanner" style="display:none;background:#fef3c7;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400e"></div>
     <input type="hidden" id="sParentId">
-    <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" placeholder="Budi"></div><div><label>No HP</label><input id="sHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
+    <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" list="dlPelanggan" placeholder="Pilih / ketik nama" oninput="isiHpPelanggan('sNama','sHp')" onblur="isiHpPelanggan('sNama','sHp')"></div><div><label>No HP</label><input id="sHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div></div>
     <div class="row"><div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div><div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div></div>
+    <label>Pilih Cepat Merek / Jenis Jam</label>
+    <div class="tap-group">
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Seiko 5')">Seiko 5</button>
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Seiko Quartz')">Seiko Quartz</button>
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Alba')">Alba</button>
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Casio')">Casio</button>
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','G-Shock')">G-Shock</button>
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Orient')">Orient</button>
+      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Citizen')">Citizen</button>
+    </div>
+    <label>Pilih Cepat Keluhan (bisa klik lebih dari satu)</label>
+    <div class="tap-group">
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jam Mati')">Jam Mati</button>
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Servis Total')">Servis Total</button>
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Kaca')">Ganti Kaca</button>
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Mesin')">Ganti Mesin</button>
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Kemasukan Air')">Kemasukan Air</button>
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jarum Lepas')">Jarum Lepas</button>
+      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Potong Rantai')">Potong Rantai</button>
+    </div>
     <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
     
     <label>Kondisi Fisik Saat Diterima (Klik jika ada)</label>
@@ -430,6 +540,16 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     <div class="row">
       <div><label>Status Garansi</label><select id="sGaransi" onchange="hitungTotalServis()"><option value="garansi">Dalam Garansi (gratis)</option><option value="luar">Luar Garansi (bayar)</option></select></div>
       <div><label>Biaya Jasa (Rp)</label><input type="number" id="sJasa" value="0" min="0" oninput="hitungTotalServis()"></div>
+    </div>
+    <label>Pilih Cepat Biaya Jasa (otomatis set Luar Garansi)</label>
+    <div class="tap-group">
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(25000)">25rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(50000)">50rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(75000)">75rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(100000)">100rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(150000)">150rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(200000)">200rb</button>
+      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(250000)">250rb</button>
     </div>
   </div>
   
@@ -552,7 +672,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     
     <!-- Data Pelanggan -->
     <div class="row">
-      <div><label>Nama Pelanggan *</label><input id="bNama" placeholder="Budi" onblur="cekKlaimBaterai(this.value)"></div>
+      <div><label>Nama Pelanggan *</label><input id="bNama" list="dlPelanggan" placeholder="Pilih / ketik nama" oninput="isiHpPelanggan('bNama','bHp');cekKlaimBaterai(this.value)" onblur="isiHpPelanggan('bNama','bHp');cekKlaimBaterai(this.value)"></div>
       <div><label>No HP</label><input id="bHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
     </div>
 
@@ -561,9 +681,21 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
     
     <!-- Input Barang & Baterai -->
     <div class="row">
-      <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" onblur="cekKlaimBaterai(document.getElementById('bNama').value)"></div>
+      <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" oninput="cekKlaimBaterai(document.getElementById('bNama').value)" onblur="cekKlaimBaterai(document.getElementById('bNama').value)"></div>
       <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
     </div>
+    <label>Pilih Cepat Merek Jam</label>
+    <div class="tap-group">
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('Seiko')">Seiko</button>
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('Alba')">Alba</button>
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('Casio')">Casio</button>
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('G-Shock')">G-Shock</button>
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('Orient')">Orient</button>
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('Citizen')">Citizen</button>
+      <button type="button" class="tap-btn" onclick="isiJamBaterai('Fossil')">Fossil</button>
+    </div>
+    <label>Pilih Cepat Tipe Baterai (Stok Tersedia)</label>
+    <div id="quickBateraiBtns" class="tap-group"></div>
     
     <!-- Tanggal & Garansi -->
     <div class="row" style="margin-top:10px">
@@ -687,7 +819,6 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
       <button class="btn-sm ghost" onclick="filterKas('tunai')">Tunai</button>
       <button class="btn-sm ghost" onclick="filterKas('transfer')">Transfer</button>
       <button class="btn-sm ghost" onclick="filterKas('qris')">QRIS</button>
-      <button class="btn-sm ghost" onclick="filterKas('mdr')">MDR</button>
     </div>
     <input id="cariKas" placeholder="Cari keterangan..." oninput="render()" style="margin-bottom:10px"><div id="listKas"></div>
   </div>
@@ -753,7 +884,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
         <tr><td style="padding:4px 0">HPP Baterai</td><td style="text-align:right" id="lr_hpp_baterai">Rp 0</td></tr>
         <tr style="border-bottom:1px solid #e2e8f0; font-weight:bold;"><td style="padding:8px 0">TOTAL HPP</td><td style="text-align:right" id="lr_total_hpp">Rp 0</td></tr>
         
-        <tr style="background:#f8fafc;"><td style="padding:10px 0; font-weight:bold;">LABA KOTOR</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="lr_laba_kotor">Rp 0</td></tr>
+        <tr style="background:rgba(251,191,36,0.12);"><td style="padding:10px 0; font-weight:bold;">LABA KOTOR</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="lr_laba_kotor">Rp 0</td></tr>
         
         <tr><td colspan="2" style="font-weight:bold; padding:8px 0; color:#dc2626; margin-top:10px;">BEBAN OPERASIONAL</td></tr>
         <tr><td style="padding:4px 0">Biaya Bank (MDR)</td><td style="text-align:right" id="lr_beban_mdr">Rp 0</td></tr>
@@ -772,7 +903,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
           <h4 style="color:#0284c7; margin-bottom:10px;">ASET</h4>
           <table style="width:100%; font-size:14px;">
             <tr><td>Kas Tunai</td><td style="text-align:right" id="nr_kas_tunai">Rp 0</td></tr>
-            <tr><td>Saldo Bank</td><td style="text-align:right" id="nr_saldo_bank">Rp 0</td></tr>
+            <tr><td>Saldo Bank<div id="nr_bank_note" style="font-size:11px;color:#f59e0b;display:none"></div></td><td style="text-align:right" id="nr_saldo_bank">Rp 0</td></tr>
             <tr><td>Piutang Servis</td><td style="text-align:right" id="nr_piutang">Rp 0</td></tr>
             <tr><td>Persediaan (Stok)</td><td style="text-align:right" id="nr_persediaan">Rp 0</td></tr>
             <tr style="border-top:1px solid #ccc; font-weight:bold;"><td style="padding-top:8px;">TOTAL ASET</td><td style="text-align:right; padding-top:8px;" id="nr_total_aset">Rp 0</td></tr>
@@ -804,7 +935,7 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
         <tr><td>Restock Barang</td><td style="text-align:right" id="ak_keluar_restock">Rp 0</td></tr>
         <tr style="border-bottom:1px solid #ccc; font-weight:bold;"><td style="padding-bottom:8px;">TOTAL KELUAR</td><td style="text-align:right; padding-bottom:8px;" id="ak_total_keluar">Rp 0</td></tr>
         
-        <tr style="background:#f8fafc;"><td style="padding:10px 0; font-weight:bold;">ARUS KAS BERSIH</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="ak_arus_bersih">Rp 0</td></tr>
+        <tr style="background:rgba(251,191,36,0.12);"><td style="padding:10px 0; font-weight:bold;">ARUS KAS BERSIH</td><td style="text-align:right; font-weight:bold; font-size:15px;" id="ak_arus_bersih">Rp 0</td></tr>
       </table>
     </div>
   </div>
@@ -818,39 +949,41 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 </div>
   <div class="card"><h3>Garansi Servis</h3>
     <div class="row">
-      <div><label>Durasi Garansi (bulan)</label><input type="number" id="setGaransiServisBulan" value="3" min="0" onchange="simpanGaransiServis()"></div>
-      <div></div>
+      <div><label>Durasi Garansi (bulan)</label><input type="number" id="setGaransiServisBulan" value="3" min="0"></div>
+      <div style="display:flex;align-items:flex-end"><button class="btn" onclick="simpanGaransiServis()">Simpan Garansi</button></div>
     </div>
   </div>
   <div class="card"><h3>Biaya Bank (MDR)</h3>
-  <label style="font-weight:bold; margin-top:10px; color:#0f172a">Kartu Kredit</label>
+  <label style="font-weight:bold; margin-top:10px; color:var(--p)">Kartu Kredit</label>
   <div class="row">
-    <div><label>BCA Card (%)</label><input type="number" id="setMdrCcBca" step="0.01" min="0" onchange="simpanMDR()"></div>
-    <div><label>Visa/Master/JCB/Union (%)</label><input type="number" id="setMdrCcVm" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>BCA Card (%)</label><input type="number" id="setMdrCcBca" step="0.01" min="0"></div>
+    <div><label>Visa/Master/JCB/Union (%)</label><input type="number" id="setMdrCcVm" step="0.01" min="0"></div>
   </div>
   <div class="row">
-    <div><label>Amex (%)</label><input type="number" id="setMdrCcAmex" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>Amex (%)</label><input type="number" id="setMdrCcAmex" step="0.01" min="0"></div>
     <div></div>
   </div>
 
-  <label style="font-weight:bold; margin-top:10px; color:#0f172a">Kartu Debit</label>
+  <label style="font-weight:bold; margin-top:10px; color:var(--p)">Kartu Debit</label>
   <div class="row">
-    <div><label>BCA (%)</label><input type="number" id="setMdrDcBca" step="0.01" min="0" onchange="simpanMDR()"></div>
-    <div><label>Bank Lain (%)</label><input type="number" id="setMdrDcLain" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>BCA (%)</label><input type="number" id="setMdrDcBca" step="0.01" min="0"></div>
+    <div><label>Bank Lain (%)</label><input type="number" id="setMdrDcLain" step="0.01" min="0"></div>
   </div>
   <div class="row">
-    <div><label>Maestro (%)</label><input type="number" id="setMdrDcMaestro" step="0.01" min="0" onchange="simpanMDR()"></div>
+    <div><label>Maestro (%)</label><input type="number" id="setMdrDcMaestro" step="0.01" min="0"></div>
     <div></div>
   </div>
 
-  <label style="font-weight:bold; margin-top:10px; color:#0f172a">QRIS & Transfer</label>
+  <label style="font-weight:bold; margin-top:10px; color:var(--p)">QRIS & Transfer</label>
   <div class="row">
-    <div><label>QRIS (di atas Rp100.000) (%)</label><input type="number" id="setMdrQrisBesar" step="0.01" min="0" onchange="simpanMDR()"></div>
-    <div><label>Transfer (Rp Flat)</label><input type="number" id="setMdrTransfer" step="1" min="0" onchange="simpanMDR()"></div>
+    <div><label>QRIS (di atas Rp100.000) (%)</label><input type="number" id="setMdrQrisBesar" step="0.01" min="0"></div>
+    <div><label>Transfer (Rp Flat)</label><input type="number" id="setMdrTransfer" step="1" min="0"></div>
   </div>
+  <button class="btn" onclick="simpanMDR()" style="margin-top:8px">Simpan Pengaturan MDR</button>
 </div>
   <div class="card"><h3>Aturan Diskon</h3>
-    <div class="row"><div><label>Maks. Diskon Tanpa Otorisasi (%)</label><input type="number" id="setDiskonPersen" value="10" min="0" onchange="simpanAturanDiskon()"></div><div><label>Maks. Diskon Tanpa Otorisasi (Rp)</label><input type="number" id="setDiskonNominal" value="20000" min="0" onchange="simpanAturanDiskon()"></div></div>
+    <div class="row"><div><label>Maks. Diskon Tanpa Otorisasi (%)</label><input type="number" id="setDiskonPersen" value="10" min="0"></div><div><label>Maks. Diskon Tanpa Otorisasi (Rp)</label><input type="number" id="setDiskonNominal" value="20000" min="0"></div></div>
+    <button class="btn" onclick="simpanAturanDiskon()" style="margin-top:8px">Simpan Aturan Diskon</button>
   </div>
   <div class="card"><h3>Identitas Toko</h3>
     <div class="row"><div><label>Nama Toko</label><input id="tkNama"></div><div><label>No WA Toko</label><input id="tkTelp"></div></div>
@@ -877,6 +1010,55 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
 </div>
 </section>
 
+
+<section id="semua_stok">
+  <div class="card">
+    <h3>📦 Semua Stok, Harga Beli & Harga Jual (Pemilik)</h3>
+    <div class="stat">
+      <div class="card"><div class="lbl">Total Nilai Modal (HPP)</div><div class="num" id="ssTotalModal">Rp 0</div></div>
+      <div class="card"><div class="lbl">Total Nilai Jual</div><div class="num" id="ssTotalJual" style="color:#15803d">Rp 0</div></div>
+      <div class="card"><div class="lbl">Potensi Laba</div><div class="num" id="ssPotensiLaba" style="color:#1d4ed8">Rp 0</div></div>
+      <div class="card"><div class="lbl">Stok Menipis / Habis</div><div class="num" id="ssJumlahMenipis" style="color:#b91c1c">0 item</div></div>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <button class="btn-sm blue" onclick="setFilterSemuaStok('semua')">Semua</button>
+      <button class="btn-sm ghost" onclick="setFilterSemuaStok('produk')">Jam</button>
+      <button class="btn-sm ghost" onclick="setFilterSemuaStok('sparepart')">Spare Part</button>
+      <button class="btn-sm ghost" onclick="setFilterSemuaStok('baterai')">Baterai</button>
+      <button class="btn-sm danger" onclick="setFilterSemuaStok('menipis')">⚠️ Stok Menipis</button>
+      <button class="btn-sm ok" onclick="cetakSemuaStok()">🖨️ Cetak Daftar</button>
+    </div>
+    <input id="cariSemuaStok" placeholder="🔍 Cari nama jam, merek, spare part, atau tipe baterai..." oninput="renderSemuaStok()" style="margin-bottom:12px;">
+    <div id="listSemuaStok" style="overflow-x:auto;"></div>
+  </div>
+</section>
+
+<section id="laporan_audit">
+  <div class="card">
+    <h3>📋 Laporan Audit Ringkas & Kartu Audit (Pemilik)</h3>
+    <div class="row">
+      <div>
+        <label>Periode Laporan</label>
+        <select id="filterPeriodeAudit" onchange="renderLaporanAuditRingkas()">
+          <option value="bulan">Bulan Ini</option>
+          <option value="hari">Hari Ini</option>
+          <option value="semua">Semua Waktu</option>
+        </select>
+      </div>
+      <div style="display:flex;align-items:flex-end;">
+        <button class="btn ok" onclick="cetakKartuAudit()">🖨️ Cetak Kartu Audit</button>
+      </div>
+    </div>
+    <div class="stat" style="margin-top:10px;">
+      <div class="card"><div class="lbl">Total Item Diaudit</div><div class="num" id="audRingkasJumlah">0</div></div>
+      <div class="card"><div class="lbl">Selisih Bersih (Rp)</div><div class="num" id="audRingkasNilai">Rp 0</div></div>
+      <div class="card"><div class="lbl">Barang Kurang (-)</div><div class="num" id="audRingkasKurang" style="color:#b91c1c">0 qty</div></div>
+      <div class="card"><div class="lbl">Barang Lebih (+)</div><div class="num" id="audRingkasLebih" style="color:#15803d">0 qty</div></div>
+    </div>
+    <div id="listLaporanAuditRingkas" style="overflow-x:auto;"></div>
+  </div>
+</section>
+
 </main>
 
 <div id="scanArea" style="display: none;"><video id="scanVideo" playsinline></video><button onclick="stopScan()">Tutup</button></div>
@@ -899,6 +1081,6 @@ th{background:#0f172a;font-size:11px;text-transform:uppercase;color:var(--m);fon
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <!-- Logika aplikasi -->
-<script src="app-fixed.js"></script>
+<script src="app-fixed-v4.js"></script>
 </body>
 </html>
