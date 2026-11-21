@@ -735,84 +735,132 @@ main { max-width: 1120px; }
 </section>
   
 <section id="servis">
-  <!-- 1. FORM INPUT SERVIS -->
-  <div class="card"><h3>Input Servis</h3>
-    <div id="klaimBanner" style="display:none;background:#fef3c7;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400e"></div>
-    <input type="hidden" id="sParentId">
-    <div class="row"><div><label>Nama Pelanggan *</label><input id="sNama" list="dlPelanggan" placeholder="Pilih / ketik nama" oninput="isiHpPelanggan('sNama','sHp')" onblur="isiHpPelanggan('sNama','sHp')"></div><div><label>No HP</label><input id="sHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div></div>
-    <div class="row"><div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div><div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div></div>
-    <label>Pilih Cepat Merek / Jenis Jam</label>
-    <div class="tap-group">
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Seiko 5')">Seiko 5</button>
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Seiko Quartz')">Seiko Quartz</button>
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Alba')">Alba</button>
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Casio')">Casio</button>
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','G-Shock')">G-Shock</button>
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Orient')">Orient</button>
-      <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Citizen')">Citizen</button>
-    </div>
-    <label>Pilih Cepat Keluhan (bisa klik lebih dari satu)</label>
-    <div class="tap-group">
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jam Mati')">Jam Mati</button>
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Servis Total')">Servis Total</button>
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Kaca')">Ganti Kaca</button>
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Mesin')">Ganti Mesin</button>
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Kemasukan Air')">Kemasukan Air</button>
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jarum Lepas')">Jarum Lepas</button>
-      <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Potong Rantai')">Potong Rantai</button>
-    </div>
-    <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
-    
-    <label>Kondisi Fisik Saat Diterima (Klik jika ada)</label>
-    <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:15px; padding:12px; border-radius:12px; border: 1px dashed var(--border);">
-      <input type="checkbox" id="k1" class="chk-kondisi pill-checkbox" value="Kaca Baret"><label for="k1" class="pill-label">Kaca Baret</label>
-      <input type="checkbox" id="k2" class="chk-kondisi pill-checkbox" value="Kaca Retak"><label for="k2" class="pill-label">Kaca Retak</label>
-      <input type="checkbox" id="k3" class="chk-kondisi pill-checkbox" value="Case Lecet"><label for="k3" class="pill-label">Case Lecet</label>
-      <input type="checkbox" id="k4" class="chk-kondisi pill-checkbox" value="Dial Noda"><label for="k4" class="pill-label">Dial Noda</label>
-      <input type="checkbox" id="k5" class="chk-kondisi pill-checkbox" value="Jarum Lepas"><label for="k5" class="pill-label">Jarum Lepas</label>
-      <input type="checkbox" id="k6" class="chk-kondisi pill-checkbox" value="Crown Patah"><label for="k6" class="pill-label">Crown Patah</label>
-      <input type="checkbox" id="k7" class="chk-kondisi pill-checkbox" value="Tanpa Strap"><label for="k7" class="pill-label">Tanpa Strap</label>
-      <input type="checkbox" id="k8" class="chk-kondisi pill-checkbox" value="Mesin Mati"><label for="k8" class="pill-label">Mesin Mati</label>
-    </div>
-    
-    <label>Catatan Kondisi Lainnya</label>
-    <input id="sKondisiLain" placeholder="Contoh: Ada goresan di belakang, bau parfum" style="margin-bottom:10px">
-    
-    <div class="row">
-      <div><label>Status Garansi</label><select id="sGaransi" onchange="hitungTotalServis()"><option value="garansi">Dalam Garansi (gratis)</option><option value="luar">Luar Garansi (bayar)</option></select></div>
-      <div><label>Biaya Jasa (Rp)</label><input type="number" id="sJasa" value="0" min="0" oninput="hitungTotalServis()"></div>
-    </div>
-    <label>Pilih Cepat Biaya Jasa (otomatis set Luar Garansi)</label>
-    <div class="tap-group">
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(25000)">25rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(50000)">50rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(75000)">75rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(100000)">100rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(150000)">150rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(200000)">200rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(250000)">250rb</button>
-    </div>
-  </div>
-  
-  <!-- 2. FORM SPARE PART -->
-  <div class="card"><h3>Pakai Spare Part</h3>
-    <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
-    <div id="cartServisList"><div class="empty">Belum ada part</div></div>
-    <div class="cart-total"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="font-size:18px;font-weight:900;color:#0f1f3d;">🔧 Watch Care Service · Tiket Servis</div>
   </div>
 
-  <!-- 3. FORM BATERAI -->
-  <div class="card"><h3>Pakai Baterai (Opsional)</h3>
-    <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
-    <div id="cartBateraiServisList"><div class="empty">Belum ada baterai</div></div>
-    <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiServisTotal">Rp 0</span></div>
+  <div class="pos-layout">
+    <!-- KOLOM KIRI: FORM INPUT TIKET SERVIS + SPARE PART + BATERAI -->
+    <div>
+      <div class="card"><h3>Form Tiket Servis Baru</h3>
+        <div id="klaimBanner" style="display:none;background:#fef3c7;border-left:4px solid #f59e0b;padding:10px;border-radius:8px;margin-bottom:12px;font-size:13px;color:#92400e"></div>
+        <input type="hidden" id="sParentId">
+        <div class="row">
+          <div><label>Nama Pelanggan *</label><input id="sNama" list="dlPelanggan" placeholder="Pilih / ketik nama" oninput="isiHpPelanggan('sNama','sHp')" onblur="isiHpPelanggan('sNama','sHp')"></div>
+          <div><label>No HP / WA</label><input id="sHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
+        </div>
+        <div class="row">
+          <div><label>Produk / Merek *</label><input id="sProduk" placeholder="Seiko 5"></div>
+          <div><label>Keluhan</label><input id="sKeluhan" placeholder="Jam mati"></div>
+        </div>
+        <label>Pilih Cepat Merek / Jenis Jam</label>
+        <div class="tap-group">
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Seiko 5')">Seiko 5</button>
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Seiko Quartz')">Seiko Quartz</button>
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Alba')">Alba</button>
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Casio')">Casio</button>
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','G-Shock')">G-Shock</button>
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Orient')">Orient</button>
+          <button type="button" class="tap-btn" onclick="isiTeks('sProduk','Citizen')">Citizen</button>
+        </div>
+        <label>Pilih Cepat Keluhan (bisa klik lebih dari satu)</label>
+        <div class="tap-group">
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jam Mati')">Jam Mati</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Servis Total')">Servis Total</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Kaca')">Ganti Kaca</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Mesin')">Ganti Mesin</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Kemasukan Air')">Kemasukan Air</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jarum Lepas')">Jarum Lepas</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Potong Rantai')">Potong Rantai</button>
+        </div>
+        <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
+
+        <label>Kondisi Fisik Saat Diterima (Klik jika ada)</label>
+        <div style="display:flex; flex-wrap:wrap; gap:8px; margin-bottom:12px; padding:10px; border-radius:10px; border: 1px dashed var(--border);">
+          <input type="checkbox" id="k1" class="chk-kondisi pill-checkbox" value="Kaca Baret"><label for="k1" class="pill-label">Kaca Baret</label>
+          <input type="checkbox" id="k2" class="chk-kondisi pill-checkbox" value="Kaca Retak"><label for="k2" class="pill-label">Kaca Retak</label>
+          <input type="checkbox" id="k3" class="chk-kondisi pill-checkbox" value="Case Lecet"><label for="k3" class="pill-label">Case Lecet</label>
+          <input type="checkbox" id="k4" class="chk-kondisi pill-checkbox" value="Dial Noda"><label for="k4" class="pill-label">Dial Noda</label>
+          <input type="checkbox" id="k5" class="chk-kondisi pill-checkbox" value="Jarum Lepas"><label for="k5" class="pill-label">Jarum Lepas</label>
+          <input type="checkbox" id="k6" class="chk-kondisi pill-checkbox" value="Crown Patah"><label for="k6" class="pill-label">Crown Patah</label>
+          <input type="checkbox" id="k7" class="chk-kondisi pill-checkbox" value="Tanpa Strap"><label for="k7" class="pill-label">Tanpa Strap</label>
+          <input type="checkbox" id="k8" class="chk-kondisi pill-checkbox" value="Mesin Mati"><label for="k8" class="pill-label">Mesin Mati</label>
+        </div>
+        <label>Catatan Kondisi Lainnya</label>
+        <input id="sKondisiLain" placeholder="Contoh: Ada goresan di belakang" style="margin-bottom:10px">
+
+        <div class="row">
+          <div><label>Status Garansi</label><select id="sGaransi" onchange="hitungTotalServis()"><option value="garansi">Dalam Garansi (gratis)</option><option value="luar">Luar Garansi (bayar)</option></select></div>
+          <div><label>Biaya Jasa (Rp)</label><input type="number" id="sJasa" value="0" min="0" oninput="hitungTotalServis()"></div>
+        </div>
+        <label>Pilih Cepat Biaya Jasa (otomatis set Luar Garansi)</label>
+        <div class="tap-group">
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(25000)">25rb</button>
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(50000)">50rb</button>
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(75000)">75rb</button>
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(100000)">100rb</button>
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(150000)">150rb</button>
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(200000)">200rb</button>
+          <button type="button" class="tap-btn ok-tap" onclick="setJasaCepat(250000)">250rb</button>
+        </div>
+      </div>
+
+      <div class="card"><h3>Pakai Spare Part &amp; Baterai (Opsional)</h3>
+        <div class="row3"><div><label>Spare Part</label><select id="selSparePart"></select></div><div><label>Qty</label><input type="number" id="qtyPart" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addPartServis()" style="width:100%">+</button></div></div>
+        <div id="cartServisList"><div class="empty">Belum ada part</div></div>
+        <div class="cart-total" style="margin-bottom:12px;"><span>Total Spare Part</span><span id="cartServisTotal">Rp 0</span></div>
+
+        <div class="row3"><div><label>Tipe Baterai</label><select id="selBateraiServis"></select></div><div><label>Qty</label><input type="number" id="qtyBaterai" value="1" min="1"></div><div style="display:flex;align-items:flex-end"><button class="btn" onclick="addBateraiServis()" style="width:100%">+</button></div></div>
+        <div id="cartBateraiServisList"><div class="empty">Belum ada baterai</div></div>
+        <div class="cart-total"><span>Total Baterai</span><span id="cartBateraiServisTotal">Rp 0</span></div>
+      </div>
+
+      <button class="btn blue" onclick="tambahKeKeranjangServis()" style="margin-bottom:14px; padding:14px; font-weight:800; font-size:16px;">➕ Tambah Jam Ini ke Daftar Nota</button>
+    </div>
+
+    <!-- KOLOM KANAN: KERANJANG NOTA SERVIS & PEMBAYARAN DP (GAYA POS KASIR) -->
+    <div class="card" style="border:2px solid #0f1f3d;">
+      <h3>🛒 Ringkasan Nota Servis &amp; DP</h3>
+      <div id="cardKeranjangServis" style="display:none;margin-bottom:12px;">
+        <div id="listKeranjangServis"></div>
+        <button class="btn-sm danger" onclick="batalKeranjangServis()" style="margin-top:8px;">🗑️ Kosongkan List</button>
+      </div>
+      <div id="srvEmptyHint" class="empty">Isi form di kiri lalu klik <b>"+ Tambah Jam Ini ke Daftar Nota"</b>.</div>
+
+      <div id="cardPembayaranServis" style="display:none;border-top:1.5px solid #e2e8f0;padding-top:10px;margin-top:10px;">
+        <div class="row">
+          <div><label>Total Biaya</label><input id="sTotalBiayaGroup" readonly style="font-size:18px;font-weight:800;text-align:right;color:#0f1f3d;"></div>
+          <div><label>DP Diterima (Rp)</label><input type="number" id="sDpGroup" value="0" min="0" oninput="updateTotalGroupServis()" style="font-size:18px;font-weight:800;"></div>
+        </div>
+        <label>Metode Pembayaran DP (Tinggal Pencet)</label>
+        <div class="pay-grid" id="payMethodGridServis">
+          <button type="button" class="pay-btn active" data-metode="tunai" onclick="pilihMetodeServis('tunai')">💵 Cash</button>
+          <button type="button" class="pay-btn" data-metode="qris" onclick="pilihMetodeServis('qris')">📱 QRIS</button>
+          <button type="button" class="pay-btn" data-metode="transfer" onclick="pilihMetodeServis('transfer')">🏦 Transfer</button>
+          <button type="button" class="pay-btn" data-metode="edc_dc_bca" onclick="pilihMetodeServis('edc_dc_bca')">💳 Debit BCA</button>
+          <button type="button" class="pay-btn" data-metode="edc_dc_lain" onclick="pilihMetodeServis('edc_dc_lain')">💳 Debit Lain</button>
+          <button type="button" class="pay-btn" data-metode="edc_cc_bca" onclick="pilihMetodeServis('edc_cc_bca')">💳 CC BCA</button>
+        </div>
+        <select id="metodeDpGroup" onchange="toggleBankDp();updateTotalGroupServis()" style="display:none;">
+          <option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option>
+          <option value="edc_cc_bca">BCA Card (1,5%)</option><option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option><option value="edc_cc_amex">Amex (3,25%)</option>
+          <option value="edc_dc_bca">BCA (0,15%)</option><option value="edc_dc_lain">Bank Lain (1%)</option><option value="edc_dc_maestro">Maestro (2%)</option>
+        </select>
+        <div class="row" id="wrapBankDp" style="display:none"><div><label>Rekening Tujuan DP</label><select id="bankDp"></select></div><div></div></div>
+        <div class="row">
+          <div><label>Sisa Tagihan</label><input id="sSisaGroup" readonly style="font-size:17px;font-weight:800;text-align:right;color:#b91c1c;"></div>
+          <div></div>
+        </div>
+        <div class="row" id="mdrDpInfo" style="display:none;color:#b91c1c;font-size:14px;background:#fee2e2;padding:8px;border-radius:8px;margin-bottom:10px;">
+          <span>Biaya Bank (MDR)</span><span id="mdrDpValue">-Rp 0</span>
+        </div>
+        <button class="btn-bayar-gold btn-simpan" onclick="simpanSemuaServis()">💾 SIMPAN &amp; CETAK NOTA SERVIS</button>
+      </div>
+    </div>
   </div>
 
-  <!-- 4. TOMBOL TAMBAH KE LIST -->
-  <button class="btn blue" onclick="tambahKeKeranjangServis()" style="margin-bottom:20px; padding:14px; width:100%; font-weight:bold; font-size:15px; border-radius:10px; box-shadow: 0 4px 6px rgba(0,0,0,0.2);">➕ Tambah Jam Ini ke List</button>
-
-  <!-- 5. DAFTAR SERVIS (ANTRIAN) -->
-  <div class="card"><h3>Daftar Servis</h3>
+  <!-- DAFTAR TIKET SERVIS & CEK GARANSI -->
+  <div class="card" style="margin-top:14px;"><h3>📋 Daftar Tiket Servis</h3>
     <div id="srvFilterPills" style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
       <button type="button" class="status-pill-btn active" data-st="" onclick="filterServis('')">Semua</button>
       <button type="button" class="status-pill-btn" data-st="antri" onclick="filterServis('antri')">✔ Diterima</button>
@@ -822,75 +870,15 @@ main { max-width: 1120px; }
     </div>
     <div id="listServis"></div>
   </div>
-  
-  <!-- 6. CEK GARANSI -->
-  <div class="card"><h3>Cek Garansi Servis</h3>
+
+  <div class="card"><h3>🔍 Cek Garansi Servis &amp; Produk</h3>
     <input id="cariGaransi" placeholder="Cari nama / no HP / no servis / produk..." oninput="renderCekGaransi()" style="margin-bottom:10px">
     <div id="hasilCekGaransi"><div class="empty">Ketik untuk mencari garansi</div></div>
   </div>
 
-  <!-- 7. KERANJANG SERVIS GABUNGAN (Muncul saat ada list) -->
-  <div class="card" id="cardKeranjangServis" style="display:none; border: 2px solid var(--p);">
-    <h3 style="color:var(--p); margin-top:0;">🛒 Daftar Jam di Nota Ini</h3>
-    <div id="listKeranjangServis"></div>
-    <button class="btn danger" onclick="batalKeranjangServis()" style="margin-top:10px; font-size:12px; padding:8px;">🗑️ Batal / Kosongkan List</button>
-  </div>
-
-  <!-- 8. PEMBAYARAN DP GABUNGAN (Muncul saat ada list) -->
-  <!-- PEMBAYARAN DP GABUNGAN -->
-<div class="card" id="cardPembayaranServis" style="display:none; border: 1px solid var(--border);">
-  <h3>💳 Pembayaran & DP</h3>
-  <div class="row">
-    <div>
-      <label>Total Biaya (Semua Jam)</label>
-      <input id="sTotalBiayaGroup" readonly style="font-size:18px;font-weight:700;text-align:right; color:var(--p);">
-    </div>
-    <div>
-      <label>DP Diterima (Rp)</label>
-      <input type="number" id="sDpGroup" value="0" min="0" oninput="updateTotalGroupServis()">
-    </div>
-  </div>
-  <div class="row">
-    <div>
-      <label>Metode DP</label>
-      <!-- PILIHAN METODE LENGKAP SEPERTI KASIR -->
-      <select id="metodeDpGroup" onchange="toggleBankDp();updateTotalGroupServis()">
-        <option value="tunai">Tunai</option>
-        <option value="transfer">Transfer</option>
-        <option value="qris">QRIS</option>
-        <optgroup label="Kartu Kredit">
-          <option value="edc_cc_bca">BCA Card (1,5%)</option>
-          <option value="edc_cc_vm">Visa/Master/JCB/Union (2%)</option>
-          <option value="edc_cc_amex">Amex (3,25%)</option>
-        </optgroup>
-        <optgroup label="Kartu Debit">
-          <option value="edc_dc_bca">BCA (0,15%)</option>
-          <option value="edc_dc_lain">Bank Lain (1%)</option>
-          <option value="edc_dc_maestro">Maestro (2%)</option>
-        </optgroup>
-      </select>
-    </div>
-    <div>
-      <label>Sisa Tagihan</label>
-      <input id="sSisaGroup" readonly style="font-size:16px;font-weight:700;text-align:right;color:#dc2626;">
-    </div>
-  </div>
-  
-  <div class="row" id="wrapBankDp" style="display:none"><div><label>Rekening Tujuan DP</label><select id="bankDp"></select></div><div></div></div>
-  <!-- BARIS INFO MDR (Muncul jika ada biaya bank) -->
-  <div class="row" id="mdrDpInfo" style="display:none; color:#dc2626; font-size:14px; margin-top:5px; background:rgba(220, 38, 38, 0.1); padding:8px; border-radius:6px;">
-    <span>Biaya Bank (MDR)</span>
-    <span id="mdrDpValue">-Rp 0</span>
-  </div>
-</div>
-  
-  <!-- 9. STICKY BOTTOM BAR -->
-  <div class="sticky-bottom-bar">
-    <div>
-      <div class="total-text">Total Biaya Servis</div>
-      <div class="total-amount" id="sTotalBiayaDisplay">Rp 0</div>
-    </div>
-    <button class="btn ok btn-simpan" onclick="simpanSemuaServis()">💾 Proses & Cetak</button>
+  <div class="sticky-bottom-bar" style="display:none;">
+    <div><div class="total-text">Total Biaya Servis</div><div class="total-amount" id="sTotalBiayaDisplay">Rp 0</div></div>
+    <button class="btn ok btn-simpan" onclick="simpanSemuaServis()">💾 Proses &amp; Cetak</button>
   </div>
 </section>
   
@@ -907,10 +895,13 @@ main { max-width: 1120px; }
 </section>
 
 <section id="baterai">
-  <!-- CARD 0: JUAL BATERAI ECERAN TANPA PASANG -->
+  <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+    <div style="font-size:18px;font-weight:900;color:#0f1f3d;">🔋 Ganti Baterai &amp; Penjualan Eceran</div>
+  </div>
+
+  <!-- JUAL BATERAI ECERAN TANPA PASANG -->
   <div class="card" style="border:2px solid #15803d;background:#f0fdf4;">
-    <h3 style="color:#15803d;border-bottom-color:#bbf7d0;">🔋 Jual Baterai Eceran (Tanpa Pasang)</h3>
-    <p style="font-size:13px;color:#166534;margin:0 0 10px;">Khusus beli baterai saja tanpa pasang &amp; tanpa garansi. Tidak perlu isi nama pelanggan/jam.</p>
+    <h3 style="color:#15803d;border-bottom-color:#bbf7d0;">⚡ Jual Baterai Eceran (Tanpa Pasang &amp; Tanpa Garansi)</h3>
     <label>Pilih Cepat Tipe Baterai</label>
     <div id="quickBateraiEceranBtns" class="tap-group"></div>
     <div class="row">
@@ -921,102 +912,86 @@ main { max-width: 1120px; }
       <div>
         <label>Metode Bayar</label>
         <select id="beMetode" onchange="toggleBankEceran()">
-          <option value="tunai">Tunai</option>
-          <option value="transfer">Transfer</option>
-          <option value="qris">QRIS</option>
-          <option value="edc_cc_bca">BCA Card (1,5%)</option>
-          <option value="edc_cc_vm">Visa/Master (2%)</option>
-          <option value="edc_cc_amex">Amex (3,25%)</option>
-          <option value="edc_dc_bca">Debit BCA (0,15%)</option>
-          <option value="edc_dc_lain">Debit Lain (1%)</option>
-          <option value="edc_dc_maestro">Maestro (2%)</option>
+          <option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option>
+          <option value="edc_cc_bca">BCA Card (1,5%)</option><option value="edc_cc_vm">Visa/Master (2%)</option><option value="edc_cc_amex">Amex (3,25%)</option>
+          <option value="edc_dc_bca">Debit BCA (0,15%)</option><option value="edc_dc_lain">Debit Lain (1%)</option><option value="edc_dc_maestro">Maestro (2%)</option>
         </select>
       </div>
-      <div><label>Total Harga</label><input id="beTotal" readonly value="Rp 0" style="font-weight:800;color:#15803d;text-align:right;"></div>
+      <div><label>Total Harga</label><input id="beTotal" readonly value="Rp 0" style="font-weight:800;color:#15803d;text-align:right;font-size:18px;"></div>
     </div>
     <div class="row" id="wrapBankEceran" style="display:none"><div><label>Rekening Tujuan</label><select id="beBank"></select></div><div></div></div>
     <button class="btn ok" id="btnJualBateraiEceran" onclick="simpanBateraiEceran()">💾 Jual Baterai Eceran &amp; Cetak Struk</button>
   </div>
 
-  <!-- CARD 1: KERANJANG GANTI BATERAI -->
-  <div class="card" id="cardKeranjangBaterai">
-    <h3>Input Ganti Baterai</h3>
-    
-    <!-- Data Pelanggan -->
-    <div class="row">
-      <div><label>Nama Pelanggan *</label><input id="bNama" list="dlPelanggan" placeholder="Pilih / ketik nama" oninput="isiHpPelanggan('bNama','bHp');cekKlaimBaterai(this.value)" onblur="isiHpPelanggan('bNama','bHp');cekKlaimBaterai(this.value)"></div>
-      <div><label>No HP</label><input id="bHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
-    </div>
-
-    <!-- Info Klaim -->
-    <div id="infoKlaimBaterai" style="display:none; padding:10px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:10px;"></div>
-    
-    <!-- Input Barang & Baterai -->
-    <div class="row">
-      <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" oninput="cekKlaimBaterai(document.getElementById('bNama').value)" onblur="cekKlaimBaterai(document.getElementById('bNama').value)"></div>
-      <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
-    </div>
-    <label>Pilih Cepat Merek Jam</label>
-    <div class="tap-group">
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('Seiko')">Seiko</button>
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('Alba')">Alba</button>
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('Casio')">Casio</button>
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('G-Shock')">G-Shock</button>
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('Orient')">Orient</button>
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('Citizen')">Citizen</button>
-      <button type="button" class="tap-btn" onclick="isiJamBaterai('Fossil')">Fossil</button>
-    </div>
-    <label>Pilih Cepat Tipe Baterai (Stok Tersedia)</label>
-    <div id="quickBateraiBtns" class="tap-group"></div>
-    
-    <!-- Tanggal & Garansi -->
-    <div class="row" style="margin-top:10px">
-      <div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div>
-      <div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="3" min="0"></div>
-    </div>
-
-    <!-- Tombol Tambah ke List -->
-    <button class="btn blue" onclick="addBateraiCart()" style="margin-top:10px; padding:12px; font-weight:bold;">➕ Tambah Baterai ke List</button>
-  </div>
-
-  <!-- CARD 2: LIST KERANJANG BATERAI (Mirip Servis) -->
-  <div class="card" id="cardListBaterai" style="display:none; border: 2px solid var(--p);">
-    <h3 style="color:var(--p); margin-top:0;">🛒 Daftar Baterai di Nota Ini</h3>
-    <div id="cartBateraiList"></div>
-    <button class="btn danger" onclick="batalKeranjangBaterai()" style="margin-top:10px; font-size:12px; padding:8px;">🗑️ Batal / Kosongkan List</button>
-  </div>
-
-  <!-- CARD 3: PEMBAYARAN (Metode Bayar) -->
-  <div class="card" id="cardPembayaranBaterai" style="display:none;">
-    <h3>💳 Pembayaran Baterai</h3>
-    <div class="row">
-      <div>
-        <label>Metode Bayar</label>
-        <select id="metodeBaterai" onchange="toggleBankBaterai(); updateTotalBaterai()">
-          <option value="tunai">Tunai</option>
-          <option value="transfer">Transfer</option>
-          <option value="qris">QRIS</option>
-          <option value="edc_cc_bca">BCA Card (1,5%)</option>
-          <option value="edc_cc_vm">Visa/Master (2%)</option>
-          <option value="edc_cc_amex">Amex (3,25%)</option>
-          <option value="edc_dc_bca">Debit BCA (0,15%)</option>
-          <option value="edc_dc_lain">Debit Lain (1%)</option>
-          <option value="edc_dc_maestro">Maestro (2%)</option>
-        </select>
+  <!-- LAYOUT POS 2 KOLOM: GANTI BATERAI DENGAN GARANSI -->
+  <div class="pos-layout">
+    <!-- KOLOM KIRI: INPUT GANTI BATERAI -->
+    <div class="card" id="cardKeranjangBaterai">
+      <h3>🔧 Input Ganti Baterai (Pasang + Garansi)</h3>
+      <div class="row">
+        <div><label>Nama Pelanggan *</label><input id="bNama" list="dlPelanggan" placeholder="Pilih / ketik nama" oninput="isiHpPelanggan('bNama','bHp');cekKlaimBaterai(this.value)" onblur="isiHpPelanggan('bNama','bHp');cekKlaimBaterai(this.value)"></div>
+        <div><label>No HP / WA</label><input id="bHp" type="tel" oninput="this.value = this.value.replace(/[^0-9]/g, '')" placeholder="0812..."></div>
       </div>
-      <div></div>
+      <div id="infoKlaimBaterai" style="display:none; padding:10px; border-radius:8px; font-size:13px; font-weight:bold; margin-bottom:10px;"></div>
+      <div class="row">
+        <div><label>Produk / Jam *</label><input id="bProduk" placeholder="Seiko 5" oninput="cekKlaimBaterai(document.getElementById('bNama').value)" onblur="cekKlaimBaterai(document.getElementById('bNama').value)"></div>
+        <div><label>Tipe Baterai *</label><select id="bTipeSel" onchange="pilihBaterai()"></select></div>
+      </div>
+      <label>Pilih Cepat Merek Jam</label>
+      <div class="tap-group">
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('Seiko')">Seiko</button>
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('Alba')">Alba</button>
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('Casio')">Casio</button>
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('G-Shock')">G-Shock</button>
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('Orient')">Orient</button>
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('Citizen')">Citizen</button>
+        <button type="button" class="tap-btn" onclick="isiJamBaterai('Fossil')">Fossil</button>
+      </div>
+      <label>Pilih Cepat Tipe Baterai (Stok Tersedia)</label>
+      <div id="quickBateraiBtns" class="tap-group"></div>
+      <div class="row" style="margin-top:8px">
+        <div><label>Tanggal Ganti</label><input type="date" id="bTgl"></div>
+        <div><label>Garansi (bulan)</label><input type="number" id="bGaransi" value="6" min="0"></div>
+      </div>
+      <button class="btn blue" onclick="addBateraiCart()" style="margin-top:10px; padding:13px; font-weight:800;">➕ Tambah Baterai ke Daftar Nota</button>
     </div>
-    <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
-    
-    <!-- Info MDR -->
-    <div class="row" id="mdrBateraiInfo" style="display:none; color:#dc2626; font-size:14px; background:rgba(220, 38, 38, 0.1); padding:8px; border-radius:6px; margin-top:10px;">
-      <span>Biaya Bank (MDR)</span>
-      <span id="mdrBateraiValue">-Rp 0</span>
+
+    <!-- KOLOM KANAN: KERANJANG & CHECKOUT BATERAI -->
+    <div class="card" style="border:2px solid #0f1f3d;">
+      <h3>🛍️ Daftar Baterai &amp; Pembayaran</h3>
+      <div id="cardListBaterai" style="display:none;margin-bottom:10px;">
+        <div id="cartBateraiList"></div>
+        <button class="btn-sm danger" onclick="batalKeranjangBaterai()" style="margin-top:8px;">🗑️ Kosongkan List</button>
+      </div>
+      <div id="batEmptyHint" class="empty">Pilih jam &amp; tipe baterai di kiri lalu klik <b>"+ Tambah Baterai ke Daftar Nota"</b>.</div>
+
+      <div id="cardPembayaranBaterai" style="display:none;border-top:1.5px solid #e2e8f0;padding-top:10px;margin-top:10px;">
+        <label>Metode Pembayaran (Tinggal Pencet)</label>
+        <div class="pay-grid" id="payMethodGridBaterai">
+          <button type="button" class="pay-btn active" data-metode="tunai" onclick="pilihMetodeBaterai('tunai')">💵 Cash</button>
+          <button type="button" class="pay-btn" data-metode="qris" onclick="pilihMetodeBaterai('qris')">📱 QRIS</button>
+          <button type="button" class="pay-btn" data-metode="transfer" onclick="pilihMetodeBaterai('transfer')">🏦 Transfer</button>
+          <button type="button" class="pay-btn" data-metode="edc_dc_bca" onclick="pilihMetodeBaterai('edc_dc_bca')">💳 Debit BCA</button>
+          <button type="button" class="pay-btn" data-metode="edc_dc_lain" onclick="pilihMetodeBaterai('edc_dc_lain')">💳 Debit Lain</button>
+          <button type="button" class="pay-btn" data-metode="edc_cc_bca" onclick="pilihMetodeBaterai('edc_cc_bca')">💳 CC BCA</button>
+        </div>
+        <select id="metodeBaterai" onchange="toggleBankBaterai(); updateTotalBaterai()" style="display:none;">
+          <option value="tunai">Tunai</option><option value="transfer">Transfer</option><option value="qris">QRIS</option>
+          <option value="edc_cc_bca">BCA Card (1,5%)</option><option value="edc_cc_vm">Visa/Master (2%)</option><option value="edc_cc_amex">Amex (3,25%)</option>
+          <option value="edc_dc_bca">Debit BCA (0,15%)</option><option value="edc_dc_lain">Debit Lain (1%)</option><option value="edc_dc_maestro">Maestro (2%)</option>
+        </select>
+        <div class="row" id="wrapBankBaterai" style="display:none"><div><label>Rekening Tujuan</label><select id="bankBaterai"></select></div><div></div></div>
+        <div class="checkout-summary">
+          <div class="cs-row total"><span>TOTAL BAYAR</span><span id="displayTotalBaterai">Rp 0</span></div>
+          <div class="cs-row" id="mdrBateraiInfo" style="display:none;color:#b91c1c;font-weight:700;"><span>Biaya Bank (MDR)</span><span id="mdrBateraiValue">-Rp 0</span></div>
+        </div>
+        <button class="btn-bayar-gold" onclick="simpanBaterai()">🔒 BAYAR &amp; CETAK STRUK BATERAI</button>
+      </div>
     </div>
   </div>
 
-  <!-- CARD 4: FORM TAMBAH TIPE BATERAI (Tetap Sama) -->
-  <div class="card" id="cardTambahBaterai" style="margin-top:20px;"><h3>Tambah Tipe Baterai</h3>
+  <!-- MASTER TIPE BATERAI & CEK GARANSI -->
+  <div class="card" id="cardTambahBaterai" style="margin-top:14px;"><h3>Tambah Tipe Baterai</h3>
     <div class="row"><div><label>Tipe *</label><input id="sbTipe" placeholder="SR626SW"></div><div><label>Min Stok</label><input type="number" id="sbMin" value="5" min="0"></div></div>
     <div class="row" id="wrapHargaBeliBaterai">
       <div><label>Harga Beli</label><input type="number" id="sbBeli" placeholder="8000"></div>
@@ -1026,18 +1001,9 @@ main { max-width: 1120px; }
     <button class="btn" onclick="tambahStokBaterai()">+ Tambah Tipe</button>
   </div>
 
-  <!-- CARD 5 & 6: DAFTAR STOK & CEK GARANSI (Tetap Sama) -->
   <div class="card"><h3>Daftar Stok Baterai</h3><div id="listStokBaterai"></div></div>
   <div class="card"><h3>Cek Garansi Baterai</h3><input id="bCari" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listBaterai"></div></div>
-
-  <!-- STICKY BOTTOM BAR BATERAI -->
-  <div class="sticky-bottom-bar" id="stickyBaterai" style="display:none;">
-    <div>
-      <div class="total-text">Total Biaya Baterai</div>
-      <div class="total-amount" id="displayTotalBaterai">Rp 0</div>
-    </div>
-    <button class="btn ok btn-simpan" onclick="simpanBaterai()">💾 Proses Baterai</button>
-  </div>
+  <div id="stickyBaterai" style="display:none;"></div>
 </section>
   
 <section id="supplier">
@@ -1131,6 +1097,12 @@ main { max-width: 1120px; }
   <div class="card"><h3>Produk Terlaris</h3><table><thead><tr><th>Produk</th><th>Qty</th><th>Omzet</th></tr></thead><tbody id="tblLaris"></tbody></table></div>
   <div class="card"><h3>Spare Part Terlaris</h3><table><thead><tr><th>Spare Part</th><th>Qty</th><th>Nilai</th></tr></thead><tbody id="tblLarisSp"></tbody></table></div>
   <div class="card"><h3>Stok Menipis</h3><div id="stokAlert"></div></div>
+
+  <div class="card" id="cardForecastStok" style="border:2px solid #f59e0b;">
+    <h3>📈 Prediksi Stok Habis (Forecasting 30 Hari)</h3>
+    <p style="font-size:13px;color:#475569;margin-top:0">Dihitung otomatis dari rata-rata penjualan &amp; pemakaian 30 hari terakhir. Membantu menentukan kapan &amp; berapa banyak harus restock.</p>
+    <div id="listForecastStok"></div>
+  </div>
   
   <div class="card">
     <h3>📲 Kirim Laporan ke WA</h3>
@@ -1254,6 +1226,37 @@ main { max-width: 1120px; }
 </section>
   
 <section id="setting">
+  <div class="card" style="border:2px solid #0f1f3d;">
+    <h3>🖨️ Printer Thermal Bluetooth (58mm ESC/POS)</h3>
+    <p style="font-size:13px;color:#475569;margin-top:0">Hubungkan printer thermal Bluetooth langsung dari Chrome Android / PC tanpa pop-up browser.</p>
+    <div id="btStatusText" style="font-size:14px;font-weight:700;color:#b91c1c;margin-bottom:10px;">Status: Belum terhubung</div>
+    <div class="row">
+      <button type="button" class="btn ok" onclick="btConnect()">🔗 Hubungkan Printer Bluetooth</button>
+      <button type="button" class="btn blue" onclick="btTestPrint()">🧾 Tes Cetak</button>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;">
+      <input type="checkbox" id="chkPakaiBT" onchange="simpanPrefBT()" style="width:22px;height:22px;flex-shrink:0;">
+      <label for="chkPakaiBT" style="margin:0;cursor:pointer;">Gunakan Printer Bluetooth sebagai mode cetak utama (jika terputus, otomatis kembali ke cetak browser)</label>
+    </div>
+  </div>
+
+  <div class="card" style="border:2px solid #15803d;">
+    <h3>📲 WhatsApp Gateway API (Fonnte / Custom Webhook)</h3>
+    <p style="font-size:13px;color:#475569;margin-top:0">Jika diisi, tombol WA akan mengirim pesan otomatis lewat API di latar belakang. Jika kosong/nonaktif, otomatis membuka aplikasi WhatsApp (`wa.me`).</p>
+    <div class="row">
+      <div><label>Endpoint API URL</label><input id="waApiUrl" placeholder="https://api.fonnte.com/send"></div>
+      <div><label>API Token / Authorization</label><input id="waApiToken" type="password" placeholder="Masukkan token Fonnte..."></div>
+    </div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <input type="checkbox" id="waApiAktif" style="width:22px;height:22px;flex-shrink:0;">
+      <label for="waApiAktif" style="margin:0;cursor:pointer;">Aktifkan Kirim WA Otomatis via API</label>
+    </div>
+    <div class="row">
+      <button type="button" class="btn ok" onclick="simpanWaApiConfig()">💾 Simpan Pengaturan WA API</button>
+      <button type="button" class="btn ghost" onclick="tesWaApi()">📤 Tes Kirim WA ke No Toko</button>
+    </div>
+  </div>
+
   <div class="card">
   <h3>🛠️ Audit Sistem Otomatis</h3>
   <p style="font-size:12px;color:#64748b">Klik untuk mengecek apakah semua fungsi dan elemen HTML berjalan normal.</p>
@@ -1393,6 +1396,6 @@ main { max-width: 1120px; }
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <!-- Logika aplikasi -->
-<script src="app-fixed-v8.js"></script>
+<script src="app-fixed-v9.js"></script>
 </body>
 </html>
