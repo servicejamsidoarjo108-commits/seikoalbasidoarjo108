@@ -621,8 +621,27 @@ function hapusCart(i) { cart.splice(i, 1); renderCart(); }
 
 function renderCart() {
   $('cartList').innerHTML = cart.length
-    ? cart.map((c, i) => `<div class="cart-item"><div><strong>${esc(c.nama)}</strong> x${c.qty}<br><small>${rp(c.harga * c.qty)}</small></div><button class="btn-sm danger" onclick="hapusCart(${i})">Batal</button></div>`).join('')
-    : '<div class="empty">Belum ada item</div>';
+    ? cart.map((c, i) => {
+        const p = db.produk.find(x => x.id === c.id);
+        const thumb = p && p.foto
+          ? `<img src="${p.foto}" style="width:44px;height:44px;object-fit:contain;border-radius:8px;border:1px solid #cbd5e1;background:#f8fafc;flex-shrink:0;">`
+          : `<div style="width:44px;height:44px;border-radius:8px;background:#e2e8f0;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0;">⌚</div>`;
+        return `<div class="cart-item" style="gap:10px;">
+          <div style="display:flex;align-items:center;gap:10px;min-width:0;flex:1;">
+            ${thumb}
+            <div style="min-width:0;">
+              <strong style="font-size:15px;color:#0f1f3d;display:block;">${esc(c.nama)}</strong>
+              <small style="color:#475569;font-weight:600;">${c.qty} × ${rp(c.harga)} = <b style="color:#b45309">${rp(c.harga * c.qty)}</b></small>
+            </div>
+          </div>
+          <div style="display:flex;align-items:center;gap:4px;flex-shrink:0;">
+            <button type="button" class="btn-sm ghost" onclick="ubahQtyCart(${i},-1)" style="padding:4px 10px;min-height:34px;">−</button>
+            <button type="button" class="btn-sm ghost" onclick="ubahQtyCart(${i},1)" style="padding:4px 10px;min-height:34px;">+</button>
+            <button type="button" class="btn-sm danger" onclick="hapusCart(${i})" style="padding:4px 10px;min-height:34px;">✕</button>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div class="empty">Belum ada item dipilih</div>';
   updateTotalKasir();
 }
 
@@ -645,17 +664,25 @@ function hitungTotalKasir() {
 
 function updateTotalKasir() {
   const h = hitungTotalKasir();
-  const mdr = hitungMDR(h.total, $('metodeBayar')?.value);
+  const metode = $('metodeBayar')?.value || 'tunai';
+  const mdr = hitungMDR(h.total, metode);
   $('cartTotal').innerHTML = `
-    <div style="font-size:12px;color:#64748b;text-align:right">Subtotal: ${rp(h.subtotal)}</div>
-    <div style="font-size:12px;color:#dc2626;text-align:right">Diskon: -${rp(h.potongan)}</div>
-    <div style="font-size:12px;color:#f59e0b;text-align:right">Tukar Poin: -${rp(h.potonganPoin)}</div>
-    <div style="font-size:16px;font-weight:700;color:#0f172a">Total: ${rp(h.total)}</div>`;
-  const el = $('mdrInfo');
+    <div class="cs-row"><span>Subtotal</span><b>${rp(h.subtotal)}</b></div>
+    ${h.potongan > 0 ? `<div class="cs-row" style="color:#b91c1c;"><span>Diskon</span><b>-${rp(h.potongan)}</b></div>` : ''}
+    ${h.potonganPoin > 0 ? `<div class="cs-row" style="color:#b45309;"><span>Tukar Poin</span><b>-${rp(h.potonganPoin)}</b></div>` : ''}
+    <div class="cs-row total"><span>TOTAL BAYAR</span><span>${rp(h.total)}</span></div>`;
+  const el = $('mdrInfo'), netEl = $('netTerimaInfo');
   if (el) {
-    if (mdr > 0) { el.style.display = 'flex'; $('mdrValue').textContent = '-' + rp(mdr); }
-    else el.style.display = 'none';
+    if (mdr > 0) {
+      el.style.display = 'flex'; $('mdrValue').textContent = '-' + rp(mdr);
+      if (netEl) { netEl.style.display = 'flex'; $('netTerimaValue').textContent = rp(Math.max(0, h.total - mdr)); }
+    } else {
+      el.style.display = 'none';
+      if (netEl) netEl.style.display = 'none';
+    }
   }
+  const wrapTunai = $('wrapTunaiKasir');
+  if (wrapTunai) wrapTunai.style.display = metode === 'tunai' ? 'block' : 'none';
 }
 
 async function prosesBayar() {
@@ -1695,7 +1722,11 @@ async function simpanAuditGlobal() {
 }
 
 function filterKas(v) { filterKasJenis = v; render(); }
-function filterServis(v) { filterServisStatus = v; render(); }
+function filterServis(v) {
+  filterServisStatus = v;
+  document.querySelectorAll('#srvFilterPills .status-pill-btn').forEach(b => b.classList.toggle('active', b.dataset.st === v));
+  render();
+}
 function filterAudit(v) { filterAuditUser = v; render(); }
 
 // === SCAN BARCODE, FOTO, CETAK BARCODE ===
@@ -2217,8 +2248,10 @@ async function hapusSupplier(id) {
 }
 
 // === LAPORAN ===
-function hitungLaporan() {
-  const now = new Date(), bln = now.getMonth(), thn = now.getFullYear();
+function hitungLaporan(blnParam = null, thnParam = null) {
+  const now = new Date();
+  const bln = blnParam !== null ? Number(blnParam) : now.getMonth();
+  const thn = thnParam !== null ? Number(thnParam) : now.getFullYear();
   const bulanIni = w => { if (!w) return false; const d = new Date(w); return d.getMonth() === bln && d.getFullYear() === thn; };
   const jualBln = db.jual.filter(t => bulanIni(t.waktu));
   const servisBln = db.servis.filter(s => bulanIni(s.tgl_selesai));
@@ -2262,8 +2295,29 @@ function gantiTabLaporan(tab) {
   });
 }
 
+function initFilterKeuangan() {
+  const selB = $('keuFilterBulan'), selT = $('keuFilterTahun');
+  if (!selB || !selT) return;
+  const now = new Date();
+  if (!selT.options.length) {
+    const tahunSet = new Set([now.getFullYear(), now.getFullYear() - 1]);
+    [...db.jual, ...db.kas, ...db.servis, ...db.baterai].forEach(x => {
+      if (x.waktu) { const y = new Date(x.waktu).getFullYear(); if (!isNaN(y)) tahunSet.add(y); }
+    });
+    const sorted = Array.from(tahunSet).sort((a, b) => b - a);
+    selT.innerHTML = sorted.map(y => `<option value="${y}">${y}</option>`).join('');
+    selB.value = String(now.getMonth());
+    selT.value = String(now.getFullYear());
+  }
+}
+
 function hitungLaporanKeuangan() {
-  const L = hitungLaporan();
+  initFilterKeuangan();
+  const bln = $('keuFilterBulan') ? Number($('keuFilterBulan').value) : new Date().getMonth();
+  const thn = $('keuFilterTahun') ? Number($('keuFilterTahun').value) : new Date().getFullYear();
+  const namaBulan = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'][bln] || '';
+  if ($('keuPeriodeInfo')) $('keuPeriodeInfo').textContent = `Periode Laba Rugi & Arus Kas: ${namaBulan} ${thn} (Neraca menampilkan posisi saat ini).`;
+  const L = hitungLaporan(bln, thn);
   const set = (id, val) => { const el = $(id); if (el) el.textContent = rp(val); };
 
   // Laba Rugi
@@ -2337,7 +2391,8 @@ function render() {
   const uRole = (getRole() || 'guest').toUpperCase();
   const homeUser = $('homeUser');
   if (homeUser) homeUser.innerHTML = `Login sebagai: <b>${esc(uName)}</b> (${esc(uRole)})`;
-  if ($('userInfo')) $('userInfo').textContent = `👤 ${uName}`;
+  if ($('userInfo')) $('userInfo').textContent = `${uName} (${uRole})`;
+  if ($('userAvatar')) $('userAvatar').textContent = (uName || 'US').slice(0, 2).toUpperCase();
   const menuAdmin = $('menuAdmin'); if (menuAdmin) menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
 
   // 2. Dropdown
@@ -2413,8 +2468,9 @@ function render() {
     const btnStruk = s.paid ? `<button class="btn-sm blue" onclick="cetakStrukServis('${id}')">Struk</button>` : '';
     const btnKartu = s.tgl_garansi_servis_sampai ? `<button class="btn-sm blue" onclick="cetakKartuGaransiServis('${id}')">Kartu</button><button class="btn-sm ok" onclick="generateDigitalWarranty('${id}', 'servis')">📸 E-Warranty</button>` : '';
     const btnKlaim = bisaKlaimGaransi(s) ? `<button class="btn-sm warn" onclick="mulaiKlaimGaransi('${id}')">Klaim (${MAX_KLAIM_SERVIS - (s.klaim_count || 0)}x)</button>` : '';
-    return `<div class="servis-item ${esc(s.status)}"><h4>${id} - ${esc(s.customer)} <span class="badge ${esc(s.status)}">${esc(s.status.toUpperCase())}</span></h4>
-      <p>Barang: ${esc(s.produk)}</p>
+    const lblStatus = { antri: '✔ Diterima', proses: '⚙️ Dikerjakan', selesai: '✅ Selesai', diambil: '📦 Sudah Diambil' }[s.status] || s.status.toUpperCase();
+    return `<div class="servis-item ${esc(s.status)}"><h4><span><span class="ticket-id-pill">${id}</span> <b style="margin-left:6px;color:#0f1f3d;">${esc(s.customer)}</b></span> <span class="badge ${esc(s.status)}">${lblStatus}</span></h4>
+      <p><b style="color:#0f1f3d;">${esc(s.produk)}</b>${s.keluhan ? ' · Keluhan: ' + esc(s.keluhan) : ''}</p>
       ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<p style="color:#dc2626; font-size:11px; margin-top:2px;"><b>⚠️ Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</p>` : ''}
       <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
       ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
@@ -3481,6 +3537,7 @@ function pilihBateraiCepat(sbId) {
   sel.value = sbId;
   pilihBaterai();
   renderQuickBateraiBtns();
+  renderKasirProdukGrid();
 }
 
 function isiHpPelanggan(namaId, hpId) {
@@ -3614,4 +3671,307 @@ function cetakStrukBateraiEceran(tipe, qty, harga, total, metode) {
     <tr><td>Metode</td><td style="text-align:right">${esc(labelMetode(metode))}</td></tr>
   </table><hr>
   <div class="c" style="font-size:9px;">Baterai eceran tanpa pasang (tanpa garansi).<br><br>${esc(toko.footer)}</div></body></html>`);
+}
+
+
+// ==========================================================
+//  FITUR V8: POS KATALOG, ISI KAS KECIL, SHIFT CLOSING, BACKUP
+// ==========================================================
+
+// 1. JAM REAL-TIME DI HEADER
+function updateLiveClock() {
+  const el = $('liveClock'); if (!el) return;
+  const now = new Date();
+  const tgl = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+  const jamStr = now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+  el.textContent = `${tgl} • ${jamStr} WIB`;
+}
+updateLiveClock();
+setInterval(updateLiveClock, 30000);
+
+// 2. POS KASIR: KATALOG KARTU PRODUK BERGAMBAR & GRID METODE BAYAR
+function renderKasirProdukGrid() {
+  const el = $('kasirProdukGrid'); if (!el) return;
+  const q = txt('cariKasirProduk').toLowerCase();
+  const list = (db.produk || []).filter(p => (p.stok || 0) > 0 && (!q || (p.nama || '').toLowerCase().includes(q) || (p.merek || '').toLowerCase().includes(q) || (p.barcode || '').toLowerCase().includes(q)));
+  if (!list.length) {
+    el.innerHTML = '<div class="empty" style="grid-column:1/-1;">Tidak ada produk tersedia.</div>';
+    return;
+  }
+  el.innerHTML = list.map(p => {
+    const imgHTML = p.foto
+      ? `<img src="${p.foto}" alt="${esc(p.nama)}" class="pos-prod-img">`
+      : `<div class="pos-prod-placeholder">⌚</div>`;
+    return `<div class="pos-prod-card">
+      <div>
+        ${imgHTML}
+        <div class="pos-prod-name">${esc(p.nama)}</div>
+        <div class="pos-prod-merek">${esc(p.merek || 'Jam Tangan')} · Stok ${p.stok}</div>
+        <div class="pos-prod-price">${rp(p.harga_jual)}</div>
+      </div>
+      <button type="button" class="pos-prod-btn" onclick="tambahProdukKeCartCepat('${esc(p.id)}')">+ Tambah ke Keranjang</button>
+    </div>`;
+  }).join('');
+}
+
+function tambahProdukKeCartCepat(id) {
+  const p = db.produk.find(x => x.id === id);
+  if (!p) return flash('Produk tidak ditemukan', 'err');
+  if ((p.stok || 0) < 1) return flash('Stok habis', 'err');
+  const existing = cart.find(c => c.id === id);
+  if ((existing?.qty || 0) + 1 > p.stok) return flash(`Stok ${p.nama} tidak mencukupi (maks ${p.stok})`, 'err');
+  if (existing) existing.qty += 1;
+  else cart.push({ id: p.id, nama: p.nama, harga: p.harga_jual, qty: 1 });
+  renderCart();
+  flash(`✅ ${p.nama} ditambahkan`);
+}
+
+function ubahQtyCart(i, delta) {
+  const c = cart[i]; if (!c) return;
+  const p = db.produk.find(x => x.id === c.id);
+  const baru = c.qty + delta;
+  if (baru <= 0) { cart.splice(i, 1); }
+  else if (p && baru > p.stok) { return flash(`Stok ${p.nama} hanya ${p.stok}`, 'err'); }
+  else { c.qty = baru; }
+  renderCart();
+}
+
+function pilihMetodeKasir(metode) {
+  const sel = $('metodeBayar');
+  if (sel) sel.value = metode;
+  syncTombolMetodeKasir();
+  toggleBankKasir();
+  updateTotalKasir();
+}
+
+function syncTombolMetodeKasir() {
+  const aktif = $('metodeBayar')?.value || 'tunai';
+  document.querySelectorAll('#payMethodGrid .pay-btn').forEach(b => b.classList.toggle('active', b.dataset.metode === aktif));
+}
+
+// 3. TOMBOL KHUSUS ISI SALDO KAS KECIL (ADMIN / PEMILIK, TANPA BATAS RP 500.000)
+function bukaIsiKasKecilModal() {
+  if (!isAdmin()) return flash('Hanya Admin/Pemilik yang bisa mengisi saldo kas kecil', 'err');
+  let ov = $('modalIsiKasKecil'); if (ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = 'modalIsiKasKecil';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:9700;display:flex;align-items:center;justify-content:center;padding:16px;';
+  ov.innerHTML = `
+    <div style="background:#fff;color:#0f172a;border:2px solid #f59e0b;border-radius:14px;max-width:440px;width:100%;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.35);">
+      <h3 style="margin:0 0 10px;color:#0f1f3d;border-bottom:2px solid #fef3c7;padding-bottom:6px;">💰 Isi Saldo / Top-Up Kas Kecil</h3>
+      <label>Nominal Isi Kas Kecil (Rp)</label>
+      <input id="ikkNominal" type="number" min="1" placeholder="Contoh: 1000000" style="margin-bottom:8px;font-size:18px;font-weight:800;">
+      <div class="tap-group">
+        <button type="button" class="tap-btn ok-tap" onclick="$('ikkNominal').value=300000">300rb</button>
+        <button type="button" class="tap-btn ok-tap" onclick="$('ikkNominal').value=500000">500rb</button>
+        <button type="button" class="tap-btn ok-tap" onclick="$('ikkNominal').value=1000000">1 Juta</button>
+        <button type="button" class="tap-btn ok-tap" onclick="$('ikkNominal').value=2000000">2 Juta</button>
+      </div>
+      <label>Keterangan</label>
+      <input id="ikkKet" value="Isi Ulang / Saldo Awal Kas Kecil" style="margin-bottom:14px;">
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn ghost" onclick="$('modalIsiKasKecil').remove()">Batal</button>
+        <button type="button" class="btn ok" onclick="simpanIsiKasKecilAdmin()">💾 Simpan Saldo</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  $('ikkNominal').focus();
+}
+
+async function simpanIsiKasKecilAdmin() {
+  const nominal = +($('ikkNominal')?.value) || 0;
+  const ket = ($('ikkKet')?.value || '').trim() || 'Isi Saldo Kas Kecil';
+  if (nominal <= 0) return flash('Nominal harus lebih dari 0', 'err');
+  try {
+    await catatKas({ jenis: 'masuk', metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' });
+    await catatLog('ISI_KAS_KECIL', `Isi saldo kas kecil sebesar ${rp(nominal)} - ${ket}`);
+    $('modalIsiKasKecil')?.remove();
+    flash(`Saldo kas kecil berhasil ditambah ${rp(nominal)}`);
+    tarikSemuaData();
+  } catch (e) { flash('Gagal mengisi kas kecil: ' + e.message, 'err'); }
+}
+
+// 4. SHIFT CLOSING (TUTUP KASIR HARIAN)
+function hitungDataShiftHariIni() {
+  const today = new Date().toDateString();
+  const hariIni = w => w && new Date(w).toDateString() === today;
+  const kasHari = (db.kas || []).filter(k => hariIni(k.waktu));
+
+  const tunaiMasuk = kasHari.filter(k => k.metode === 'tunai' && k.jenis === 'masuk').reduce((s, k) => s + (k.nominal || 0), 0);
+  const tunaiKeluar = kasHari.filter(k => k.metode === 'tunai' && k.jenis === 'keluar').reduce((s, k) => s + (k.nominal || 0), 0);
+  const tunaiSistem = tunaiMasuk - tunaiKeluar;
+
+  const nonTunaiMasuk = kasHari.filter(k => k.metode !== 'tunai' && k.jenis === 'masuk').reduce((s, k) => s + (k.nominal || 0), 0);
+  const mdrHari = kasHari.filter(k => k.sumber === 'mdr').reduce((s, k) => s + (k.nominal || 0), 0);
+  const jmlJual = (db.jual || []).filter(t => hariIni(t.waktu)).length;
+  const jmlBat = (db.baterai || []).filter(b => hariIni(b.waktu)).length;
+  const jmlSrv = (db.servis || []).filter(s => hariIni(s.waktu)).length;
+
+  return { tunaiMasuk, tunaiKeluar, tunaiSistem, nonTunaiMasuk, mdrHari, jmlJual, jmlBat, jmlSrv };
+}
+
+function bukaShiftClosing() {
+  const d = hitungDataShiftHariIni();
+  let ov = $('modalShiftClosing'); if (ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = 'modalShiftClosing';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.78);z-index:9700;overflow-y:auto;padding:16px;';
+  ov.innerHTML = `
+    <div style="background:#fff;color:#0f172a;border:2px solid #0f1f3d;border-radius:14px;max-width:480px;width:100%;margin:3vh auto;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.4);">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-bottom:12px;">
+        <h3 style="margin:0;border:none;padding:0;color:#0f1f3d;">🔐 Tutup Kasir (Shift Closing)</h3>
+        <button type="button" class="btn-sm ghost" onclick="$('modalShiftClosing').remove()">✕</button>
+      </div>
+      <div style="font-size:13px;color:#475569;margin-bottom:10px;">
+        Kasir: <b>${esc(sessionStorage.getItem('ta_user') || '-')}</b> · Tanggal: <b>${new Date().toLocaleDateString('id-ID')}</b><br>
+        Transaksi Hari Ini: <b>${d.jmlJual}</b> Jual · <b>${d.jmlSrv}</b> Servis · <b>${d.jmlBat}</b> Baterai
+      </div>
+      <div class="checkout-summary" style="margin-bottom:12px;">
+        <div class="cs-row"><span>Tunai Masuk Hari Ini</span><b style="color:#15803d;">+${rp(d.tunaiMasuk)}</b></div>
+        <div class="cs-row"><span>Tunai Keluar (Kas Kecil/dll)</span><b style="color:#b91c1c;">-${rp(d.tunaiKeluar)}</b></div>
+        <div class="cs-row total"><span>Seharusnya di Laci (Sistem)</span><span>${rp(d.tunaiSistem)}</span></div>
+        <div class="cs-row" style="margin-top:8px;padding-top:6px;border-top:1px solid #e2e8f0;"><span>Non-Tunai (QRIS/Transfer/EDC)</span><b>${rp(d.nonTunaiMasuk)}</b></div>
+        ${d.mdrHari > 0 ? `<div class="cs-row" style="color:#b91c1c;"><span>Potongan MDR Hari Ini</span><b>-${rp(d.mdrHari)}</b></div>` : ''}
+      </div>
+      <label>Hitung Uang Tunai Fisik di Laci (Rp) *</label>
+      <input id="scFisik" type="number" min="0" placeholder="Masukkan jumlah uang fisik..." oninput="hitungSelisihShift(${d.tunaiSistem})" style="font-size:18px;font-weight:800;margin-bottom:8px;">
+      <div id="scSelisihBox" style="display:none;padding:10px;border-radius:10px;font-weight:800;font-size:15px;text-align:center;margin-bottom:10px;"></div>
+      <label>Catatan Tutup Kasir (Opsional)</label>
+      <input id="scCatatan" placeholder="Contoh: Setor ke pemilik, sisa modal laci 200rb" style="margin-bottom:12px;">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+        <button type="button" class="btn ok" onclick="simpanShiftClosing(true)">💾 Simpan &amp; Cetak</button>
+        <button type="button" class="btn blue" onclick="simpanShiftClosing(false, true)">📲 Simpan &amp; WA</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+  $('scFisik').focus();
+}
+
+function hitungSelisihShift(tunaiSistem) {
+  const val = $('scFisik')?.value;
+  const box = $('scSelisihBox'); if (!box) return;
+  if (val === '' || val === undefined) { box.style.display = 'none'; return; }
+  const fisik = Number(val) || 0;
+  const selisih = fisik - tunaiSistem;
+  box.style.display = 'block';
+  if (selisih === 0) {
+    box.style.background = '#dcfce7'; box.style.color = '#14532d'; box.style.border = '1.5px solid #16a34a';
+    box.textContent = '✅ COCOK 100% (Selisih Rp 0)';
+  } else if (selisih < 0) {
+    box.style.background = '#fee2e2'; box.style.color = '#7f1d1d'; box.style.border = '1.5px solid #dc2626';
+    box.textContent = `⚠️ KURANG ${rp(Math.abs(selisih))}`;
+  } else {
+    box.style.background = '#dbeafe'; box.style.color = '#1e3a8a'; box.style.border = '1.5px solid #2563eb';
+    box.textContent = `ℹ️ LEBIH +${rp(selisih)}`;
+  }
+}
+
+async function simpanShiftClosing(cetak = false, kirimWA = false) {
+  const fisikRaw = $('scFisik')?.value;
+  if (fisikRaw === '' || fisikRaw === undefined) return flash('Masukkan jumlah uang tunai fisik di laci', 'err');
+  const fisik = Math.max(0, Number(fisikRaw) || 0);
+  const catatan = ($('scCatatan')?.value || '').trim();
+  const d = hitungDataShiftHariIni();
+  const selisih = fisik - d.tunaiSistem;
+  const user = sessionStorage.getItem('ta_user') || 'kasir';
+  const statusTeks = selisih === 0 ? 'COCOK' : (selisih < 0 ? `KURANG ${rp(Math.abs(selisih))}` : `LEBIH +${rp(selisih)}`);
+
+  try {
+    await catatLog('SHIFT_CLOSING', `Tutup kasir oleh ${user} | Sistem: ${rp(d.tunaiSistem)} | Fisik: ${rp(fisik)} | Selisih: ${statusTeks} | Non-Tunai: ${rp(d.nonTunaiMasuk)}${catatan ? ' | Ket: ' + catatan : ''}`);
+    flash('Laporan Tutup Kasir berhasil dicatat!');
+    $('modalShiftClosing')?.remove();
+
+    if (cetak) {
+      const toko = getToko();
+      cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}</style></head><body>
+        ${headerLogo(toko)}<div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+        <div class="c b">LAPORAN TUTUP KASIR</div><hr>
+        <div>Tgl: ${new Date().toLocaleString('id-ID')}</div>
+        <div>Kasir: ${esc(user)}</div><hr>
+        <table>
+          <tr><td>Tunai Masuk</td><td style="text-align:right">${rp(d.tunaiMasuk)}</td></tr>
+          <tr><td>Tunai Keluar</td><td style="text-align:right">-${rp(d.tunaiKeluar)}</td></tr>
+          <tr><td class="b">Tunai Sistem</td><td class="b" style="text-align:right">${rp(d.tunaiSistem)}</td></tr>
+          <tr><td class="b">Tunai Fisik</td><td class="b" style="text-align:right">${rp(fisik)}</td></tr>
+          <tr><td class="b">Selisih</td><td class="b" style="text-align:right">${statusTeks}</td></tr>
+        </table><hr>
+        <table>
+          <tr><td>Non-Tunai</td><td style="text-align:right">${rp(d.nonTunaiMasuk)}</td></tr>
+          <tr><td>MDR</td><td style="text-align:right">-${rp(d.mdrHari)}</td></tr>
+        </table><hr>
+        ${catatan ? `<div>Ket: ${esc(catatan)}</div><hr>` : ''}
+        <div class="c" style="margin-top:16px">Tanda Tangan Kasir<br><br><br>( ${esc(user)} )</div>
+      </body></html>`);
+    }
+    if (kirimWA) {
+      const toko = getToko();
+      if (!toko.telp) return flash('Isi No WA Toko di Setting dulu', 'err');
+      const teks = `*LAPORAN TUTUP KASIR (SHIFT CLOSING)*
+${toko.nama}
+Tgl: ${new Date().toLocaleString('id-ID')}
+Kasir: *${user}*
+-------------------------
+Tunai Masuk : ${rp(d.tunaiMasuk)}
+Tunai Keluar: -${rp(d.tunaiKeluar)}
+*Tunai Sistem: ${rp(d.tunaiSistem)}*
+*Tunai Fisik : ${rp(fisik)}*
+*Status      : ${statusTeks}*
+-------------------------
+Non-Tunai   : ${rp(d.nonTunaiMasuk)}
+Biaya MDR   : -${rp(d.mdrHari)}
+${catatan ? 'Catatan     : ' + catatan + '
+' : ''}_Tercatat otomatis di Audit Log_`;
+      openWA(toko.telp, teks);
+    }
+    tarikSemuaData();
+  } catch (e) { flash('Gagal menyimpan tutup kasir: ' + e.message, 'err'); }
+}
+
+// 5. BACKUP DATA (CSV EXCEL-READY & FULL JSON)
+function unduhFile(namaFile, isi, mime) {
+  const blob = new Blob([isi], { type: mime });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = namaFile; a.click();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+function keCSV(headers, rows) {
+  const escCsv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
+  return '﻿' + [headers.map(escCsv).join(','), ...rows.map(r => r.map(escCsv).join(','))].join('
+');
+}
+
+function exportCSV(modul) {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa mengekspor backup data', 'err');
+  const tgl = tglLokal();
+  if (modul === 'jual') {
+    const rows = (db.jual || []).map(t => [t.id, t.waktu, t.cust_nama || '-', t.cust_hp || '-', t.metode, t.subtotal, t.diskon, t.total, (t.items || []).map(i => `${i.nama} x${i.qty}`).join('; ')]);
+    unduhFile(`Backup_Penjualan_${tgl}.csv`, keCSV(['ID', 'Waktu', 'Pembeli', 'HP', 'Metode', 'Subtotal', 'Diskon', 'Total', 'Item'], rows), 'text/csv;charset=utf-8;');
+  } else if (modul === 'servis') {
+    const rows = (db.servis || []).map(s => [s.id, s.waktu, s.customer, s.telp || '-', s.produk, s.keluhan || '-', s.status, s.biaya_pelanggan, s.dp || 0, s.sisa || 0, s.paid ? 'LUNAS' : 'BELUM', s.tgl_garansi_servis_sampai || '-']);
+    unduhFile(`Backup_Servis_${tgl}.csv`, keCSV(['ID', 'Waktu', 'Pelanggan', 'HP', 'Produk', 'Keluhan', 'Status', 'Total', 'DP', 'Sisa', 'Lunas', 'Garansi s/d'], rows), 'text/csv;charset=utf-8;');
+  } else if (modul === 'baterai') {
+    const rows = (db.baterai || []).map(b => [b.id, b.tgl_ganti, b.customer, b.telp || '-', b.produk, b.tipe, b.biaya, b.jenis_klaim || 'Normal', b.tgl_expired]);
+    unduhFile(`Backup_Baterai_${tgl}.csv`, keCSV(['ID', 'Tgl Ganti', 'Pelanggan', 'HP', 'Jam', 'Tipe Baterai', 'Biaya', 'Status', 'Garansi s/d'], rows), 'text/csv;charset=utf-8;');
+  } else if (modul === 'kas') {
+    const rows = (db.kas || []).map(k => [k.id, k.waktu, k.jenis, k.metode, k.sumber, k.nominal, k.keterangan || '-', k.ref_id || '-']);
+    unduhFile(`Backup_Kas_${tgl}.csv`, keCSV(['ID', 'Waktu', 'Jenis', 'Metode', 'Sumber', 'Nominal', 'Keterangan', 'Ref ID'], rows), 'text/csv;charset=utf-8;');
+  } else if (modul === 'stok') {
+    const rows = kumpulkanSemuaStok().map(x => [x.label, x.nama, x.barcode, x.stok, x.beli, x.jual, x.jual - x.beli, x.stok * x.beli]);
+    unduhFile(`Backup_Stok_Harga_${tgl}.csv`, keCSV(['Kategori', 'Nama Barang', 'Barcode', 'Stok', 'Harga Beli', 'Harga Jual', 'Laba/Unit', 'Nilai Modal'], rows), 'text/csv;charset=utf-8;');
+  } else if (modul === 'pelanggan') {
+    const rows = (db.pelanggan || []).map(p => [p.id, p.nama, p.telp || '-', p.poin || 0, p.terakhir_transaksi || '-']);
+    unduhFile(`Backup_Pelanggan_${tgl}.csv`, keCSV(['ID', 'Nama', 'HP', 'Poin', 'Transaksi Terakhir'], rows), 'text/csv;charset=utf-8;');
+  }
+  catatLog('BACKUP_CSV', `Ekspor data CSV: ${modul}`);
+  flash(`File Excel (CSV) ${modul} berhasil diunduh!`);
+}
+
+function backupSemuaJSON() {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa mengunduh backup penuh', 'err');
+  const payload = { exported_at: nowISO(), toko: getToko().nama, data: db };
+  unduhFile(`Backup_Lengkap_TokoSeiko108_${tglLokal()}.json`, JSON.stringify(payload, null, 2), 'application/json');
+  catatLog('BACKUP_FULL', 'Mengunduh backup lengkap JSON');
+  flash('Backup penuh (.json) berhasil diunduh!');
 }
