@@ -3919,8 +3919,7 @@ Tunai Keluar: -${rp(d.tunaiKeluar)}
 -------------------------
 Non-Tunai   : ${rp(d.nonTunaiMasuk)}
 Biaya MDR   : -${rp(d.mdrHari)}
-${catatan ? 'Catatan     : ' + catatan + '
-' : ''}_Tercatat otomatis di Audit Log_`;
+${catatan ? 'Catatan     : ' + catatan + '\n' : ''}_Tercatat otomatis di Audit Log_`;
       openWA(toko.telp, teks);
     }
     tarikSemuaData();
@@ -3938,8 +3937,7 @@ function unduhFile(namaFile, isi, mime) {
 
 function keCSV(headers, rows) {
   const escCsv = v => `"${String(v ?? '').replace(/"/g, '""')}"`;
-  return '﻿' + [headers.map(escCsv).join(','), ...rows.map(r => r.map(escCsv).join(','))].join('
-');
+  return '\uFEFF' + [headers.map(escCsv).join(','), ...rows.map(r => r.map(escCsv).join(','))].join('\n');
 }
 
 function exportCSV(modul) {
