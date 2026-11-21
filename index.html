@@ -232,6 +232,72 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
 }
 .qty-stepper input { text-align: center; font-weight: 800; font-size: 18px; }
 
+
+/* --- KARTU DAFTAR VERTIKAL (ANTI KEPOTONG DI HP & RAMAH ORANG TUA) --- */
+.item-card {
+  background: #ffffff;
+  border: 1.5px solid #cbd5e1;
+  border-left: 5px solid var(--p);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  box-shadow: 0 2px 5px rgba(15,23,42,.06);
+}
+.item-card.low-stock { border-left-color: #b91c1c; background: #fffafa; }
+.item-card.audit-minus { border-left-color: #b91c1c; }
+.item-card.audit-plus { border-left-color: #15803d; }
+
+.ic-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+.ic-title {
+  font-size: 16px;
+  font-weight: 800;
+  color: #0f172a;
+  line-height: 1.3;
+  word-break: break-word;
+}
+.ic-stock {
+  flex-shrink: 0;
+  font-size: 14px;
+  font-weight: 800;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: #eff6ff;
+  color: #1e3a8a;
+  border: 1px solid #93c5fd;
+  white-space: nowrap;
+}
+.ic-stock.low { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+
+.ic-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 8px 10px;
+}
+.ic-cell { display: flex; flex-direction: column; }
+.ic-lbl { font-size: 11px; font-weight: 700; color: #64748b; text-transform: uppercase; }
+.ic-val { font-size: 15px; font-weight: 800; color: #0f172a; white-space: nowrap; }
+.ic-val.ok { color: #15803d; }
+.ic-val.danger { color: #b91c1c; }
+.ic-note {
+  margin-top: 8px;
+  font-size: 13px;
+  color: #334155;
+  background: #f1f5f9;
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+.stat .num { white-space: nowrap; font-size: 17px; }
+
 </style>
 </head>
 <body>
@@ -446,14 +512,9 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
     
     <button class="btn warn" onclick="simpanAuditGlobal()">💾 Simpan Semua Audit</button>
     
-    <hr style="border:none;border-top:1px solid #e2e8f0;margin:12px 0">
-    <div style="display:flex; gap:5px; margin-bottom:10px;">
-      <button class="btn-sm ghost" onclick="filterAudit('')">Semua</button>
-      <button class="btn-sm ghost" onclick="filterAudit('kasir')">Oleh Kasir</button>
-      <button class="btn-sm ghost" onclick="filterAudit('admin')">Oleh Admin</button>
+    <div style="margin-top:10px;font-size:13px;color:#475569;">
+      📌 Riwayat &amp; Laporan Audit kini disatukan di menu <b>Laporan &amp; Kartu Audit</b>.
     </div>
-    <h3>Riwayat Audit Terakhir</h3>
-    <div id="listAuditBarang"></div>
   </div>
   
   <div class="card"><h3>Daftar Produk</h3><input id="cariProduk" placeholder="Cari nama/merek/barcode..." oninput="render()" style="margin-bottom:10px"><div id="listProduk"></div></div>
@@ -1081,6 +1142,6 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <!-- Logika aplikasi -->
-<script src="app-fixed-v4.js"></script>
+<script src="app-fixed-v6.js"></script>
 </body>
 </html>
