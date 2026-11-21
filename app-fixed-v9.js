@@ -439,24 +439,61 @@ async function tarikSemuaData(muatFoto = false) {
 // === REAL-TIME SYNC ===
 function jadwalRefresh() { clearTimeout(refreshTimer); refreshTimer = setTimeout(tarikSemuaData, 800); }
 
+let sesiCheckTimer = null;
+let sedangKickSesi = false;
+
 async function daftarkanSesiTunggal(userId) {
   if (!userId || !supabaseClient) return;
   try {
-    // Cabut refresh token di perangkat lain (bawaan Supabase v2)
     await supabaseClient.auth.signOut({ scope: 'others' });
   } catch (_) { }
   const token = genId('SES');
+  localStorage.setItem('ta_session_token', token);
+  localStorage.setItem('ta_uid', userId);
   sessionStorage.setItem('ta_session_token', token);
   sessionStorage.setItem('ta_uid', userId);
   try {
-    await supabaseClient.from('sesi_aktif').upsert({
+    const { error } = await supabaseClient.from('sesi_aktif').upsert({
       user_id: userId,
       session_token: token,
       device_info: (navigator.userAgent || '').slice(0, 120),
       updated_at: nowISO()
     });
-  } catch (e) { console.warn('Tabel sesi_aktif belum dibuat (jalankan migrasi_sesi_aktif.sql):', e.message); }
+    if (error) console.warn('Gagal simpan sesi_aktif:', error.message);
+  } catch (e) { console.warn('Tabel sesi_aktif belum dibuat:', e.message); }
 }
+
+async function verifikasiSesiTunggal() {
+  if (sedangKickSesi || !supabaseClient) return true;
+  const uid = localStorage.getItem('ta_uid') || sessionStorage.getItem('ta_uid');
+  const lokal = localStorage.getItem('ta_session_token') || sessionStorage.getItem('ta_session_token');
+  if (!uid || !lokal) return true;
+  try {
+    const { data, error } = await supabaseClient.from('sesi_aktif').select('session_token').eq('user_id', uid).maybeSingle();
+    if (error || !data) return true;
+    if (data.session_token && data.session_token !== lokal) {
+      sedangKickSesi = true;
+      alert('⚠️ Akun ini baru saja login di perangkat lain.\nAnda akan dikeluarkan demi keamanan.');
+      await logout(true);
+      sedangKickSesi = false;
+      return false;
+    }
+  } catch (_) { }
+  return true;
+}
+
+function mulaiPantauSesi() {
+  if (sesiCheckTimer) clearInterval(sesiCheckTimer);
+  sesiCheckTimer = setInterval(() => {
+    if (sessionStorage.getItem('ta_logged') === '1') verifikasiSesiTunggal();
+  }, 10000);
+}
+
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible' && sessionStorage.getItem('ta_logged') === '1') {
+    verifikasiSesiTunggal();
+  }
+});
 
 function setupRealtime() {
   if (!supabaseClient) return;
@@ -465,21 +502,23 @@ function setupRealtime() {
   ['produk', 'sparepart', 'stok_baterai', 'jual', 'servis', 'baterai', 'kas', 'pelanggan'].forEach(t => {
     realtimeChannel.on('postgres_changes', { event: '*', schema: 'public', table: t }, jadwalRefresh);
   });
-  // Pantau sesi_aktif: jika perangkat lain login dengan akun ini, langsung tendang!
-  const uid = sessionStorage.getItem('ta_uid');
+  // Pantau sesi_aktif secara realtime: jika perangkat lain login, langsung tendang!
+  const uid = localStorage.getItem('ta_uid') || sessionStorage.getItem('ta_uid');
   if (uid) {
     realtimeChannel.on('postgres_changes', {
       event: '*', schema: 'public', table: 'sesi_aktif', filter: `user_id=eq.${uid}`
     }, payload => {
       const baru = payload?.new?.session_token;
-      const lokal = sessionStorage.getItem('ta_session_token');
-      if (baru && lokal && baru !== lokal) {
+      const lokal = localStorage.getItem('ta_session_token') || sessionStorage.getItem('ta_session_token');
+      if (baru && lokal && baru !== lokal && !sedangKickSesi) {
+        sedangKickSesi = true;
         alert('⚠️ Akun ini baru saja login di perangkat lain.\nAnda akan dikeluarkan demi keamanan.');
-        logout(true);
+        logout(true).finally(() => { sedangKickSesi = false; });
       }
     });
   }
   realtimeChannel.subscribe();
+  mulaiPantauSesi();
 }
 
 // === LOGIN & LOGOUT ===
@@ -529,6 +568,9 @@ async function logout(paksa = false) {
     realtimeChannel = null;
     await supabaseClient.auth.signOut();
   }
+  if (sesiCheckTimer) { clearInterval(sesiCheckTimer); sesiCheckTimer = null; }
+  localStorage.removeItem('ta_session_token');
+  localStorage.removeItem('ta_uid');
   sessionStorage.clear();
   cart = []; cartServis = []; cartBaterai = []; cartBateraiServis = []; cartServisGabungan = [];
   tempAuditData = {}; modeKlaimProdukJualId = ''; statusKlaimAktif = { multiplier: 1, tipe: 'Normal' };
@@ -3372,6 +3414,14 @@ async function inisialisasi() {
   sessionStorage.setItem('ta_logged', '1');
   sessionStorage.setItem('ta_user', username);
   sessionStorage.setItem('ta_role', tentukanRole(sesi.user, username));
+  localStorage.setItem('ta_uid', sesi.user.id);
+  sessionStorage.setItem('ta_uid', sesi.user.id);
+  if (!localStorage.getItem('ta_session_token')) {
+    await daftarkanSesiTunggal(sesi.user.id);
+  } else {
+    const valid = await verifikasiSesiTunggal();
+    if (!valid) return;
+  }
   $('loginOverlay')?.classList.add('hidden');
   applyRoleUI();
   await tarikSemuaData();
