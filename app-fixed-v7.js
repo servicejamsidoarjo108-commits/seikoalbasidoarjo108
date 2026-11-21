@@ -2342,12 +2342,13 @@ function render() {
 
   // 2. Dropdown
   const optBank = '<option value="">-- pilih rekening --</option>' + (db.bank || []).map(b => `<option value="${esc(b.id)}">${esc(b.nama)}${b.no ? ' (' + esc(b.no) + ')' : ''}</option>`).join('');
-  ['kasBank', 'bankKasir', 'bankDp', 'bankBaterai'].forEach(id => setSelect(id, optBank));
+  ['kasBank', 'bankKasir', 'bankDp', 'bankBaterai', 'beBank'].forEach(id => setSelect(id, optBank));
   setSelect('selProduk', db.produk.filter(p => p.stok > 0).map(p => `<option value="${esc(p.id)}">${esc(p.nama)} (stok ${p.stok}) - ${rp(p.harga_jual)}</option>`).join('') || '<option value="">Tidak ada stok</option>');
   setSelect('selSparePart', '<option value="">-- pilih --</option>' + db.sparePart.map(sp => `<option value="${esc(sp.id)}" ${sp.stok === 0 ? 'disabled' : ''}>${esc(sp.nama)} - stok ${sp.stok}</option>`).join(''));
   const optBat = '<option value="">-- pilih --</option>' + db.stokBaterai.map(sb => `<option value="${esc(sb.id)}" ${sb.stok === 0 ? 'disabled' : ''}>${esc(sb.tipe)} - stok ${sb.stok}</option>`).join('');
   setSelect('selBateraiServis', optBat);
   setSelect('bTipeSel', optBat);
+  setSelect('beTipeSel', optBat);
   if ($('rsItem')) updateRsItem();
 
   // 3. Produk (dengan filter cariProduk)
@@ -2453,7 +2454,16 @@ function render() {
   const trxHariIni = db.jual.filter(t => new Date(t.waktu).toDateString() === today);
   setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => `<tr><td>${jam(t.waktu)}</td><td>${(t.items || []).length} item<br><small>${esc(labelMetode(t.metode || 'tunai'))}</small></td><td>${rp(t.total)}</td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="cetakStruk('${esc(t.id)}')">Cetak</button><button class="btn-sm ok" onclick="shareStrukDigital('${esc(t.id)}')">WA</button>${isPemilik() ? `<button class="btn-sm danger" onclick="hapusJual('${esc(t.id)}')">Hapus</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="4" class="empty">Belum ada transaksi</td></tr>');
 
-  const listKK = db.kas.filter(k => k.sumber === 'kas_kecil' && new Date(k.waktu).toDateString() === today).slice(0, 10);
+  const semuaKK = db.kas.filter(k => k.sumber === 'kas_kecil');
+  const saldoKK = semuaKK.reduce((s, k) => s + (k.jenis === 'masuk' ? (k.nominal || 0) : -(k.nominal || 0)), 0);
+  const kkHari = semuaKK.filter(k => k.waktu && new Date(k.waktu).toDateString() === today);
+  const kkMasuk = kkHari.filter(k => k.jenis === 'masuk').reduce((s, k) => s + (k.nominal || 0), 0);
+  const kkKeluar = kkHari.filter(k => k.jenis === 'keluar').reduce((s, k) => s + (k.nominal || 0), 0);
+  if ($('kkSaldoTotal')) $('kkSaldoTotal').textContent = rp(saldoKK);
+  if ($('kkMasukHari')) $('kkMasukHari').textContent = rp(kkMasuk);
+  if ($('kkKeluarHari')) $('kkKeluarHari').textContent = rp(kkKeluar);
+  if ($('kasSaldoKecil')) $('kasSaldoKecil').textContent = rp(saldoKK);
+  const listKK = kkHari.slice(0, 10);
   setHTML('listKasKecilKasir', listKK.length ? `<table><thead><tr><th>Jam</th><th>Keterangan</th><th>Nominal</th></tr></thead><tbody>` +
     listKK.map(k => `<tr><td>${jam(k.waktu)}</td><td>${esc(k.keterangan)}</td><td style="color:${k.jenis === 'masuk' ? '#16a34a' : '#dc2626'};font-weight:bold;">${k.jenis === 'masuk' ? '📥' : '📤'} ${rp(k.nominal)}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada catatan kas kecil hari ini.</div>');
 
@@ -3084,7 +3094,7 @@ async function bayarBebanTetap(id) {
   try {
     const { error } = await supabaseClient.rpc('bayar_beban_bulanan', { p_beban_id: id, p_metode: res.metode, p_bank_id: res.bankId, p_nominal: res.nominal, p_periode: periodeSekarang() });
     if (error) throw error;
-    flash(`${b.nama} bulan ini dibayar ${rp(nominal)}`);
+    flash(`${b.nama} bulan ini dibayar ${rp(res.nominal)}`);
     tarikSemuaData();
   } catch (e) { flash('Gagal: ' + e.message, 'err'); tarikSemuaData(); }
 }
@@ -3483,17 +3493,24 @@ function isiHpPelanggan(namaId, hpId) {
 }
 
 function renderQuickBateraiBtns() {
-  const el = $('quickBateraiBtns'); if (!el) return;
-  const aktifId = $('bTipeSel')?.value || '';
   const list = (db.stokBaterai || []).filter(sb => (sb.stok || 0) > 0);
-  if (!list.length) {
-    el.innerHTML = '<span style="font-size:13px;color:#64748b">Stok baterai kosong</span>';
-    return;
+  const el = $('quickBateraiBtns');
+  if (el) {
+    const aktifId = $('bTipeSel')?.value || '';
+    el.innerHTML = list.length ? list.map(sb => `
+      <button type="button" class="tap-btn ${sb.id === aktifId ? 'active-tap' : 'ok-tap'}" onclick="pilihBateraiCepat('${esc(sb.id)}')">
+        ${esc(sb.tipe)} <small>(${sb.stok})</small>
+      </button>`).join('') : '<span style="font-size:13px;color:#64748b">Stok baterai kosong</span>';
   }
-  el.innerHTML = list.map(sb => `
-    <button type="button" class="tap-btn ${sb.id === aktifId ? 'active-tap' : 'ok-tap'}" onclick="pilihBateraiCepat('${esc(sb.id)}')">
-      ${esc(sb.tipe)} <small>(${sb.stok})</small>
-    </button>`).join('');
+  const elE = $('quickBateraiEceranBtns');
+  if (elE) {
+    const aktifE = $('beTipeSel')?.value || '';
+    elE.innerHTML = list.length ? list.map(sb => `
+      <button type="button" class="tap-btn ${sb.id === aktifE ? 'active-tap' : 'ok-tap'}" onclick="pilihBateraiEceranCepat('${esc(sb.id)}')">
+        ${esc(sb.tipe)} <small>(${sb.stok})</small>
+      </button>`).join('') : '<span style="font-size:13px;color:#64748b">Stok baterai kosong</span>';
+  }
+  updateTotalBateraiEceran();
 }
 
 function renderQuickUI() {
@@ -3515,4 +3532,86 @@ async function hapusAuditBarang(id) {
     flash('Riwayat audit berhasil dihapus');
     tarikSemuaData();
   } catch (e) { flash('Gagal menghapus riwayat audit: ' + e.message, 'err'); }
+}
+
+
+// === JUAL BATERAI ECERAN TANPA PASANG (TANPA GARANSI) ===
+function toggleBankEceran() { toggleWrap('wrapBankEceran', 'beMetode', ['tunai', 'hutang']); }
+
+function pilihBateraiEceranCepat(sbId) {
+  const sel = $('beTipeSel'); if (!sel) return;
+  sel.value = sbId;
+  renderQuickBateraiBtns();
+}
+
+function updateTotalBateraiEceran() {
+  const sbId = $('beTipeSel')?.value;
+  const qty = Math.max(1, Math.floor(num('beQty')) || 1);
+  const sb = db.stokBaterai.find(x => x.id === sbId);
+  const total = sb ? (sb.harga_jual || 0) * qty : 0;
+  if ($('beTotal')) $('beTotal').value = rp(total);
+}
+
+let sedangJualEceran = false;
+async function simpanBateraiEceran() {
+  if (sedangJualEceran) return;
+  const sbId = $('beTipeSel')?.value;
+  const qty = Math.max(1, Math.floor(num('beQty')) || 1);
+  if (!sbId) return flash('Pilih tipe baterai terlebih dahulu', 'err');
+  const sb = db.stokBaterai.find(x => x.id === sbId);
+  if (!sb) return flash('Data baterai tidak ditemukan', 'err');
+  if (qty > (sb.stok || 0)) return flash(`Stok baterai ${sb.tipe} tidak cukup (sisa ${sb.stok})`, 'err');
+
+  const metode = $('beMetode')?.value || 'tunai';
+  const cekBank = wajibBankNonTunai('beBank', metode);
+  if (!cekBank.ok) return;
+
+  sedangJualEceran = true;
+  const btn = $('btnJualBateraiEceran');
+  if (btn) { btn.disabled = true; btn.textContent = 'Memproses...'; }
+  try {
+    const harga = sb.harga_jual || 0;
+    const rpcArgs = {
+      p_items: [{ produk: 'Baterai Eceran (Tanpa Pasang)', sb_id: sb.id, harga, qty, jenis_klaim: 'Eceran' }],
+      p_customer: 'Pembeli Eceran',
+      p_telp: null,
+      p_tgl_ganti: tglLokal(),
+      p_garansi_bulan: 0,
+      p_metode: metode,
+      p_bank_id: cekBank.bankId
+    };
+    const { data, error } = await supabaseClient.rpc('proses_ganti_baterai', rpcArgs);
+    if (error) throw error;
+
+    await catatLog('BATERAI_ECERAN', `Jual baterai eceran ${sb.tipe} x${qty} (${rp(data.total)}) via ${labelMetode(metode)}`);
+    flash(`Baterai eceran ${sb.tipe} x${qty} terjual (${rp(data.total)})`);
+    try { cetakStrukBateraiEceran(sb.tipe, qty, harga, data.total, metode); } catch (e) { console.error(e); }
+
+    if ($('beTipeSel')) $('beTipeSel').value = '';
+    if ($('beQty')) $('beQty').value = 1;
+    updateTotalBateraiEceran();
+    tarikSemuaData();
+  } catch (e) {
+    flash('Gagal menjual baterai eceran: ' + e.message, 'err');
+  } finally {
+    sedangJualEceran = false;
+    if (btn) { btn.disabled = false; btn.textContent = '💾 Jual Baterai Eceran & Cetak Struk'; }
+  }
+}
+
+function cetakStrukBateraiEceran(tipe, qty, harga, total, metode) {
+  const toko = getToko();
+  cetakHTML(`<html><head><meta charset="UTF-8"><style>${CSS_STRUK}</style></head><body>
+  ${headerLogo(toko)}<div class="c b" style="font-size:12px">${esc(toko.nama)}</div>
+  <div class="c">${esc(toko.alamat)}</div><div class="c b">STRUK BATERAI ECERAN</div><hr>
+  <div>Tgl: ${new Date().toLocaleString('id-ID')}</div>
+  <div>Kasir: ${esc(sessionStorage.getItem('ta_user') || 'Admin')}</div><hr>
+  <table>
+    <tr><td>Baterai ${esc(tipe)}<br>${qty} x ${harga.toLocaleString('id-ID')}</td><td style="text-align:right">${total.toLocaleString('id-ID')}</td></tr>
+  </table><hr>
+  <table>
+    <tr><td class="b">TOTAL</td><td class="b" style="text-align:right">Rp ${total.toLocaleString('id-ID')}</td></tr>
+    <tr><td>Metode</td><td style="text-align:right">${esc(labelMetode(metode))}</td></tr>
+  </table><hr>
+  <div class="c" style="font-size:9px;">Baterai eceran tanpa pasang (tanpa garansi).<br><br>${esc(toko.footer)}</div></body></html>`);
 }
