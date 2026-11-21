@@ -1389,13 +1389,20 @@ main { max-width: 1120px; }
 
 <div id="cloudStatus" style="position: fixed; bottom: 5px; left: 5px; font-size: 9px; color: #22c55e; z-index: 999; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; opacity: 0.15; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.15'">Cloud Connected</div>
 
-<!-- Koneksi Supabase (kunci publik; keamanan data diatur oleh RLS di database) -->
+<!-- Penangkap error otomatis -->
+<script>
+  window.onerror = function(m, u, l) {
+    var el = document.getElementById('loginErr');
+    if (el) el.textContent = 'ERR: ' + m + ' (baris ' + l + ')';
+  };
+</script>
+<!-- Koneksi Supabase -->
 <script>
   const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <!-- Logika aplikasi -->
-<script src="app-fixed-v9.js"></script>
+<script src="app-fixed-v9.js?v=99"></script>
 </body>
 </html>
