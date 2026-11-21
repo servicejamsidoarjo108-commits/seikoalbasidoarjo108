@@ -1399,24 +1399,3 @@ main { max-width: 1120px; }
 <script src="app-fixed-v9.js"></script>
 </body>
 </html>
- + ')' : ''));
-    });
-    window.addEventListener('unhandledrejection', function(e) {
-      showBootErr(e.reason ? (e.reason.message || String(e.reason)) : 'Promise Error');
-    });
-  })();
-</script>
-<!-- Koneksi Supabase (kunci publik; keamanan data diatur oleh RLS di database) -->
-<script>
-  const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
-  const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
-  const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
-  if (!supabaseClient) {
-    var el = document.getElementById('loginErr');
-    if (el) el.textContent = 'Error: Library Supabase gagal dimuat.';
-  }
-</script>
-<!-- Logika aplikasi (dengan cache-buster agar tablet tidak nyangkut file lama) -->
-<script src="app-fixed-v9.js?v=94" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v9.js gagal dimuat.';"></script>
-</body>
-</html>
