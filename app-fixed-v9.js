@@ -4324,13 +4324,3 @@ function renderForecastStok() {
     </div>`;
   }).join('');
 }
-lass="ic-val">${x.keluar30} unit</span></div>
-        <div class="ic-cell"><span class="ic-lbl">Estimasi Habis</span><span class="ic-val ${kritis ? 'danger' : ''}">${teksHari}</span></div>
-        <div class="ic-cell" style="grid-column:span 2;border-top:1px dashed #cbd5e1;padding-top:6px;flex-direction:row;justify-content:space-between;align-items:center;">
-          <span class="ic-lbl">Rekomendasi Beli (Stok 30 Hari)</span>
-          <span class="ic-val ok">${x.saranBeli > 0 ? '+' + x.saranBeli + ' unit' : 'Cukup'}</span>
-        </div>
-      </div>
-    </div>`;
-  }).join('');
-}
