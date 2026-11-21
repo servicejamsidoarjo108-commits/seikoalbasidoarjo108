@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
 <meta name="theme-color" content="#0f172a">
-<title>⌚ Toko Seiko Alba Sidoarjo 108</title>
+<title>⌚ POS & Watch Care</title>
 <link rel="manifest" href="manifest.json">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <script src='https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js'></script>
@@ -437,9 +437,9 @@ main { max-width: 1120px; }
 <body>
 
 <div id="loginOverlay">
-  <h2>⌚ Toko Seiko Alba<br>Sidoarjo 108</h2>
+  <h2 id="loginTitle">⌚ POS &amp; Watch Care</h2>
   <p>Masuk untuk melanjutkan</p>
-  <input id="loginUser" placeholder="Username" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform: lowercase;">
+  <input id="loginUser" placeholder="Email / Username" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" style="text-transform: lowercase;">
   <input type="password" id="pinInput" placeholder="Password" autocomplete="new-password">
   <button onclick="login()">Masuk</button>
   <div id="loginErr"></div>
@@ -450,7 +450,7 @@ main { max-width: 1120px; }
     <div class="hdr-brand">
       <div class="hdr-logo-icon"><i class="fa-solid fa-clock"></i></div>
       <div>
-        <div class="hdr-title">TOKO SEIKO ALBA 108</div>
+        <div class="hdr-title" id="hdrTokoNama">POS &amp; WATCH CARE</div>
         <div class="hdr-sub">Point of Sale · Watch Care Service</div>
       </div>
     </div>
@@ -1313,7 +1313,7 @@ main { max-width: 1120px; }
   <p style="font-size:13px;color:#475569;line-height:1.5">
     Demi keamanan maksimal, penambahan atau penghapusan user (Admin, Kasir, Pemilik) kini dilakukan langsung melalui Dashboard Supabase.<br><br>
     Buka <b>Authentication -> Users -> Add User</b> di dashboard Supabase Anda.<br>
-    Format Email: <b>namauser@tokoseiko.com</b>
+    Setelah membuat user di Supabase Auth, hubungkan <b>User UID</b> ke tabel <b>profil_user</b> sesuai <b>toko_id</b> &amp; <b>role</b> (pemilik/admin/kasir).
   </p>
 </div>
   <!-- CARD AUDIT TRAIL (KHUSUS PEMILIK) -->
@@ -1389,20 +1389,32 @@ main { max-width: 1120px; }
 
 <div id="cloudStatus" style="position: fixed; bottom: 5px; left: 5px; font-size: 9px; color: #22c55e; z-index: 999; background: rgba(0,0,0,0.3); padding: 2px 6px; border-radius: 4px; opacity: 0.15; transition: opacity 0.3s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.15'">Cloud Connected</div>
 
-<!-- Penangkap error otomatis -->
+<!-- Penangkap error otomatis agar pesan error langsung tampil di layar login tablet/HP -->
 <script>
-  window.onerror = function(m, u, l) {
-    var el = document.getElementById('loginErr');
-    if (el) el.textContent = 'ERR: ' + m + ' (baris ' + l + ')';
-  };
+  (function() {
+    function showBootErr(msg) {
+      var el = document.getElementById('loginErr');
+      if (el) { el.style.color = '#f87171'; el.textContent = 'Error: ' + msg; }
+    }
+    window.addEventListener('error', function(e) {
+      showBootErr((e.message || 'JS Error') + (e.lineno ? ' (baris ' + e.lineno + ')' : ''));
+    });
+    window.addEventListener('unhandledrejection', function(e) {
+      showBootErr(e.reason ? (e.reason.message || String(e.reason)) : 'Promise Error');
+    });
+  })();
 </script>
-<!-- Koneksi Supabase -->
+<!-- Koneksi Supabase (kunci publik; keamanan data diatur oleh RLS di database) -->
 <script>
   const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
   const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
-  const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const supabaseClient = window.supabase ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+  if (!supabaseClient) {
+    var el = document.getElementById('loginErr');
+    if (el) el.textContent = 'Error: Library Supabase gagal dimuat.';
+  }
 </script>
-<!-- Logika aplikasi -->
-<script src="app-fixed-v9.js?v=99"></script>
+<!-- Logika aplikasi (dengan cache-buster agar tablet tidak nyangkut file lama) -->
+<script src="app-fixed-v10.js?v=100" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v10.js gagal dimuat.';"></script>
 </body>
 </html>
