@@ -438,7 +438,12 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
   </div>
 
   <div class="card" id="cardKasKecilKasir">
-    <h3>📝 Catat Kas Kecil (Maks. Rp500.000)</h3>
+    <h3>📝 Kas Kecil (Maks. Rp500.000)</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:12px;background:#f8fafc;border:1.5px solid #cbd5e1;border-radius:10px;padding:10px;text-align:center;">
+      <div><div style="font-size:11px;font-weight:700;color:#475569;">SALDO KAS KECIL</div><div id="kkSaldoTotal" style="font-size:16px;font-weight:800;color:#1d4ed8;">Rp 0</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:#475569;">MASUK HARI INI</div><div id="kkMasukHari" style="font-size:15px;font-weight:800;color:#15803d;">Rp 0</div></div>
+      <div><div style="font-size:11px;font-weight:700;color:#475569;">KELUAR HARI INI</div><div id="kkKeluarHari" style="font-size:15px;font-weight:800;color:#b91c1c;">Rp 0</div></div>
+    </div>
     <p style="font-size:12px;color:#64748b;margin-top:0">Untuk mencatat uang masuk (jasa potong rantai, dll) atau uang keluar (beli galon, dll).</p>
     <div class="tap-group">
       <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',15000,'Jasa potong rantai')">+ Potong Rantai 15rb</button>
@@ -727,6 +732,37 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
 </section>
 
 <section id="baterai">
+  <!-- CARD 0: JUAL BATERAI ECERAN TANPA PASANG -->
+  <div class="card" style="border:2px solid #15803d;background:#f0fdf4;">
+    <h3 style="color:#15803d;border-bottom-color:#bbf7d0;">🔋 Jual Baterai Eceran (Tanpa Pasang)</h3>
+    <p style="font-size:13px;color:#166534;margin:0 0 10px;">Khusus beli baterai saja tanpa pasang &amp; tanpa garansi. Tidak perlu isi nama pelanggan/jam.</p>
+    <label>Pilih Cepat Tipe Baterai</label>
+    <div id="quickBateraiEceranBtns" class="tap-group"></div>
+    <div class="row">
+      <div><label>Tipe Baterai *</label><select id="beTipeSel" onchange="updateTotalBateraiEceran()"></select></div>
+      <div><label>Qty</label><div class="qty-stepper"><button type="button" onclick="ubahQty('beQty',-1);updateTotalBateraiEceran()">−</button><input type="number" id="beQty" value="1" min="1" oninput="updateTotalBateraiEceran()"><button type="button" onclick="ubahQty('beQty',1);updateTotalBateraiEceran()">+</button></div></div>
+    </div>
+    <div class="row">
+      <div>
+        <label>Metode Bayar</label>
+        <select id="beMetode" onchange="toggleBankEceran()">
+          <option value="tunai">Tunai</option>
+          <option value="transfer">Transfer</option>
+          <option value="qris">QRIS</option>
+          <option value="edc_cc_bca">BCA Card (1,5%)</option>
+          <option value="edc_cc_vm">Visa/Master (2%)</option>
+          <option value="edc_cc_amex">Amex (3,25%)</option>
+          <option value="edc_dc_bca">Debit BCA (0,15%)</option>
+          <option value="edc_dc_lain">Debit Lain (1%)</option>
+          <option value="edc_dc_maestro">Maestro (2%)</option>
+        </select>
+      </div>
+      <div><label>Total Harga</label><input id="beTotal" readonly value="Rp 0" style="font-weight:800;color:#15803d;text-align:right;"></div>
+    </div>
+    <div class="row" id="wrapBankEceran" style="display:none"><div><label>Rekening Tujuan</label><select id="beBank"></select></div><div></div></div>
+    <button class="btn ok" id="btnJualBateraiEceran" onclick="simpanBateraiEceran()">💾 Jual Baterai Eceran &amp; Cetak Struk</button>
+  </div>
+
   <!-- CARD 1: KERANJANG GANTI BATERAI -->
   <div class="card" id="cardKeranjangBaterai">
     <h3>Input Ganti Baterai</h3>
@@ -849,6 +885,7 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
     <div class="card"><div class="lbl">Keluar Hari Ini</div><div class="num" id="kasKeluarHari">Rp 0</div></div>
     <div class="card"><div class="lbl">Biaya Garansi Bln Ini</div><div class="num" id="kasGaransi" style="color:#dc2626">Rp 0</div></div>
     <div class="card"><div class="lbl">Saldo Total</div><div class="num" id="kasTotal">Rp 0</div></div>
+    <div class="card"><div class="lbl">Saldo Kas Kecil</div><div class="num" id="kasSaldoKecil" style="color:#1d4ed8">Rp 0</div></div>
   </div>
   
   <div class="card" id="cardInputKasAdmin">
@@ -1142,6 +1179,6 @@ th{background:#e2e8f0;font-size:13px;text-transform:uppercase;color:#1e293b;font
   const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 </script>
 <!-- Logika aplikasi -->
-<script src="app-fixed-v6.js"></script>
+<script src="app-fixed-v7.js"></script>
 </body>
 </html>
