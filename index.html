@@ -1226,103 +1226,166 @@ main { max-width: 1120px; }
 </section>
   
 <section id="setting">
-  <div class="card" style="border:2px solid #0f1f3d;">
-    <h3>🖨️ Printer Thermal Bluetooth (58mm ESC/POS)</h3>
-    <p style="font-size:13px;color:#475569;margin-top:0">Hubungkan printer thermal Bluetooth langsung dari Chrome Android / PC tanpa pop-up browser.</p>
-    <div id="btStatusText" style="font-size:14px;font-weight:700;color:#b91c1c;margin-bottom:10px;">Status: Belum terhubung</div>
-    <div class="row">
-      <button type="button" class="btn ok" onclick="btConnect()">🔗 Hubungkan Printer Bluetooth</button>
-      <button type="button" class="btn blue" onclick="btTestPrint()">🧾 Tes Cetak</button>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;">
-      <input type="checkbox" id="chkPakaiBT" onchange="simpanPrefBT()" style="width:22px;height:22px;flex-shrink:0;">
-      <label for="chkPakaiBT" style="margin:0;cursor:pointer;">Gunakan Printer Bluetooth sebagai mode cetak utama (jika terputus, otomatis kembali ke cetak browser)</label>
+  <div class="card" style="padding:12px 14px;">
+    <h3 style="margin-bottom:10px;">⚙️ Pengaturan Toko &amp; Sistem</h3>
+    <div id="settingTabs" style="display:flex;flex-wrap:wrap;gap:6px;">
+      <button type="button" class="status-pill-btn active" data-stab="identitas" onclick="gantiTabSetting('identitas')">🏪 Identitas</button>
+      <button type="button" class="status-pill-btn" data-stab="garansi" onclick="gantiTabSetting('garansi')">🛡️ Garansi &amp; MDR</button>
+      <button type="button" class="status-pill-btn" data-stab="notif" onclick="gantiTabSetting('notif')">📲 WA &amp; Telegram</button>
+      <button type="button" class="status-pill-btn" data-stab="perangkat" onclick="gantiTabSetting('perangkat')">🖨️ Perangkat &amp; Bahasa</button>
+      <button type="button" class="status-pill-btn" data-stab="sistem" onclick="gantiTabSetting('sistem')">🛠️ Sistem &amp; Audit</button>
     </div>
   </div>
 
-  <div class="card" style="border:2px solid #15803d;">
-    <h3>📲 WhatsApp Gateway API (Fonnte / Custom Webhook)</h3>
-    <p style="font-size:13px;color:#475569;margin-top:0">Jika diisi, tombol WA akan mengirim pesan otomatis lewat API di latar belakang. Jika kosong/nonaktif, otomatis membuka aplikasi WhatsApp (`wa.me`).</p>
-    <div class="row">
-      <div><label>Endpoint API URL</label><input id="waApiUrl" placeholder="https://api.fonnte.com/send"></div>
-      <div><label>API Token / Authorization</label><input id="waApiToken" type="password" placeholder="Masukkan token Fonnte..."></div>
-    </div>
-    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
-      <input type="checkbox" id="waApiAktif" style="width:22px;height:22px;flex-shrink:0;">
-      <label for="waApiAktif" style="margin:0;cursor:pointer;">Aktifkan Kirim WA Otomatis via API</label>
-    </div>
-    <div class="row">
-      <button type="button" class="btn ok" onclick="simpanWaApiConfig()">💾 Simpan Pengaturan WA API</button>
-      <button type="button" class="btn ghost" onclick="tesWaApi()">📤 Tes Kirim WA ke No Toko</button>
+  <!-- TAB 1: IDENTITAS TOKO -->
+  <div id="stab_identitas" class="stab-pane">
+    <div class="card"><h3>🏪 Identitas Toko &amp; Nota</h3>
+      <div class="row"><div><label>Nama Toko</label><input id="tkNama"></div><div><label>No WA Toko / Pemilik</label><input id="tkTelp"></div></div>
+      <label>Alamat</label><input id="tkAlamat" style="margin-bottom:10px">
+      <label>Footer Struk</label><input id="tkFooter" style="margin-bottom:10px">
+      <label>S&amp;K Lengkap (WA)</label><textarea id="tkSyarat" rows="5" style="margin-bottom:10px"></textarea>
+      <label>S&amp;K Singkat (Struk)</label><textarea id="tkSyaratSingkat" rows="4" style="margin-bottom:10px"></textarea>
+      <button class="btn ok" onclick="simpanToko()">💾 Simpan Identitas</button>
     </div>
   </div>
 
-  <div class="card">
-  <h3>🛠️ Audit Sistem Otomatis</h3>
-  <p style="font-size:12px;color:#64748b">Klik untuk mengecek apakah semua fungsi dan elemen HTML berjalan normal.</p>
-  <button class="btn blue" onclick="auditSistem()">Jalankan Audit Sistem</button>
-</div>
-  <div class="card"><h3>Garansi Servis</h3>
-    <div class="row">
-      <div><label>Durasi Garansi (bulan)</label><input type="number" id="setGaransiServisBulan" value="3" min="0"></div>
-      <div style="display:flex;align-items:flex-end"><button class="btn" onclick="simpanGaransiServis()">Simpan Garansi</button></div>
+  <!-- TAB 2: GARANSI, RULES BATERAI, DISKON & MDR -->
+  <div id="stab_garansi" class="stab-pane" style="display:none;">
+    <div class="card" style="border:2px solid #0f1f3d;">
+      <h3>🛡️ Aturan Garansi Servis &amp; Baterai</h3>
+      <div class="row">
+        <div><label>Garansi Servis Default (bulan)</label><input type="number" id="setGaransiServisBulan" value="3" min="0"></div>
+        <div><label>Maks. Klaim Garansi Servis (kali)</label><input type="number" id="setMaxKlaimServis" value="2" min="1"></div>
+      </div>
+      <div class="row">
+        <div><label>Garansi Baterai Gratis Penuh (bulan)</label><input type="number" id="setBatPenuhBulan" value="6" min="0"></div>
+        <div><label>Batas Diskon Baterai 50% (bulan)</label><input type="number" id="setBatSetengahBulan" value="9" min="0"></div>
+      </div>
+      <p style="font-size:12px;color:#64748b;margin-top:0;">Contoh bawaan: 0–6 bulan gratis (Rp 0), bulan ke 7–9 diskon 50%, lewat 9 bulan bayar penuh.</p>
+      <button class="btn ok" onclick="simpanGaransiServis()">💾 Simpan Aturan Garansi &amp; Baterai</button>
+    </div>
+
+    <div class="card"><h3>🏷️ Aturan Diskon Kasir</h3>
+      <div class="row"><div><label>Maks. Diskon Tanpa Otorisasi (%)</label><input type="number" id="setDiskonPersen" value="10" min="0"></div><div><label>Maks. Diskon Tanpa Otorisasi (Rp)</label><input type="number" id="setDiskonNominal" value="20000" min="0"></div></div>
+      <button class="btn" onclick="simpanAturanDiskon()" style="margin-top:8px">💾 Simpan Aturan Diskon</button>
+    </div>
+
+    <div class="card"><h3>💳 Biaya Bank (MDR)</h3>
+      <label style="font-weight:bold; margin-top:6px; color:var(--p)">Kartu Kredit</label>
+      <div class="row">
+        <div><label>BCA Card (%)</label><input type="number" id="setMdrCcBca" step="0.01" min="0"></div>
+        <div><label>Visa/Master/JCB/Union (%)</label><input type="number" id="setMdrCcVm" step="0.01" min="0"></div>
+      </div>
+      <div class="row">
+        <div><label>Amex (%)</label><input type="number" id="setMdrCcAmex" step="0.01" min="0"></div>
+        <div></div>
+      </div>
+      <label style="font-weight:bold; margin-top:6px; color:var(--p)">Kartu Debit</label>
+      <div class="row">
+        <div><label>BCA (%)</label><input type="number" id="setMdrDcBca" step="0.01" min="0"></div>
+        <div><label>Bank Lain (%)</label><input type="number" id="setMdrDcLain" step="0.01" min="0"></div>
+      </div>
+      <div class="row">
+        <div><label>Maestro (%)</label><input type="number" id="setMdrDcMaestro" step="0.01" min="0"></div>
+        <div></div>
+      </div>
+      <label style="font-weight:bold; margin-top:6px; color:var(--p)">QRIS &amp; Transfer</label>
+      <div class="row">
+        <div><label>QRIS (di atas Rp100.000) (%)</label><input type="number" id="setMdrQrisBesar" step="0.01" min="0"></div>
+        <div><label>Transfer (Rp Flat)</label><input type="number" id="setMdrTransfer" step="1" min="0"></div>
+      </div>
+      <button class="btn" onclick="simpanMDR()" style="margin-top:8px">💾 Simpan Pengaturan MDR</button>
     </div>
   </div>
-  <div class="card"><h3>Biaya Bank (MDR)</h3>
-  <label style="font-weight:bold; margin-top:10px; color:var(--p)">Kartu Kredit</label>
-  <div class="row">
-    <div><label>BCA Card (%)</label><input type="number" id="setMdrCcBca" step="0.01" min="0"></div>
-    <div><label>Visa/Master/JCB/Union (%)</label><input type="number" id="setMdrCcVm" step="0.01" min="0"></div>
-  </div>
-  <div class="row">
-    <div><label>Amex (%)</label><input type="number" id="setMdrCcAmex" step="0.01" min="0"></div>
-    <div></div>
+
+  <!-- TAB 3: NOTIFIKASI (WHATSAPP & TELEGRAM BERDAMPINGAN) -->
+  <div id="stab_notif" class="stab-pane" style="display:none;">
+    <div class="card" style="border:2px solid #15803d;">
+      <h3>📲 WhatsApp Gateway API (Fonnte / Custom)</h3>
+      <p style="font-size:13px;color:#475569;margin-top:0">Jika aktif, tombol WA mengirim pesan otomatis di latar belakang. Jika nonaktif, otomatis membuka aplikasi WhatsApp (`wa.me`).</p>
+      <div class="row">
+        <div><label>Endpoint API URL</label><input id="waApiUrl" placeholder="https://api.fonnte.com/send"></div>
+        <div><label>API Token / Authorization</label><input id="waApiToken" type="password" placeholder="Masukkan token Fonnte..."></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <input type="checkbox" id="waApiAktif" style="width:22px;height:22px;flex-shrink:0;">
+        <label for="waApiAktif" style="margin:0;cursor:pointer;">Aktifkan Kirim WA Otomatis via API</label>
+      </div>
+      <div class="row">
+        <button type="button" class="btn ok" onclick="simpanWaApiConfig()">💾 Simpan WA API</button>
+        <button type="button" class="btn ghost" onclick="tesWaApi()">📤 Tes WA ke No Toko</button>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid #0284c7;background:#f0f9ff;">
+      <h3 style="color:#0369a1;border-bottom-color:#bae6fd;">✈️ Notifikasi Telegram Bot (Tambahan / Anti-Blokir)</h3>
+      <p style="font-size:13px;color:#334155;margin-top:0">Berjalan berdampingan dengan WA (tidak menggantikan WA). Cocok untuk menerima salinan Laporan Tutup Kasir, Laporan Harian, &amp; Bukti Ambil Servis ke HP/Grup Telegram Pemilik.</p>
+      <div class="row">
+        <div><label>Bot Token (dari @BotFather)</label><input id="tgBotToken" type="password" placeholder="123456:ABC-DEF..."></div>
+        <div><label>Chat ID Tujuan (Pemilik / Grup)</label><input id="tgChatId" placeholder="Contoh: 123456789"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+        <input type="checkbox" id="tgAktif" style="width:22px;height:22px;flex-shrink:0;">
+        <label for="tgAktif" style="margin:0;cursor:pointer;">Aktifkan Kirim Salinan Notifikasi ke Telegram</label>
+      </div>
+      <div class="row">
+        <button type="button" class="btn blue" onclick="simpanTgConfig()">💾 Simpan Telegram Bot</button>
+        <button type="button" class="btn ghost" onclick="tesTgBot()">✈️ Tes Kirim Telegram</button>
+      </div>
+    </div>
   </div>
 
-  <label style="font-weight:bold; margin-top:10px; color:var(--p)">Kartu Debit</label>
-  <div class="row">
-    <div><label>BCA (%)</label><input type="number" id="setMdrDcBca" step="0.01" min="0"></div>
-    <div><label>Bank Lain (%)</label><input type="number" id="setMdrDcLain" step="0.01" min="0"></div>
-  </div>
-  <div class="row">
-    <div><label>Maestro (%)</label><input type="number" id="setMdrDcMaestro" step="0.01" min="0"></div>
-    <div></div>
+  <!-- TAB 4: PERANGKAT & BAHASA -->
+  <div id="stab_perangkat" class="stab-pane" style="display:none;">
+    <div class="card" style="border:2px solid #f59e0b;">
+      <h3>🌐 Bahasa Tampilan (Language / 语言)</h3>
+      <p style="font-size:13px;color:#475569;margin-top:0">Ubah bahasa menu utama dan navigasi aplikasi secara instan.</p>
+      <div class="tap-group">
+        <button type="button" class="tap-btn" id="btnLang_id" onclick="setBahasa('id')">🇮🇩 Bahasa Indonesia</button>
+        <button type="button" class="tap-btn" id="btnLang_en" onclick="setBahasa('en')">🇬🇧 English</button>
+        <button type="button" class="tap-btn" id="btnLang_zh" onclick="setBahasa('zh')">🇨🇳 中文 (Mandarin)</button>
+      </div>
+    </div>
+
+    <div class="card" style="border:2px solid #0f1f3d;">
+      <h3>🖨️ Printer Thermal Bluetooth (58mm ESC/POS)</h3>
+      <p style="font-size:13px;color:#475569;margin-top:0">Hubungkan printer thermal Bluetooth langsung dari Chrome Android / PC tanpa pop-up browser.</p>
+      <div id="btStatusText" style="font-size:14px;font-weight:700;color:#b91c1c;margin-bottom:10px;">Status: Belum terhubung</div>
+      <div class="row">
+        <button type="button" class="btn ok" onclick="btConnect()">🔗 Hubungkan Printer Bluetooth</button>
+        <button type="button" class="btn blue" onclick="btTestPrint()">🧾 Tes Cetak</button>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;background:#f8fafc;border-radius:8px;border:1px solid #cbd5e1;">
+        <input type="checkbox" id="chkPakaiBT" onchange="simpanPrefBT()" style="width:22px;height:22px;flex-shrink:0;">
+        <label for="chkPakaiBT" style="margin:0;cursor:pointer;">Gunakan Printer Bluetooth sebagai mode cetak utama (jika terputus, otomatis kembali ke cetak browser)</label>
+      </div>
+    </div>
   </div>
 
-  <label style="font-weight:bold; margin-top:10px; color:var(--p)">QRIS & Transfer</label>
-  <div class="row">
-    <div><label>QRIS (di atas Rp100.000) (%)</label><input type="number" id="setMdrQrisBesar" step="0.01" min="0"></div>
-    <div><label>Transfer (Rp Flat)</label><input type="number" id="setMdrTransfer" step="1" min="0"></div>
+  <!-- TAB 5: SISTEM & AUDIT -->
+  <div id="stab_sistem" class="stab-pane" style="display:none;">
+    <div class="card">
+      <h3>🛠️ Audit Sistem Otomatis</h3>
+      <p style="font-size:12px;color:#64748b">Klik untuk mengecek apakah semua fungsi dan elemen HTML berjalan normal.</p>
+      <button class="btn blue" onclick="auditSistem()">Jalankan Audit Sistem</button>
+    </div>
+
+    <div class="card">
+      <h3>👥 Kelola User (Mode Cloud)</h3>
+      <p style="font-size:13px;color:#475569;line-height:1.5">
+        Penambahan atau penghapusan user (Admin, Kasir, Pemilik) dilakukan melalui Dashboard Supabase.<br><br>
+        Buka <b>Authentication -&gt; Users -&gt; Add User</b> di dashboard Supabase Anda.<br>
+        Setelah membuat user di Supabase Auth, hubungkan <b>User UID</b> ke tabel <b>profil_user</b> sesuai <b>toko_id</b> &amp; <b>role</b> (pemilik/admin/kasir).
+      </p>
+    </div>
+
+    <div class="card" id="cardAuditTrail" style="display:none;">
+      <h3>📋 Audit Trail (Aktivitas Sistem)</h3>
+      <p style="font-size:12px;color:#64748b;margin-top:0">Mencatat semua aktivitas penting yang dilakukan oleh Admin dan Kasir.</p>
+      <input id="cariAuditLog" placeholder="🔍 Cari nama user / aksi..." oninput="renderAuditLog()" style="margin-bottom:10px">
+      <div id="listAuditLog" style="max-height: 400px; overflow-y: auto; border:1px solid #e2e8f0; border-radius:8px;"></div>
+    </div>
   </div>
-  <button class="btn" onclick="simpanMDR()" style="margin-top:8px">Simpan Pengaturan MDR</button>
-</div>
-  <div class="card"><h3>Aturan Diskon</h3>
-    <div class="row"><div><label>Maks. Diskon Tanpa Otorisasi (%)</label><input type="number" id="setDiskonPersen" value="10" min="0"></div><div><label>Maks. Diskon Tanpa Otorisasi (Rp)</label><input type="number" id="setDiskonNominal" value="20000" min="0"></div></div>
-    <button class="btn" onclick="simpanAturanDiskon()" style="margin-top:8px">Simpan Aturan Diskon</button>
-  </div>
-  <div class="card"><h3>Identitas Toko</h3>
-    <div class="row"><div><label>Nama Toko</label><input id="tkNama"></div><div><label>No WA Toko</label><input id="tkTelp"></div></div>
-    <label>Alamat</label><input id="tkAlamat" style="margin-bottom:10px">
-    <label>Footer Struk</label><input id="tkFooter" style="margin-bottom:10px">
-    <label>S&K Lengkap (WA)</label><textarea id="tkSyarat" rows="6" style="margin-bottom:10px"></textarea>
-    <label>S&K Singkat (Struk)</label><textarea id="tkSyaratSingkat" rows="4" style="margin-bottom:10px"></textarea>
-    <button class="btn" onclick="simpanToko()">Simpan Identitas</button>
-  </div>
-  <div class="card">
-  <h3>Kelola User (Mode Cloud)</h3>
-  <p style="font-size:13px;color:#475569;line-height:1.5">
-    Demi keamanan maksimal, penambahan atau penghapusan user (Admin, Kasir, Pemilik) kini dilakukan langsung melalui Dashboard Supabase.<br><br>
-    Buka <b>Authentication -> Users -> Add User</b> di dashboard Supabase Anda.<br>
-    Setelah membuat user di Supabase Auth, hubungkan <b>User UID</b> ke tabel <b>profil_user</b> sesuai <b>toko_id</b> &amp; <b>role</b> (pemilik/admin/kasir).
-  </p>
-</div>
-  <!-- CARD AUDIT TRAIL (KHUSUS PEMILIK) -->
-<div class="card" id="cardAuditTrail" style="display:none;">
-  <h3>📋 Audit Trail (Aktivitas Sistem)</h3>
-  <p style="font-size:12px;color:#64748b;margin-top:0">Mencatat semua aktivitas penting yang dilakukan oleh Admin dan Kasir.</p>
-  <input id="cariAuditLog" placeholder="🔍 Cari nama user / aksi..." oninput="renderAuditLog()" style="margin-bottom:10px">
-  <div id="listAuditLog" style="max-height: 400px; overflow-y: auto; border:1px solid #e2e8f0; border-radius:8px;"></div>
-</div>
 </section>
 
 
@@ -1415,6 +1478,6 @@ main { max-width: 1120px; }
   }
 </script>
 <!-- Logika aplikasi (dengan cache-buster agar tablet tidak nyangkut file lama) -->
-<script src="app-fixed-v12.js?v=102" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v12.js gagal dimuat.';"></script>
+<script src="app-fixed-v13.js?v=103" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v13.js gagal dimuat.';"></script>
 </body>
 </html>
