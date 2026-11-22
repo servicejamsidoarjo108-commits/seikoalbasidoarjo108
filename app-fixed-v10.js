@@ -1258,7 +1258,12 @@ async function bayarSisaServis(id) {
     });
     if (error) throw error;
     flash(data?.paid ? 'LUNAS' : `Sisa ${rp(data?.sisa ?? 0)}`);
-    tarikSemuaData();
+    await tarikSemuaData();
+    if (data?.paid && s.status === 'selesai') {
+      if (confirm('Tagihan sudah LUNAS!\n\nApakah pelanggan langsung mengambil jam sekarang? (Lanjut ke Tanda Tangan Pengambilan)')) {
+        bukaModalAmbilServis(id);
+      }
+    }
   } catch (e) {
     if (/bayar_sisa_servis_aman/i.test(e.message || '')) {
       return flash('Jalankan migrasi_perbaikan_keamanan.sql di Supabase terlebih dahulu.', 'err');
@@ -1275,7 +1280,10 @@ async function ubahStatusServis(id) {
 
   const flow = ['antri', 'proses', 'selesai', 'diambil'];
   const nextStatus = flow[flow.indexOf(s.status) + 1];
-  if (nextStatus === 'diambil' && !s.paid && s.sisa > 0) return flash('Lunasi sisa tagihan dulu sebelum jam diambil.', 'err');
+  if (nextStatus === 'diambil') {
+    if (!s.paid && s.sisa > 0) return flash('Lunasi sisa tagihan dulu sebelum jam diambil.', 'err');
+    return bukaModalAmbilServis(id);
+  }
 
   const updateData = { status: nextStatus };
   if (nextStatus === 'selesai' && !s.tgl_selesai) {
@@ -2351,6 +2359,8 @@ function cetakStrukServis(id) {
   <div>${esc(s.produk)}</div><hr>
   <table><tr><td>Jasa</td><td style="text-align:right">${(s.jasa || 0).toLocaleString('id-ID')}</td></tr>${partsHTML}</table><hr>
   <table><tr><td class="b">TOTAL</td><td class="b" style="text-align:right">${(s.biaya_pelanggan || 0).toLocaleString('id-ID')}</td></tr>${(s.dp||0) > 0 ? `<tr><td>DP (sudah dibayar)</td><td style="text-align:right">${(s.dp).toLocaleString('id-ID')}</td></tr>` : ''}<tr><td class="b">SISA</td><td class="b" style="text-align:right">${(s.sisa || 0).toLocaleString('id-ID')}</td></tr></table><hr>
+  ${s.tgl_diambil ? `<div style="font-size:10px;margin:4px 0;"><b>Diambil:</b> ${new Date(s.tgl_diambil).toLocaleString('id-ID')}<br><b>Penerima:</b> ${esc(s.diambil_oleh || s.customer)}</div>` : ''}
+  ${(s.ttd_ambil && LOGO_VALID.test(s.ttd_ambil)) ? `<div class="c" style="margin:4px 0;"><div style="font-size:9px;">Tanda Tangan Penerima:</div><img src="${s.ttd_ambil}" style="max-width:44mm;max-height:18mm;border:1px solid #ccc;background:#fff;margin-top:2px;"></div>` : ''}
   ${blokQR(linkLacak('id', s.id), 'Scan untuk lacak status & garansi:')}
   <div class="c" style="margin-top:6px">${s.paid ? 'LUNAS' : 'BELUM LUNAS'}<br><br>${esc(toko.footer)}</div></body></html>`);
 }
@@ -2679,21 +2689,47 @@ function render() {
   // 4. Sparepart
   const cariSp = txt('cariSp').toLowerCase();
   const listSp = db.sparePart.filter(sp => !cariSp || (sp.nama || '').toLowerCase().includes(cariSp) || (sp.kategori || '').toLowerCase().includes(cariSp));
-  setHTML('listSparePart', listSp.length ? `<table><thead><tr><th>Nama</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` +
-    listSp.map(sp => `<tr>
-      <td><strong>${esc(sp.nama)}</strong><br><small style="color:#64748b">${esc(sp.kategori)}</small></td>
-      <td style="color:${sp.stok <= sp.min_stok ? '#dc2626' : 'inherit'}; font-weight:${sp.stok <= sp.min_stok ? '700' : '400'};">${sp.stok}</td>
-      <td>${rp(sp.harga_jual)}${isPemilik() ? `<br><small style="color:#64748b">beli ${rp(sp.harga_beli)}</small>` : ''}</td>
-      <td style="white-space:nowrap">
-        ${isAdmin() ? `<button class="btn-sm blue" onclick="editSparePart('${esc(sp.id)}')">Edit</button>` : ''}
-        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusSparePart('${esc(sp.id)}')">Hapus</button>` : ''}
-      </td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada sparepart</div>');
+  setHTML('listSparePart', listSp.length ? listSp.map(sp => {
+    const low = (sp.stok || 0) <= (sp.min_stok ?? 2);
+    const id = esc(sp.id);
+    return `<div class="item-card ${low ? 'low-stock' : ''}">
+      <div class="ic-head">
+        <div>
+          <div class="ic-title">${esc(sp.nama)}</div>
+          <div style="font-size:13px;color:#475569;font-weight:600;">${esc(sp.kategori || '-')}</div>
+        </div>
+        <div class="ic-stock ${low ? 'low' : ''}">Stok: ${sp.stok}${low ? ' ⚠️' : ''}</div>
+      </div>
+      <div class="ic-grid" style="margin-bottom:10px;">
+        <div class="ic-cell"><span class="ic-lbl">Harga Jual</span><span class="ic-val">${rp(sp.harga_jual)}</span></div>
+        ${isPemilik() ? `<div class="ic-cell"><span class="ic-lbl">Harga Beli</span><span class="ic-val">${rp(sp.harga_beli)}</span></div>` : `<div class="ic-cell"><span class="ic-lbl">Min Stok</span><span class="ic-val">${sp.min_stok ?? 0}</span></div>`}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isAdmin() ? `<button class="btn-sm blue" onclick="editSparePart('${id}')">✏️ Edit</button>` : ''}
+        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusSparePart('${id}')">🗑️ Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Belum ada sparepart</div>');
 
   // 5. Stok baterai
-  setHTML('listStokBaterai', db.stokBaterai.length ? `<table><thead><tr><th>Tipe</th><th>Stok</th><th>Harga</th><th>Aksi</th></tr></thead><tbody>` +
-    db.stokBaterai.map(sb => `<tr><td>${esc(sb.tipe)}</td><td>${sb.stok}</td><td>${rp(sb.harga_jual)}</td>
-      <td style="white-space:nowrap"><button class="btn-sm blue" onclick="editStokBaterai('${esc(sb.id)}')">Edit</button>
-      ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusStokBaterai('${esc(sb.id)}')">Hapus</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Kosong</div>');
+  setHTML('listStokBaterai', db.stokBaterai.length ? db.stokBaterai.map(sb => {
+    const low = (sb.stok || 0) <= (sb.min_stok ?? 5);
+    const id = esc(sb.id);
+    return `<div class="item-card ${low ? 'low-stock' : ''}">
+      <div class="ic-head">
+        <div class="ic-title">🔋 ${esc(sb.tipe)}</div>
+        <div class="ic-stock ${low ? 'low' : ''}">Stok: ${sb.stok}${low ? ' ⚠️' : ''}</div>
+      </div>
+      <div class="ic-grid" style="margin-bottom:10px;">
+        <div class="ic-cell"><span class="ic-lbl">Harga Jual</span><span class="ic-val">${rp(sb.harga_jual)}</span></div>
+        ${isPemilik() ? `<div class="ic-cell"><span class="ic-lbl">Harga Beli</span><span class="ic-val">${rp(sb.harga_beli)}</span></div>` : `<div class="ic-cell"><span class="ic-lbl">Min Stok</span><span class="ic-val">${sb.min_stok ?? 0}</span></div>`}
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        ${isAdmin() ? `<button class="btn-sm blue" onclick="editStokBaterai('${id}')">✏️ Edit</button>` : ''}
+        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusStokBaterai('${id}')">🗑️ Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Kosong</div>');
 
   // 6. Servis
   const srv = db.servis.filter(s => !filterServisStatus || s.status === filterServisStatus);
@@ -2709,8 +2745,13 @@ function render() {
       ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<p style="color:#dc2626; font-size:11px; margin-top:2px;"><b>⚠️ Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</p>` : ''}
       <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
       ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
+      ${s.tgl_diambil ? `<p style="font-size:11px;color:#15803d;font-weight:700;">✅ Diambil: ${new Date(s.tgl_diambil).toLocaleString('id-ID')} (${esc(s.diambil_oleh || s.customer)})</p>` : ''}
       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
-        <button class="btn-sm blue" onclick="ubahStatusServis('${id}')">Status</button>
+        ${s.status === 'diambil'
+          ? (s.ttd_ambil || s.tgl_diambil ? `<button class="btn-sm ok" onclick="lihatBuktiAmbil('${id}')">✍️ Bukti Ambil</button>` : '')
+          : (s.status === 'selesai'
+              ? `<button class="btn-sm ok" onclick="ubahStatusServis('${id}')">✍️ Ambil &amp; TTD</button>`
+              : `<button class="btn-sm blue" onclick="ubahStatusServis('${id}')">Status →</button>`)}
         <button class="btn-sm ghost" onclick="cetakNotaServis('${id}')">Nota</button>
         ${s.telp ? `<button class="btn-sm ok" onclick="waServisMasuk('${id}')">WA Terima</button>` : ''}
         ${btnBayar}${btnStruk}${btnKartu}${btnKlaim}
@@ -2743,7 +2784,23 @@ function render() {
 
   // 8. Transaksi & kas kecil hari ini
   const trxHariIni = db.jual.filter(t => new Date(t.waktu).toDateString() === today);
-  setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => `<tr><td>${jam(t.waktu)}</td><td>${(t.items || []).length} item<br><small>${esc(labelMetode(t.metode || 'tunai'))}</small></td><td>${rp(t.total)}</td><td style="white-space:nowrap"><button class="btn-sm blue" onclick="cetakStruk('${esc(t.id)}')">Cetak</button><button class="btn-sm ok" onclick="shareStrukDigital('${esc(t.id)}')">WA</button>${isPemilik() ? `<button class="btn-sm danger" onclick="hapusJual('${esc(t.id)}')">Hapus</button>` : ''}</td></tr>`).join('') : '<tr><td colspan="4" class="empty">Belum ada transaksi</td></tr>');
+  setHTML('tblJualHariIni', trxHariIni.length ? trxHariIni.map(t => {
+    const id = esc(t.id);
+    return `<div class="item-card" style="margin-bottom:8px;">
+      <div class="ic-head" style="margin-bottom:6px;">
+        <div>
+          <div style="font-size:13px;color:#475569;font-weight:700;">🕒 ${jam(t.waktu)} · ${(t.items || []).length} item · ${esc(labelMetode(t.metode || 'tunai'))}</div>
+          ${t.cust_nama ? `<div style="font-size:13px;color:#0f1f3d;font-weight:600;">👤 ${esc(t.cust_nama)}</div>` : ''}
+        </div>
+        <div style="font-size:16px;font-weight:900;color:#0f1f3d;white-space:nowrap;">${rp(t.total)}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm blue" onclick="cetakStruk('${id}')">🖨️ Cetak</button>
+        <button class="btn-sm ok" onclick="shareStrukDigital('${id}')">📲 WA</button>
+        ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusJual('${id}')">🗑️ Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Belum ada transaksi hari ini</div>');
 
   const semuaKK = db.kas.filter(k => k.sumber === 'kas_kecil');
   const saldoKK = semuaKK.reduce((s, k) => s + (k.jenis === 'masuk' ? (k.nominal || 0) : -(k.nominal || 0)), 0);
@@ -2797,36 +2854,76 @@ function render() {
   else if (fk) kasList = []; // filter tidak dikenal -> kosongkan, jangan diam-diam tampilkan semua
   const qKas = txt('cariKas').toLowerCase();
   if (qKas) kasList = kasList.filter(k => (k.keterangan || '').toLowerCase().includes(qKas) || (k.metode || '').toLowerCase().includes(qKas) || (k.sumber || '').toLowerCase().includes(qKas));
-  setHTML('listKas', kasList.slice(0, 50).map(k => `<div style="font-size:12px;border-bottom:1px solid #eee;padding:4px;display:flex;justify-content:space-between;align-items:center;">
-    <div>${new Date(k.waktu).toLocaleDateString('id-ID')} - ${esc(k.keterangan)}</div>
-    <div><b style="color:${k.jenis === 'masuk' ? 'green' : 'red'}; margin-right:10px;">${rp(k.nominal)}</b>
-    ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusKas('${esc(k.id)}')" style="padding:2px 6px;font-size:10px;">X</button>` : ''}</div></div>`).join('') || '<div class="empty">Tidak ada data</div>');
+  setHTML('listKas', kasList.slice(0, 50).map(k => `<div style="font-size:13px;border-bottom:1px solid #e2e8f0;padding:8px 4px;display:flex;justify-content:space-between;align-items:center;gap:10px;">
+    <div style="min-width:0;flex:1;word-break:break-word;">
+      <div style="font-size:11px;color:#64748b;">${new Date(k.waktu).toLocaleDateString('id-ID')} · ${esc(labelMetode(k.metode || 'tunai'))}</div>
+      <div style="color:#0f172a;font-weight:600;">${esc(k.keterangan)}</div>
+    </div>
+    <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+      <b style="color:${k.jenis === 'masuk' ? '#15803d' : '#b91c1c'};white-space:nowrap;">${k.jenis === 'masuk' ? '+' : '-'}${rp(k.nominal)}</b>
+      ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusKas('${esc(k.id)}')" style="padding:4px 9px;min-height:28px;font-size:12px;border-radius:6px;line-height:1;">✕</button>` : ''}
+    </div></div>`).join('') || '<div class="empty">Tidak ada data</div>');
 
-  setHTML('listBank', db.bank.length ? `<table><thead><tr><th>Bank</th><th>No. Rek</th><th>Saldo Awal</th><th>Saldo Saat Ini</th><th>Aksi</th></tr></thead><tbody>` +
-    db.bank.map(b => `<tr><td><strong>${esc(b.nama)}</strong></td><td>${esc(b.no || '-')}</td><td>${rp(b.saldo_awal)}</td>
-      <td style="font-weight:bold;color:#0284c7">${rp(saldoBankSistem(b))}</td>
-      <td><div style="display:flex; flex-wrap:wrap; gap:5px;">${isAdmin() ? `
-        <button class="btn-sm warn" onclick="rekonsiliasiBank('${esc(b.id)}')" style="font-size:11px;">🔄 Rekon</button>
-        <button class="btn-sm blue" onclick="editBank('${esc(b.id)}')" style="font-size:11px;">Edit</button>
-        <button class="btn-sm danger" onclick="hapusBank('${esc(b.id)}')" style="font-size:11px;">Hapus</button>` : ''}</div></td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada rekening</div>');
+  setHTML('listBank', db.bank.length ? db.bank.map(b => {
+    const id = esc(b.id);
+    return `<div class="item-card">
+      <div class="ic-head">
+        <div>
+          <div class="ic-title">🏦 ${esc(b.nama)}</div>
+          <div style="font-size:13px;color:#475569;font-weight:600;">No. Rek: ${esc(b.no || '-')}</div>
+        </div>
+      </div>
+      <div class="ic-grid" style="margin-bottom:10px;">
+        <div class="ic-cell"><span class="ic-lbl">Saldo Awal</span><span class="ic-val">${rp(b.saldo_awal)}</span></div>
+        <div class="ic-cell"><span class="ic-lbl">Saldo Saat Ini</span><span class="ic-val" style="color:#0284c7;">${rp(saldoBankSistem(b))}</span></div>
+      </div>
+      ${isAdmin() ? `<div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm warn" onclick="rekonsiliasiBank('${id}')">🔄 Rekon</button>
+        <button class="btn-sm blue" onclick="editBank('${id}')">✏️ Edit</button>
+        <button class="btn-sm danger" onclick="hapusBank('${id}')">🗑️ Hapus</button>
+      </div>` : ''}
+    </div>`;
+  }).join('') : '<div class="empty">Belum ada rekening</div>');
 
   // 10. Supplier & hutang
-  setHTML('listSupplier', db.supplier.length ? `<table><thead><tr><th>Nama</th><th>Kontak</th><th>Aksi</th></tr></thead><tbody>` +
-    db.supplier.map(s => `<tr><td><strong>${esc(s.nama)}</strong><br><small>${esc(s.catatan || '')}</small></td><td>${esc(s.hp || '-')}<br><small>${esc(s.alamat || '')}</small></td>
-      <td style="white-space:nowrap"><button class="btn-sm blue" onclick="editSupplier('${esc(s.id)}')">Edit</button>${isAdmin() ? `<button class="btn-sm danger" onclick="hapusSupplier('${esc(s.id)}')">Hapus</button>` : ''}</td></tr>`).join('') + '</tbody></table>' : '<div class="empty">Belum ada supplier</div>');
+  setHTML('listSupplier', db.supplier.length ? db.supplier.map(s => {
+    const id = esc(s.id);
+    return `<div class="item-card">
+      <div class="ic-head" style="margin-bottom:6px;">
+        <div>
+          <div class="ic-title">🏪 ${esc(s.nama)}</div>
+          <div style="font-size:13px;color:#475569;font-weight:600;">📞 ${esc(s.hp || '-')}</div>
+          ${s.alamat ? `<div style="font-size:12px;color:#64748b;">📍 ${esc(s.alamat)}</div>` : ''}
+          ${s.catatan ? `<div style="font-size:12px;color:#0f1f3d;margin-top:2px;">📝 ${esc(s.catatan)}</div>` : ''}
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm blue" onclick="editSupplier('${id}')">✏️ Edit</button>
+        ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusSupplier('${id}')">🗑️ Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Belum ada supplier</div>');
 
   const hutang = db.pembelian.filter(p => p.status === 'hutang').sort((a, b) => String(a.jatuh_tempo || '9999').localeCompare(String(b.jatuh_tempo || '9999')));
   const totalHutang = hutang.reduce((s, p) => s + (p.total || 0), 0);
   const hariIniStr = tglLokal();
   setHTML('listHutang', hutang.length
-    ? `<div style="margin-bottom:8px;font-weight:700;">Total Hutang Usaha: <span style="color:#dc2626">${rp(totalHutang)}</span> (${hutang.length} faktur)</div>` +
-      `<table><thead><tr><th>Faktur</th><th>Supplier</th><th>Total</th><th>Aksi</th></tr></thead><tbody>` +
+    ? `<div style="margin-bottom:10px;font-weight:800;font-size:15px;">Total Hutang Usaha: <span style="color:#dc2626">${rp(totalHutang)}</span> (${hutang.length} faktur)</div>` +
       hutang.map(p => {
         const telat = p.jatuh_tempo && p.jatuh_tempo < hariIniStr;
-        const tempo = p.jatuh_tempo ? `<br><small style="color:${telat ? '#dc2626' : '#64748b'}">${telat ? '⚠️ TERLAMBAT - ' : 'Jatuh tempo '}${new Date(p.jatuh_tempo + 'T00:00:00').toLocaleDateString('id-ID')}</small>` : '';
-        return `<tr><td>${esc(p.no_faktur || p.id)}<br><small>${new Date(p.waktu).toLocaleDateString('id-ID')}</small></td><td>${esc(p.supplier_nama)}${tempo}</td><td>${rp(p.total)}</td>
-      <td>${isAdmin() ? `<button class="btn-sm ok" onclick="lunasiHutang('${esc(p.id)}')">Lunas</button>` : ''}</td></tr>`;
-      }).join('') + '</tbody></table>'
+        const tempo = p.jatuh_tempo ? `<div style="font-size:12px;font-weight:700;color:${telat ? '#dc2626' : '#64748b'};">${telat ? '⚠️ TERLAMBAT — ' : 'Jatuh tempo: '}${new Date(p.jatuh_tempo + 'T00:00:00').toLocaleDateString('id-ID')}</div>` : '';
+        return `<div class="item-card ${telat ? 'low-stock' : ''}">
+          <div class="ic-head" style="margin-bottom:6px;">
+            <div>
+              <div class="ic-title">${esc(p.supplier_nama)}</div>
+              <div style="font-size:12px;color:#475569;">Faktur: ${esc(p.no_faktur || p.id)} · ${new Date(p.waktu).toLocaleDateString('id-ID')}</div>
+              ${tempo}
+            </div>
+            <div style="font-size:16px;font-weight:900;color:#b91c1c;white-space:nowrap;">${rp(p.total)}</div>
+          </div>
+          ${isAdmin() ? `<div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn-sm ok" onclick="lunasiHutang('${esc(p.id)}')">✅ Lunasi Hutang</button></div>` : ''}
+        </div>`;
+      }).join('')
     : '<div class="empty">Tidak ada hutang</div>');
 
   if (isAdmin()) renderBebanTetap();
@@ -2834,17 +2931,33 @@ function render() {
   // 11. Pelanggan
   const cariP = txt('cariPelanggan').toLowerCase();
   const listP = (db.pelanggan || []).filter(p => !cariP || (p.nama || '').toLowerCase().includes(cariP) || (p.telp || '').includes(cariP));
-  setHTML('listPelanggan', listP.length ? `<table><thead><tr><th>Nama</th><th>No HP</th><th>Total Belanja</th><th></th></tr></thead><tbody>` +
-    listP.map(p => {
-      const cocok = (hp, nama) => cocokPelanggan(hp, nama, p.telp, p.nama);
-      const total = db.jual.filter(t => cocok(t.cust_hp, t.cust_nama)).reduce((s, t) => s + t.total, 0)
-        + db.servis.filter(t => cocok(t.telp, t.customer)).reduce((s, t) => s + (t.biaya_pelanggan || 0), 0)
-        + db.baterai.filter(t => cocok(t.telp, t.customer)).reduce((s, t) => s + (t.biaya || 0), 0);
-      return `<tr><td><strong>${esc(p.nama)}</strong></td><td>${esc(p.telp || '-')}</td><td>${rp(total)}<br><small style="color:#f59e0b">⭐ ${p.poin || 0} Poin</small></td>
-        <td style="white-space:nowrap"><button class="btn-sm blue" onclick="showCustomerHistoryById('${esc(p.id)}')">Riwayat</button>
-        ${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="waPelanggan('${esc(p.id)}')">WA</button>` : ''}
-        ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${esc(p.id)}')">Hapus</button>` : ''}</td></tr>`;
-    }).join('') + '</tbody></table>' : '<div class="empty">Belum ada data pelanggan</div>');
+  setHTML('listPelanggan', listP.length ? listP.map(p => {
+    const cocok = (hp, nama) => cocokPelanggan(hp, nama, p.telp, p.nama);
+    const total = db.jual.filter(t => cocok(t.cust_hp, t.cust_nama)).reduce((s, t) => s + t.total, 0)
+      + db.servis.filter(t => cocok(t.telp, t.customer)).reduce((s, t) => s + (t.biaya_pelanggan || 0), 0)
+      + db.baterai.filter(t => cocok(t.telp, t.customer)).reduce((s, t) => s + (t.biaya || 0), 0);
+    const id = esc(p.id);
+    return `<div class="item-card">
+      <div class="ic-head" style="margin-bottom:8px;">
+        <div>
+          <div class="ic-title">👤 ${esc(p.nama)}</div>
+          <div style="font-size:13px;color:#475569;font-weight:600;">📞 ${esc(p.telp || '-')}</div>
+        </div>
+        <span class="badge warn" style="white-space:nowrap;">⭐ ${p.poin || 0} Poin</span>
+      </div>
+      <div class="ic-grid" style="margin-bottom:10px;">
+        <div class="ic-cell" style="grid-column:span 2;flex-direction:row;justify-content:space-between;align-items:center;">
+          <span class="ic-lbl">Total Belanja</span>
+          <span class="ic-val">${rp(total)}</span>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;">
+        <button class="btn-sm blue" onclick="showCustomerHistoryById('${id}')">📋 Riwayat</button>
+        ${p.telp && p.telp !== '-' ? `<button class="btn-sm ok" onclick="waPelanggan('${id}')">📲 WA</button>` : ''}
+        ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusPelanggan('${id}')">🗑️ Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Belum ada data pelanggan</div>');
 
   // 12. Laporan
   const L = hitungLaporan();
@@ -3024,7 +3137,7 @@ async function auditSistem() {
   const fungsiWajib = ['login', 'logout', 'bukaMenu', 'flash', 'render', 'tarikSemuaData', 'catatLog', 'simpanProduk', 'hapusProduk', 'editProduk', 'prosesRestock', 'addCart', 'hapusCart', 'prosesBayar', 'renderCart', 'addPartServis', 'hapusPartServis', 'renderServisCart', 'addBateraiServis', 'hapusBateraiServis', 'renderBateraiServisCart', 'simpanSemuaServis', 'bayarSisaServis', 'ubahStatusServis', 'hapusServis', 'addBateraiCart', 'hapusBateraiCart', 'renderBateraiCart', 'simpanBaterai', 'pilihBaterai', 'tambahStokBaterai', 'hapusBaterai', 'simpanKasManual', 'simpanKasKecilKasir', 'tambahBank', 'simpanToko', 'simpanMDR', 'simpanGaransiServis', 'simpanAturanDiskon', 'renderAuditGlobal', 'simpanAuditGlobal', 'renderAuditLog', 'filterKas', 'filterServis', 'filterAudit', 'waAdminLaporan', 'formatNama', 'cekPoinPelanggan', 'hitungMDR', 'labelMetode', 'cetakKartuBaterai', 'lunasiHutang'];
   fungsiWajib.forEach(f => { try { if (typeof eval(f) !== 'function') laporan.fungsiHilang.push(f); } catch (e) { laporan.fungsiHilang.push(f); } });
 
-  const htmlWajib = ['loginOverlay', 'loginUser', 'pinInput', 'homeUser', 'menuAdmin', 'selProduk', 'qty', 'cartList', 'cartTotal', 'metodeBayar', 'bayar', 'custNama', 'custHp', 'infoPoin', 'tukarPoin', 'tipeDiskon', 'nilaiDiskon', 'sNama', 'sProduk', 'sGaransi', 'sJasa', 'sParentId', 'selSparePart', 'cartServisList', 'cartServisTotal', 'selBateraiServis', 'cartBateraiServisList', 'cartBateraiServisTotal', 'sDpGroup', 'metodeDpGroup', 'listServis', 'cariGaransi', 'hasilCekGaransi', 'bNama', 'bProduk', 'bTipeSel', 'cartBateraiList', 'displayTotalBaterai', 'metodeBaterai', 'listStokBaterai', 'listBaterai', 'bCari', 'sbTipe', 'sbStok', 'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'listProduk', 'spNama', 'listSparePart', 'supNama', 'listSupplier', 'listHutang', 'kasTunai', 'kasNonTunai', 'kasTotal', 'listKas', 'listBank', 'kasNominal', 'kasKet', 'listPelanggan', 'cariPelanggan', 'lapOmzet', 'lapServis', 'lapBat', 'lapLabaKotor', 'lr_laba_bersih', 'lr_total_pendapatan', 'nr_total_aset', 'ak_arus_bersih', 'tkNama', 'tkTelp', 'setMdrCcBca', 'setMdrDcBca', 'listAuditLog', 'listAuditGlobal', 'listAuditBarang', 'auditCatatanMassal', 'msg'];
+  const htmlWajib = ['loginOverlay', 'loginUser', 'pinInput', 'homeUser', 'menuAdmin', 'selProduk', 'qty', 'cartList', 'cartTotal', 'metodeBayar', 'bayar', 'custNama', 'custHp', 'infoPoin', 'tukarPoin', 'tipeDiskon', 'nilaiDiskon', 'sNama', 'sProduk', 'sGaransi', 'sJasa', 'sParentId', 'selSparePart', 'cartServisList', 'cartServisTotal', 'selBateraiServis', 'cartBateraiServisList', 'cartBateraiServisTotal', 'sDpGroup', 'metodeDpGroup', 'listServis', 'cariGaransi', 'hasilCekGaransi', 'bNama', 'bProduk', 'bTipeSel', 'cartBateraiList', 'displayTotalBaterai', 'metodeBaterai', 'listStokBaterai', 'listBaterai', 'bCari', 'sbTipe', 'sbStok', 'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'listProduk', 'spNama', 'listSparePart', 'supNama', 'listSupplier', 'listHutang', 'kasTunai', 'kasNonTunai', 'kasTotal', 'listKas', 'listBank', 'kasNominal', 'kasKet', 'listPelanggan', 'cariPelanggan', 'lapOmzet', 'lapServis', 'lapBat', 'lapLabaKotor', 'lr_laba_bersih', 'lr_total_pendapatan', 'nr_total_aset', 'ak_arus_bersih', 'tkNama', 'tkTelp', 'setMdrCcBca', 'setMdrDcBca', 'listAuditLog', 'listAuditGlobal', 'listLaporanAuditRingkas', 'auditCatatanMassal', 'msg'];
   htmlWajib.forEach(id => { if (!$(id)) laporan.htmlHilang.push(id); });
 
   const tabelWajib = ['settings', 'produk', 'sparepart', 'stok_baterai', 'jual', 'jual_items', 'servis', 'servis_parts', 'servis_baterai', 'baterai', 'kas', 'pelanggan', 'bank', 'supplier', 'pembelian', 'audit_barang', 'audit_log'];
@@ -3314,22 +3427,31 @@ function renderBebanTetap() {
   let totalRencana = 0, totalSudah = 0;
 
   $('formBebanTetap').style.display = isPemilik() ? 'block' : 'none';
-  $('listBebanTetap').innerHTML = daftar.length ? `<table><thead><tr><th>Beban</th><th>Nominal</th><th>Status ${esc(per)}</th><th>Aksi</th></tr></thead><tbody>` +
-    daftar.map(b => {
-      const bayar = kasBayar(`${b.id}@${per}`);
-      const tempo = tglJatuhTempoBulanIni(b);
-      const selisih = Math.round((tempo - hariIni) / 86400000);
-      let status;
-      totalRencana += b.nominal;
-      if (bayar) { totalSudah += bayar.nominal; status = `<span style="color:#16a34a;font-weight:700">✅ Sudah dibayar</span><br><small>${rp(bayar.nominal)} - ${new Date(bayar.waktu).toLocaleDateString('id-ID')}</small>`; }
-      else if (selisih < 0) status = `<span style="color:#dc2626;font-weight:700">⚠️ TERLAMBAT ${Math.abs(selisih)} hari</span><br><small>Jatuh tempo tgl ${b.tgl_jatuh_tempo}</small>`;
-      else if (selisih <= 3) status = `<span style="color:#d97706;font-weight:700">⏳ ${selisih === 0 ? 'Jatuh tempo HARI INI' : 'Jatuh tempo ' + selisih + ' hari lagi'}</span><br><small>tgl ${b.tgl_jatuh_tempo}</small>`;
-      else status = `<span style="color:#64748b">Belum dibayar</span><br><small>Jatuh tempo tgl ${b.tgl_jatuh_tempo}</small>`;
-      const id = esc(b.id);
-      return `<tr><td><strong>${esc(b.nama)}</strong></td><td>${rp(b.nominal)}</td><td>${status}</td>
-        <td style="white-space:nowrap">${bayar ? '' : `<button class="btn-sm ok" onclick="bayarBebanTetap('${id}')">Bayar</button>`}
-        ${isPemilik() ? `<button class="btn-sm blue" onclick="ubahBebanTetap('${id}')">Ubah</button><button class="btn-sm danger" onclick="hapusBebanTetap('${id}')">Hapus</button>` : ''}</td></tr>`;
-    }).join('') + '</tbody></table>' : '<div class="empty">Belum ada beban tetap. Pemilik bisa menambahkannya di bawah.</div>';
+  $('listBebanTetap').innerHTML = daftar.length ? daftar.map(b => {
+    const bayar = kasBayar(`${b.id}@${per}`);
+    const tempo = tglJatuhTempoBulanIni(b);
+    const selisih = Math.round((tempo - hariIni) / 86400000);
+    let status;
+    totalRencana += b.nominal;
+    if (bayar) { totalSudah += bayar.nominal; status = `<span style="color:#15803d;font-weight:700">✅ Sudah dibayar (${rp(bayar.nominal)} · ${new Date(bayar.waktu).toLocaleDateString('id-ID')})</span>`; }
+    else if (selisih < 0) status = `<span style="color:#b91c1c;font-weight:700">⚠️ TERLAMBAT ${Math.abs(selisih)} hari (tgl ${b.tgl_jatuh_tempo})</span>`;
+    else if (selisih <= 3) status = `<span style="color:#b45309;font-weight:700">⏳ ${selisih === 0 ? 'Jatuh tempo HARI INI' : 'Jatuh tempo ' + selisih + ' hari lagi'} (tgl ${b.tgl_jatuh_tempo})</span>`;
+    else status = `<span style="color:#64748b">Belum dibayar · Jatuh tempo tgl ${b.tgl_jatuh_tempo}</span>`;
+    const id = esc(b.id);
+    return `<div class="item-card ${!bayar && selisih < 0 ? 'low-stock' : ''}">
+      <div class="ic-head" style="margin-bottom:6px;">
+        <div>
+          <div class="ic-title">${esc(b.nama)}</div>
+          <div style="font-size:12px;margin-top:2px;">${status}</div>
+        </div>
+        <div style="font-size:16px;font-weight:900;color:#0f1f3d;white-space:nowrap;">${rp(b.nominal)}</div>
+      </div>
+      <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:8px;">
+        ${bayar ? '' : `<button class="btn-sm ok" onclick="bayarBebanTetap('${id}')">💵 Bayar</button>`}
+        ${isPemilik() ? `<button class="btn-sm blue" onclick="ubahBebanTetap('${id}')">✏️ Ubah</button><button class="btn-sm danger" onclick="hapusBebanTetap('${id}')">🗑️ Hapus</button>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div class="empty">Belum ada beban tetap. Pemilik bisa menambahkannya di bawah.</div>';
   $('ringkasBebanTetap').innerHTML = daftar.length
     ? `Rencana bulan ini: <b>${rp(totalRencana)}</b> &nbsp;|&nbsp; Sudah dibayar: <b style="color:#16a34a">${rp(totalSudah)}</b> &nbsp;|&nbsp; Sisa: <b style="color:#dc2626">${rp(Math.max(0, totalRencana - totalSudah))}</b>` : '';
 }
@@ -4094,9 +4216,12 @@ function bukaShiftClosing() {
       <div id="scSelisihBox" style="display:none;padding:10px;border-radius:10px;font-weight:800;font-size:15px;text-align:center;margin-bottom:10px;"></div>
       <label>Catatan Tutup Kasir (Opsional)</label>
       <input id="scCatatan" placeholder="Contoh: Setor ke pemilik, sisa modal laci 200rb" style="margin-bottom:12px;">
+      <div style="font-size:12px;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:8px;margin-bottom:10px;">
+        📲 Laporan hasil penjualan &amp; tutup kasir hari ini otomatis dikirim ke WA Pemilik saat disimpan.
+      </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button type="button" class="btn ok" onclick="simpanShiftClosing(true)">💾 Simpan &amp; Cetak</button>
-        <button type="button" class="btn blue" onclick="simpanShiftClosing(false, true)">📲 Simpan &amp; WA</button>
+        <button type="button" class="btn ok" onclick="simpanShiftClosing(true, true)">💾 Simpan, Cetak &amp; WA</button>
+        <button type="button" class="btn blue" onclick="simpanShiftClosing(false, true)">📲 Simpan &amp; Kirim WA</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
@@ -4159,14 +4284,33 @@ async function simpanShiftClosing(cetak = false, kirimWA = false) {
         <div class="c" style="margin-top:16px">Tanda Tangan Kasir<br><br><br>( ${esc(user)} )</div>
       </body></html>`);
     }
-    if (kirimWA) {
+    const apiAktif = localStorage.getItem('ta_wa_api_aktif') === '1';
+    if (kirimWA || apiAktif) {
       const toko = getToko();
-      if (!toko.telp) return flash('Isi No WA Toko di Setting dulu', 'err');
-      const teks = `*LAPORAN TUTUP KASIR (SHIFT CLOSING)*
+      if (!toko.telp) {
+        if (kirimWA) flash('Isi No WA Toko di Setting dulu untuk kirim laporan WA', 'err');
+      } else {
+        const todayStr = new Date().toDateString();
+        const hariIni = w => w && new Date(w).toDateString() === todayStr;
+        const trxHari = (db.jual || []).filter(t => hariIni(t.waktu));
+        const omzetJual = trxHari.reduce((s, t) => s + (t.total || 0), 0);
+        const srvHari = (db.servis || []).filter(s => hariIni(s.tgl_selesai));
+        const omzetSrv = srvHari.reduce((s, t) => s + (t.biaya_pelanggan || 0), 0);
+        const batHari = (db.baterai || []).filter(b => hariIni(b.waktu));
+        const omzetBat = batHari.reduce((s, b) => s + (b.biaya || 0), 0);
+        const totalOmzet = omzetJual + omzetSrv + omzetBat;
+        const teks = `*LAPORAN TUTUP TOKO & PENJUALAN HARIAN*
 ${toko.nama}
 Tgl: ${new Date().toLocaleString('id-ID')}
 Kasir: *${user}*
--------------------------
+=========================
+*OMZET HARI INI*
+- Penjualan Jam : ${rp(omzetJual)} (${trxHari.length} trx)
+- Servis Selesai: ${rp(omzetSrv)} (${srvHari.length} srv)
+- Ganti Baterai : ${rp(omzetBat)} (${batHari.length} bat)
+*TOTAL OMZET    : ${rp(totalOmzet)}*
+=========================
+*REKAP LACI KASIR*
 Tunai Masuk : ${rp(d.tunaiMasuk)}
 Tunai Keluar: -${rp(d.tunaiKeluar)}
 *Tunai Sistem: ${rp(d.tunaiSistem)}*
@@ -4175,8 +4319,9 @@ Tunai Keluar: -${rp(d.tunaiKeluar)}
 -------------------------
 Non-Tunai   : ${rp(d.nonTunaiMasuk)}
 Biaya MDR   : -${rp(d.mdrHari)}
-${catatan ? 'Catatan     : ' + catatan + '\n' : ''}_Tercatat otomatis di Audit Log_`;
-      openWA(toko.telp, teks);
+${catatan ? 'Catatan     : ' + catatan + '\n' : ''}_Laporan otomatis saat tutup kasir_`;
+        await openWA(toko.telp, teks);
+      }
     }
     tarikSemuaData();
   } catch (e) { flash('Gagal menyimpan tutup kasir: ' + e.message, 'err'); }
@@ -4430,4 +4575,197 @@ function renderForecastStok() {
       </div>
     </div>`;
   }).join('');
+}
+
+// ==========================================================
+//  FITUR V11: TANDA TANGAN DIGITAL PENGAMBILAN SERVIS & AUTO-WA
+// ==========================================================
+function bukaModalAmbilServis(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s) return;
+  if (!s.paid && s.sisa > 0) return flash('Lunasi sisa tagihan dulu sebelum jam diambil.', 'err');
+
+  let ov = $('modalAmbilServis'); if (ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = 'modalAmbilServis';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.82);z-index:9800;overflow-y:auto;padding:16px;';
+  ov.innerHTML = `
+    <div style="background:#fff;color:#0f172a;border:2px solid #0f1f3d;border-radius:14px;max-width:460px;width:100%;margin:3vh auto;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.45);">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-bottom:12px;">
+        <h3 style="margin:0;border:none;padding:0;color:#0f1f3d;">✍️ Serah Terima &amp; TTD Pengambilan</h3>
+        <button type="button" class="btn-sm ghost" onclick="$('modalAmbilServis').remove()">✕</button>
+      </div>
+      <div style="font-size:13px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:10px;margin-bottom:12px;line-height:1.5;">
+        <b>No Servis:</b> ${esc(s.id)}<br>
+        <b>Pelanggan:</b> ${esc(s.customer)} ${s.telp ? '(' + esc(s.telp) + ')' : ''}<br>
+        <b>Barang:</b> ${esc(s.produk)}<br>
+        <b>Total:</b> ${rp(s.biaya_pelanggan)} <span class="badge ok">LUNAS</span>
+      </div>
+      <label>Nama Penerima Barang *</label>
+      <input id="ttdPenerima" value="${esc(s.customer || '')}" placeholder="Nama yang mengambil barang" style="margin-bottom:10px;">
+      <label>Tanda Tangan Penerima (Goreskan di kotak bawah) *</label>
+      <div style="border:2px dashed #64748b;border-radius:10px;background:#ffffff;overflow:hidden;margin-bottom:8px;">
+        <canvas id="ttdCanvas" width="400" height="170" style="width:100%;height:170px;display:block;touch-action:none;cursor:crosshair;"></canvas>
+      </div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <span style="font-size:11px;color:#64748b;">Setelah disubmit, struk langsung dicetak &amp; WA konfirmasi dikirim.</span>
+        <button type="button" class="btn-sm ghost" id="btnHapusTtd" style="flex-shrink:0;">🧹 Ulangi</button>
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button type="button" class="btn ghost" onclick="$('modalAmbilServis').remove()" style="flex:0.8;">Batal</button>
+        <button type="button" class="btn ok" id="btnSubmitTtd" style="flex:1.5;">✅ Konfirmasi, Cetak &amp; WA</button>
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
+
+  const canvas = $('ttdCanvas');
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2.8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+
+  let drawing = false;
+  let hasSigned = false;
+
+  const getPos = e => {
+    const rect = canvas.getBoundingClientRect();
+    const pt = e.touches ? e.touches[0] : e;
+    return {
+      x: (pt.clientX - rect.left) * (canvas.width / rect.width),
+      y: (pt.clientY - rect.top) * (canvas.height / rect.height)
+    };
+  };
+
+  const startDraw = e => {
+    e.preventDefault();
+    drawing = true;
+    hasSigned = true;
+    const pos = getPos(e);
+    ctx.beginPath();
+    ctx.moveTo(pos.x, pos.y);
+  };
+  const moveDraw = e => {
+    if (!drawing) return;
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
+    ctx.stroke();
+  };
+  const endDraw = e => {
+    if (!drawing) return;
+    e.preventDefault();
+    drawing = false;
+    ctx.closePath();
+  };
+
+  canvas.addEventListener('mousedown', startDraw);
+  canvas.addEventListener('mousemove', moveDraw);
+  window.addEventListener('mouseup', endDraw);
+  canvas.addEventListener('touchstart', startDraw, { passive: false });
+  canvas.addEventListener('touchmove', moveDraw, { passive: false });
+  canvas.addEventListener('touchend', endDraw, { passive: false });
+
+  $('btnHapusTtd').onclick = () => {
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+    hasSigned = false;
+  };
+
+  $('btnSubmitTtd').onclick = async () => {
+    const penerima = ($('ttdPenerima')?.value || '').trim();
+    if (!penerima) return flash('Nama penerima wajib diisi', 'err');
+    if (!hasSigned) return flash('Pelanggan wajib tanda tangan di kotak terlebih dahulu', 'err');
+
+    const btn = $('btnSubmitTtd');
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan...';
+
+    const ttdDataUrl = canvas.toDataURL('image/png');
+    const waktuAmbil = nowISO();
+    const kasir = sessionStorage.getItem('ta_user') || 'admin';
+
+    try {
+      const updateData = {
+        status: 'diambil',
+        tgl_diambil: waktuAmbil,
+        ttd_ambil: ttdDataUrl,
+        diambil_oleh: penerima,
+        diserahkan_oleh: kasir
+      };
+      await dbOk(supabaseClient.from('servis').update(updateData).eq('id', id));
+      await catatLog('AMBIL_SERVIS', `Servis ${s.id} diambil oleh ${penerima} (diserahkan ${kasir})`);
+
+      // Perbarui cache lokal agar struk & WA langsung memuat TTD & waktu ambil terbaru
+      Object.assign(s, updateData);
+      $('modalAmbilServis')?.remove();
+      flash('✅ Servis resmi diambil! Mencetak struk & mengirim WA...');
+
+      try { cetakStrukServis(id); } catch (e) { console.error(e); }
+      if (s.telp) {
+        try { await waServisDiambil(id); } catch (e) { console.error(e); }
+      }
+      tarikSemuaData();
+    } catch (e) {
+      btn.disabled = false;
+      btn.textContent = '✅ Konfirmasi, Cetak & WA';
+      flash('Gagal menyimpan bukti pengambilan: ' + e.message, 'err');
+    }
+  };
+}
+
+async function waServisDiambil(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s || !s.telp) return;
+  const toko = getToko(), garis = '=========================';
+  const waktu = s.tgl_diambil ? new Date(s.tgl_diambil).toLocaleString('id-ID') : new Date().toLocaleString('id-ID');
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*BUKTI PENGAMBILAN SERVIS*\n${garis}\n`;
+  text += `No Servis : *${s.id}*\n`;
+  text += `Pelanggan : ${s.customer}\n`;
+  text += `Barang    : ${s.produk}\n`;
+  text += `Status    : *SUDAH DIAMBIL*\n`;
+  text += `Diambil   : ${waktu}\n`;
+  text += `Penerima  : ${s.diambil_oleh || s.customer}\n`;
+  text += `Pembayaran: *LUNAS* (${rp(s.biaya_pelanggan)})\n`;
+  if (s.tgl_garansi_servis_sampai) {
+    text += `${garis}\nGaransi servis berlaku s/d *${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} pukul 23:59*\n`;
+  }
+  text += `${garis}\nTerima kasih telah mempercayakan jam Anda kepada kami.\n_Simpan pesan ini sebagai bukti resmi pengambilan & garansi._`;
+  await openWA(s.telp, text);
+}
+
+function lihatBuktiAmbil(id) {
+  const s = db.servis.find(x => x.id === id);
+  if (!s) return;
+  let ov = $('modalBuktiAmbil'); if (ov) ov.remove();
+  ov = document.createElement('div');
+  ov.id = 'modalBuktiAmbil';
+  ov.style.cssText = 'position:fixed;inset:0;background:rgba(15,23,42,.82);z-index:9800;overflow-y:auto;padding:16px;';
+  const ttdHtml = (s.ttd_ambil && LOGO_VALID.test(s.ttd_ambil))
+    ? `<img src="${s.ttd_ambil}" style="width:100%;max-height:180px;object-fit:contain;border:1.5px solid #cbd5e1;border-radius:10px;background:#fff;">`
+    : '<div class="empty">Tidak ada gambar tanda tangan.</div>';
+  ov.innerHTML = `
+    <div style="background:#fff;color:#0f172a;border:2px solid #15803d;border-radius:14px;max-width:440px;width:100%;margin:5vh auto;padding:18px;box-shadow:0 12px 30px rgba(0,0,0,.45);">
+      <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:2px solid #e2e8f0;padding-bottom:8px;margin-bottom:12px;">
+        <h3 style="margin:0;border:none;padding:0;color:#15803d;">✅ Bukti Pengambilan Servis</h3>
+        <button type="button" class="btn-sm ghost" onclick="$('modalBuktiAmbil').remove()">✕</button>
+      </div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:12px;">
+        <b>No Servis:</b> ${esc(s.id)}<br>
+        <b>Pelanggan:</b> ${esc(s.customer)}<br>
+        <b>Barang:</b> ${esc(s.produk)}<br>
+        <b>Waktu Diambil:</b> ${s.tgl_diambil ? new Date(s.tgl_diambil).toLocaleString('id-ID') : '-'}<br>
+        <b>Diterima Oleh:</b> ${esc(s.diambil_oleh || s.customer)}<br>
+        <b>Diserahkan Oleh:</b> ${esc(s.diserahkan_oleh || '-')}
+      </div>
+      <label>Tanda Tangan Penerima:</label>
+      ${ttdHtml}
+      <div style="display:flex;gap:8px;margin-top:12px;">
+        <button type="button" class="btn blue" onclick="cetakStrukServis('${esc(s.id)}')">🖨️ Cetak Ulang Struk</button>
+        ${s.telp ? `<button type="button" class="btn ok" onclick="waServisDiambil('${esc(s.id)}')">📲 Kirim Ulang WA</button>` : ''}
+      </div>
+    </div>`;
+  document.body.appendChild(ov);
 }

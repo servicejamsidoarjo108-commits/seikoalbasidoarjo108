@@ -640,7 +640,7 @@ main { max-width: 1120px; }
     <div id="listKasKecilKasir"></div>
   </div>
 
-  <div class="card"><h3>Transaksi Hari Ini</h3><table><thead><tr><th>Jam</th><th>Item</th><th>Total</th><th></th></tr></thead><tbody id="tblJualHariIni"></tbody></table></div>
+  <div class="card"><h3>Transaksi Hari Ini</h3><div id="tblJualHariIni"></div></div>
 </section>
   
 <section id="produk">
@@ -861,7 +861,7 @@ main { max-width: 1120px; }
 
   <!-- DAFTAR TIKET SERVIS & CEK GARANSI -->
   <div class="card" style="margin-top:14px;"><h3>📋 Daftar Tiket Servis</h3>
-    <div id="srvFilterPills" style="display:flex;gap:8px;margin-bottom:12px;overflow-x:auto;padding-bottom:4px;">
+    <div id="srvFilterPills" style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:12px;">
       <button type="button" class="status-pill-btn active" data-st="" onclick="filterServis('')">Semua</button>
       <button type="button" class="status-pill-btn" data-st="antri" onclick="filterServis('antri')">✔ Diterima</button>
       <button type="button" class="status-pill-btn" data-st="proses" onclick="filterServis('proses')">⚙️ Dikerjakan</button>
@@ -1061,7 +1061,7 @@ main { max-width: 1120px; }
   </div>
 
   <div class="card"><h3>Riwayat Kas</h3>
-    <div style="display:flex;gap:6px;margin-bottom:10px;overflow-x:auto">
+    <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px;">
       <button class="btn-sm ghost" onclick="filterKas('')">Semua</button>
       <button class="btn-sm ghost" onclick="filterKas('masuk')">Masuk</button>
       <button class="btn-sm ghost" onclick="filterKas('keluar')">Keluar</button>
@@ -1146,7 +1146,7 @@ main { max-width: 1120px; }
     <p id="keuPeriodeInfo" style="font-size:13px;color:#475569;margin-top:0;font-weight:600;">Menampilkan Laba Rugi &amp; Arus Kas sesuai periode terpilih (Neraca menampilkan posisi kumulatif saat ini).</p>
     
     <!-- TAB NAVIGASI -->
-    <div style="display:flex; gap:5px; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px; overflow-x:auto;">
+    <div style="display:flex; flex-wrap:wrap; gap:6px; margin-bottom:15px; border-bottom:1px solid #e2e8f0; padding-bottom:10px;">
       <button class="btn-sm blue" onclick="gantiTabLaporan('laba_rugi')" id="tab_laba_rugi">Laba Rugi</button>
       <button class="btn-sm ghost" onclick="gantiTabLaporan('neraca')" id="tab_neraca">Neraca</button>
       <button class="btn-sm ghost" onclick="gantiTabLaporan('arus_kas')" id="tab_arus_kas">Arus Kas</button>
@@ -1415,6 +1415,6 @@ main { max-width: 1120px; }
   }
 </script>
 <!-- Logika aplikasi (dengan cache-buster agar tablet tidak nyangkut file lama) -->
-<script src="app-fixed-v10.js?v=100" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v10.js gagal dimuat.';"></script>
+<script src="app-fixed-v12.js?v=102" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v12.js gagal dimuat.';"></script>
 </body>
 </html>
