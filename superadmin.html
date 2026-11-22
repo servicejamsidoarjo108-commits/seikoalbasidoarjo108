@@ -225,7 +225,7 @@ function renderToko() {
   const q = ($('cariToko').value || '').toLowerCase();
   const list = daftarToko.filter(t => !q || (t.nama_toko||'').toLowerCase().includes(q) || (t.alamat||'').toLowerCase().includes(q) || (t.no_wa||'').includes(q));
   $('listToko').innerHTML = list.length ? list.map(t => {
-    const tglExp = toko.masa_aktif_sampai || toko.expired_at || toko.masa_aktif;
+        const exp = t.masa_aktif_sampai ? new Date(t.masa_aktif_sampai) : null;
     const sisa = exp ? Math.ceil((exp - now) / 86400000) : 9999;
     const isOff = t.aktif === false || sisa < 0;
     const isWarn = !isOff && sisa <= 14;
