@@ -225,7 +225,7 @@ function renderToko() {
   const q = ($('cariToko').value || '').toLowerCase();
   const list = daftarToko.filter(t => !q || (t.nama_toko||'').toLowerCase().includes(q) || (t.alamat||'').toLowerCase().includes(q) || (t.no_wa||'').includes(q));
   $('listToko').innerHTML = list.length ? list.map(t => {
-    const exp = t.masa_aktif_sampai ? new Date(t.masa_aktif_sampai) : null;
+    const tglExp = toko.masa_aktif_sampai || toko.expired_at || toko.masa_aktif;
     const sisa = exp ? Math.ceil((exp - now) / 86400000) : 9999;
     const isOff = t.aktif === false || sisa < 0;
     const isWarn = !isOff && sisa <= 14;
@@ -234,7 +234,7 @@ function renderToko() {
       ? '<span class="badge b-dg">NONAKTIF</span>'
       : (sisa < 0 ? '<span class="badge b-dg">EXPIRED</span>' : (isWarn ? `<span class="badge b-warn">SISA ${sisa} HARI</span>` : `<span class="badge b-ok">AKTIF (${exp ? sisa + ' hr' : 'Selamanya'})</span>`));
     const users = daftarProfil.filter(u => u.toko_id === t.id);
-    const userList = users.map(u => `<span style="background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:12px;">${esc(u.username)} (${esc(u.role)})</span>`).join(' ');
+    const userList = users.map(u => `<span style="background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:12px;display:inline-flex;align-items:center;gap:4px;">${esc(u.username || u.nama || '-')} (${esc(u.role)}) <button onclick="resetPasswordUser('${esc(u.user_id)}','${esc(u.username || u.nama || '-')}')" style="background:#f59e0b;color:#fff;border:none;padding:1px 6px;border-radius:4px;font-size:11px;cursor:pointer;">🔑 Reset PW</button></span>`).join(' ');
     return `<div class="toko-item ${cls}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
         <div>
@@ -363,6 +363,20 @@ async function simpanStaffBaru() {
     await muatData();
   }
 })();
+async function resetPasswordUser(userId, username) {
+  const passBaru = prompt(`Masukkan password baru untuk "${username}" (minimal 6 karakter):`);
+  if (!passBaru) return;
+  if (passBaru.trim().length < 6) return alert('Password minimal 6 karakter!');
+
+  const { error } = await sb.rpc('superadmin_reset_password', {
+    p_user_id: userId,
+    p_password_baru: passBaru.trim()
+  });
+
+  if (error) return alert('Gagal reset password: ' + error.message);
+  alert(`Password untuk "${username}" berhasil diubah!`);
+}
+
 </script>
 </body>
 </html>
