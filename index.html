@@ -480,9 +480,10 @@ main { max-width: 1120px; }
   <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('laporan')"><i class="fa-solid fa-chart-pie" style="font-size:32px;margin-bottom:8px"></i> Laporan</button>
 </div>
 
-<button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('pelanggan')">
-  <i class="fa-solid fa-users" style="font-size:32px;margin-bottom:8px"></i> Pelanggan
-</button>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px">
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--card-bg);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('pelanggan')"><i class="fa-solid fa-users" style="font-size:32px;margin-bottom:8px"></i> Pelanggan</button>
+  <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:#f0fdf4;color:#15803d;border:2px solid #16a34a;font-size:16px" onclick="bukaMenu('karyawan')"><i class="fa-solid fa-id-badge" style="font-size:32px;margin-bottom:8px"></i> Karyawan &amp; Absensi</button>
+</div>
 
 <div id="menuAdmin" style="display:none;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;border-top:1px dashed var(--border);padding-top:16px">
   <button class="btn" style="height:100px;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--d);color:var(--p);border:1px solid var(--border);font-size:16px" onclick="bukaMenu('kas')"><i class="fa-solid fa-money-bill-wave" style="font-size:32px;margin-bottom:8px"></i> Kas</button>
@@ -1437,6 +1438,50 @@ main { max-width: 1120px; }
   </div>
 </section>
 
+
+<section id="karyawan">
+  <div class="card" style="border:2px solid #15803d;background:#f0fdf4;">
+    <h3 style="color:#15803d;border-bottom-color:#bbf7d0;">🕒 Absensi Karyawan Hari Ini</h3>
+    <div id="absensiStatusBox" style="font-size:14px;font-weight:700;color:#0f1f3d;margin-bottom:10px;">Memuat status absensi...</div>
+    <input id="absCatatan" placeholder="Catatan absensi (opsional, mis. Shift pagi)" style="margin-bottom:10px;">
+    <div class="row">
+      <button type="button" class="btn ok" id="btnAbsenMasuk" onclick="absenMasuk()">🟢 Absen Masuk (Clock In)</button>
+      <button type="button" class="btn danger" id="btnAbsenPulang" onclick="absenPulang()">🔴 Absen Pulang (Clock Out)</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>💰 Ringkasan Komisi &amp; Kehadiran Bulan Ini</h3>
+    <div class="stat">
+      <div class="card"><div class="lbl">Hadir Bulan Ini</div><div class="num" id="karHadirBln">0 hari</div></div>
+      <div class="card"><div class="lbl">Total Komisi Bulan Ini</div><div class="num" id="karKomisiBln" style="color:#15803d">Rp 0</div></div>
+    </div>
+    <div id="listRekapKaryawan"></div>
+  </div>
+
+  <div class="card" id="cardAturanKomisi" style="display:none;border:2px solid #f59e0b;">
+    <h3>⚙️ Aturan Komisi Otomatis (Khusus Pemilik)</h3>
+    <div class="row">
+      <div><label>Komisi Penjualan Jam (%)</label><input type="number" id="setKomisiJual" step="0.1" min="0" value="1"></div>
+      <div><label>Komisi Servis Selesai (%)</label><input type="number" id="setKomisiServis" step="0.1" min="0" value="5"></div>
+    </div>
+    <div class="row">
+      <div><label>Komisi Ganti Baterai (Rp / unit)</label><input type="number" id="setKomisiBaterai" min="0" value="2000"></div>
+      <div style="display:flex;align-items:flex-end;"><button type="button" class="btn ok" onclick="simpanAturanKomisi()">💾 Simpan Aturan Komisi</button></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h3>📋 Riwayat Absensi</h3>
+    <div id="listAbsensi"></div>
+  </div>
+
+  <div class="card">
+    <h3>🧾 Riwayat Komisi Transaksi</h3>
+    <div id="listKomisi"></div>
+  </div>
+</section>
+
 </main>
 
 <div id="scanArea" style="display: none;"><video id="scanVideo" playsinline></video><button onclick="stopScan()">Tutup</button></div>
@@ -1478,6 +1523,6 @@ main { max-width: 1120px; }
   }
 </script>
 <!-- Logika aplikasi (dengan cache-buster agar tablet tidak nyangkut file lama) -->
-<script src="app-fixed-v20.js?v=110" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v20.js gagal dimuat.';"></script>
+<script src="app-fixed-v21.js?v=111" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v21.js gagal dimuat.';"></script>
 </body>
 </html>
