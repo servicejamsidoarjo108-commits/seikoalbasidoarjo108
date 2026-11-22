@@ -5946,3 +5946,34 @@ async function toggleAktifKaryawan(userId) {
     tarikSemuaData();
   } catch (e) { flash('Gagal mengubah status: ' + e.message, 'err'); }
 }
+
+// === PELINDUNG ANTI DOUBLE-CLICK GLOBAL ===
+(function() {
+  const fungsiDilindungi = [
+    'simpanKasKecilKasir', 'simpanKasManual', 'simpanIsiKasKecilAdmin',
+    'simpanProduk', 'prosesRestock', 'tambahSparePart', 'tambahStokBaterai',
+    'simpanBaterai', 'simpanSupplier', 'simpanAuditGlobal',
+    'simpanShiftClosing', 'absenMasuk', 'absenPulang',
+    'bayarBebanTetap', 'tambahBebanTetap', 'kirimHitungStok'
+  ];
+  const sedangJalan = {};
+  fungsiDilindungi.forEach(nama => {
+    const asli = window[nama];
+    if (typeof asli !== 'function') return;
+    window[nama] = async function(...args) {
+      if (sedangJalan[nama]) return;
+      sedangJalan[nama] = true;
+      const btn = (window.event && window.event.target && window.event.target.closest)
+        ? window.event.target.closest('button') : null;
+      const teksAsli = btn ? btn.innerHTML : '';
+      if (btn) { btn.disabled = true; btn.innerHTML = '⏳ Memproses...'; }
+      try {
+        return await asli.apply(this, args);
+      } finally {
+        sedangJalan[nama] = false;
+        if (btn) { btn.disabled = false; btn.innerHTML = teksAsli; }
+      }
+    };
+  });
+})();
+
