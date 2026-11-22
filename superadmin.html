@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="theme-color" content="#0f1f3d">
+<title>👑 Superadmin — POS &amp; Watch Care</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#f1f5f9;--card:#fff;--navy:#0f1f3d;--gold:#f59e0b;--ok:#15803d;--dg:#b91c1c;--warn:#b45309;--border:#cbd5e1;}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Arial,sans-serif;background:var(--bg);color:#0f172a;font-size:15px;padding-bottom:60px;}
+header{background:linear-gradient(135deg,#0f1f3d,#1e3a6d);color:#fff;padding:14px 16px;border-bottom:3px solid var(--gold);position:sticky;top:0;z-index:10;}
+.hdr{max-width:980px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;}
+.hdr h1{margin:0;font-size:18px;color:#fbbf24;}
+main{max-width:980px;margin:auto;padding:14px;}
+.card{background:var(--card);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;box-shadow:0 2px 8px rgba(15,23,42,.06);}
+h3{margin:0 0 12px;font-size:15px;color:var(--navy);text-transform:uppercase;border-bottom:2px solid #e2e8f0;padding-bottom:6px;}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;}
+@media(max-width:600px){.row{grid-template-columns:1fr;}}
+label{display:block;font-size:13px;font-weight:700;color:#334155;margin-bottom:4px;}
+input,select{width:100%;padding:11px 12px;border:1.5px solid #94a3b8;border-radius:10px;font-size:15px;background:#fff;color:#0f172a;}
+button{cursor:pointer;font-family:inherit;font-weight:700;border:none;border-radius:10px;}
+.btn{width:100%;padding:13px;font-size:15px;background:var(--navy);color:#fbbf24;}
+.btn-sm{padding:8px 12px;font-size:13px;border-radius:8px;color:#fff;}
+.ok{background:var(--ok);color:#fff;} .dg{background:var(--dg);color:#fff;} .warn{background:var(--warn);color:#fff;} .blue{background:#2563eb;color:#fff;} .ghost{background:#e2e8f0;color:#0f172a;}
+.stat{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px;}
+@media(max-width:640px){.stat{grid-template-columns:1fr 1fr;}}
+.stat .card{margin:0;text-align:center;padding:12px;}
+.stat .lbl{font-size:11px;font-weight:700;color:#64748b;text-transform:uppercase;}
+.stat .num{font-size:20px;font-weight:900;color:var(--navy);margin-top:4px;}
+.toko-item{border:1.5px solid var(--border);border-left:5px solid var(--ok);border-radius:12px;padding:14px;margin-bottom:10px;background:#fff;}
+.toko-item.warn-exp{border-left-color:var(--warn);background:#fffbeb;}
+.toko-item.dead{border-left-color:var(--dg);background:#fff5f5;}
+.badge{display:inline-block;padding:3px 9px;border-radius:999px;font-size:11px;font-weight:800;}
+.b-ok{background:#dcfce7;color:#14532d;} .b-warn{background:#fef3c7;color:#78350f;} .b-dg{background:#fee2e2;color:#7f1d1d;}
+.msg{display:none;padding:11px 14px;border-radius:10px;margin-bottom:12px;font-weight:700;}
+.msg.ok{display:block;background:#dcfce7;color:#14532d;border:1.5px solid #16a34a;}
+.msg.err{display:block;background:#fee2e2;color:#7f1d1d;border:1.5px solid #dc2626;}
+#loginBox{position:fixed;inset:0;background:#0f1f3d;z-index:999;display:flex;align-items:center;justify-content:center;padding:20px;}
+#loginBox.hidden{display:none;}
+.login-card{background:#1e293b;color:#fff;padding:24px;border-radius:16px;width:100%;max-width:360px;border:1px solid #334155;text-align:center;}
+.login-card input{background:#0f172a;color:#fff;border-color:#334155;margin-bottom:10px;text-align:center;}
+.modal{display:none;position:fixed;inset:0;background:rgba(15,23,42,.75);z-index:900;padding:16px;overflow-y:auto;}
+.modal-box{background:#fff;border-radius:14px;max-width:440px;margin:6vh auto;padding:18px;border:2px solid var(--navy);}
+</style>
+</head>
+<body>
+
+<div id="loginBox">
+  <div class="login-card">
+    <h2 style="margin:0 0 6px;color:#fbbf24;">👑 SUPERADMIN PANEL</h2>
+    <p style="margin:0 0 18px;font-size:13px;color:#94a3b8;">Khusus Pengelola SaaS POS &amp; Watch Care</p>
+    <input id="saUser" placeholder="Email / Username Superadmin" autocomplete="off" autocapitalize="none">
+    <input id="saPass" type="password" placeholder="Password">
+    <button class="btn" id="btnSaLogin" onclick="saLogin()" style="background:#fbbf24;color:#0f1f3d;">Masuk Superadmin</button>
+    <div id="saErr" style="color:#f87171;font-size:13px;margin-top:10px;min-height:18px;"></div>
+  </div>
+</div>
+
+<header>
+  <div class="hdr">
+    <h1>👑 SUPERADMIN — KELOLA TOKO &amp; LANGGANAN</h1>
+    <div style="display:flex;gap:8px;align-items:center;">
+      <button class="btn-sm ghost" onclick="muatData()">🔄 Refresh</button>
+      <button class="btn-sm dg" onclick="saLogout()">🔓 Logout</button>
+    </div>
+  </div>
+</header>
+
+<main>
+  <div id="msg" class="msg"></div>
+
+  <div class="stat">
+    <div class="card"><div class="lbl">Total Toko</div><div class="num" id="stTotal">0</div></div>
+    <div class="card"><div class="lbl">Aktif</div><div class="num" id="stAktif" style="color:#15803d;">0</div></div>
+    <div class="card"><div class="lbl">Hampir Habis (&le;14 hr)</div><div class="num" id="stWarn" style="color:#b45309;">0</div></div>
+    <div class="card"><div class="lbl">Expired / Nonaktif</div><div class="num" id="stDead" style="color:#b91c1c;">0</div></div>
+  </div>
+
+  <!-- FORM BUAT TOKO BARU + AKUN PEMILIK (1-KLIK FULL OTOMATIS) -->
+  <div class="card" style="border:2px solid #0f1f3d;">
+    <h3>➕ Tambah Toko Baru &amp; Akun Pemilik (1-Klik Otomatis)</h3>
+    <div class="row">
+      <div><label>Nama Toko *</label><input id="tNama" placeholder="Contoh: Toko Jam Maju Jaya"></div>
+      <div><label>No WA Pemilik (62...)</label><input id="tWa" placeholder="6281234567890"></div>
+    </div>
+    <div class="row">
+      <div><label>Alamat Toko</label><input id="tAlamat" placeholder="Jl. Raya No. 10, Surabaya"></div>
+      <div>
+        <label>Paket Langganan Awal</label>
+        <select id="tPaket">
+          <option value="14d">Trial 14 Hari</option>
+          <option value="1m">1 Bulan</option>
+          <option value="3m">3 Bulan</option>
+          <option value="6m">6 Bulan</option>
+          <option value="1y" selected>1 Tahun</option>
+        </select>
+      </div>
+    </div>
+    <div class="row">
+      <div><label>Email Login Pemilik *</label><input id="tEmail" placeholder="owner@tokomaju.com" autocapitalize="none"></div>
+      <div><label>Password Login *</label><input id="tPass" type="text" placeholder="Minimal 6 karakter"></div>
+    </div>
+    <div class="row">
+      <div><label>Nama Lengkap Pemilik</label><input id="tPemilik" placeholder="Bapak Budi"></div>
+      <div><label>Username Tampilan (Struk/Header)</label><input id="tUsername" placeholder="budi_owner"></div>
+    </div>
+    <button class="btn ok" id="btnBuatToko" onclick="buatTokoBaru()">🚀 Buat Toko &amp; Akun Otomatis</button>
+  </div>
+
+  <!-- DAFTAR TOKO -->
+  <div class="card">
+    <h3>🏪 Daftar Semua Toko Klien</h3>
+    <input id="cariToko" placeholder="🔍 Cari nama toko / alamat / no WA..." oninput="renderToko()" style="margin-bottom:12px;">
+    <div id="listToko">Memuat data...</div>
+  </div>
+</main>
+
+<!-- MODAL TAMBAH USER KE TOKO KLIEN -->
+<div id="modalStaff" class="modal">
+  <div class="modal-box">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+      <b style="font-size:16px;color:#0f1f3d;" id="msTitle">➕ Tambah Akun Karyawan</b>
+      <button class="btn-sm ghost" onclick="$('modalStaff').style.display='none'">✕</button>
+    </div>
+    <input type="hidden" id="msTokoId">
+    <label>Email Login *</label><input id="msEmail" placeholder="kasir1@tokomaju.com" style="margin-bottom:8px;">
+    <label>Password *</label><input id="msPass" placeholder="Minimal 6 karakter" style="margin-bottom:8px;">
+    <label>Nama Lengkap</label><input id="msNama" placeholder="Siti Aminah" style="margin-bottom:8px;">
+    <label>Username Tampilan</label><input id="msUsername" placeholder="siti" style="margin-bottom:8px;">
+    <label>Role / Hak Akses</label>
+    <select id="msRole" style="margin-bottom:12px;">
+      <option value="kasir">Kasir</option>
+      <option value="admin">Admin</option>
+      <option value="pemilik">Pemilik</option>
+    </select>
+    <button class="btn ok" id="btnBuatStaff" onclick="simpanStaffBaru()">✅ Buat Akun Karyawan</button>
+  </div>
+</div>
+
+<script>
+const SUPABASE_URL = 'https://khgooqasgscsxgegdqzc.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd';
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let daftarToko = [], daftarProfil = [];
+
+function flash(text, type = 'ok') {
+  const el = $('msg'); el.textContent = text; el.className = 'msg ' + type;
+  clearTimeout(window.__t); window.__t = setTimeout(() => { el.className = 'msg'; }, 4000);
+}
+
+function hitungExp(paket, dari = new Date()) {
+  const d = new Date(dari);
+  if (paket === '14d') d.setDate(d.getDate() + 14);
+  else if (paket === '1m') d.setMonth(d.getMonth() + 1);
+  else if (paket === '3m') d.setMonth(d.getMonth() + 3);
+  else if (paket === '6m') d.setMonth(d.getMonth() + 6);
+  else if (paket === '1y') d.setFullYear(d.getFullYear() + 1);
+  return d.toISOString();
+}
+
+async function cekSuperadmin(uid) {
+  const { data } = await sb.from('superadmin_users').select('user_id').eq('user_id', uid).maybeSingle();
+  return !!data;
+}
+
+async function saLogin() {
+  const raw = ($('saUser').value || '').trim().toLowerCase();
+  const pass = $('saPass').value || '';
+  $('saErr').textContent = '';
+  if (!raw || !pass) return $('saErr').textContent = 'Email/Username dan Password wajib diisi';
+  const email = raw.includes('@') ? raw : (raw + '@tokoseiko.com');
+  $('btnSaLogin').disabled = true; $('btnSaLogin').textContent = 'Memeriksa...';
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if (error) throw error;
+    const ok = await cekSuperadmin(data.user.id);
+    if (!ok) {
+      await sb.auth.signOut();
+      throw new Error('Akun ini bukan Superadmin.');
+    }
+    $('loginBox').classList.add('hidden');
+    await muatData();
+  } catch (e) {
+    $('saErr').textContent = e.message || 'Login gagal';
+  } finally {
+    $('btnSaLogin').disabled = false; $('btnSaLogin').textContent = 'Masuk Superadmin';
+  }
+}
+
+async function saLogout() {
+  await sb.auth.signOut();
+  $('loginBox').classList.remove('hidden');
+}
+
+async function muatData() {
+  const [t, p] = await Promise.all([
+    sb.from('toko').select('*').order('created_at', { ascending: false }),
+    sb.from('profil_user').select('*').order('username', { ascending: true })
+  ]);
+  if (t.error) return flash('Gagal memuat toko: ' + t.error.message, 'err');
+  daftarToko = t.data || [];
+  daftarProfil = p.data || [];
+  renderToko();
+}
+
+function renderToko() {
+  const now = new Date();
+  let aktif = 0, warn = 0, dead = 0;
+  daftarToko.forEach(t => {
+    const sisa = t.masa_aktif_sampai ? Math.ceil((new Date(t.masa_aktif_sampai) - now) / 86400000) : 9999;
+    if (t.aktif === false || sisa < 0) dead++;
+    else if (sisa <= 14) { aktif++; warn++; }
+    else aktif++;
+  });
+  $('stTotal').textContent = daftarToko.length;
+  $('stAktif').textContent = aktif;
+  $('stWarn').textContent = warn;
+  $('stDead').textContent = dead;
+
+  const q = ($('cariToko').value || '').toLowerCase();
+  const list = daftarToko.filter(t => !q || (t.nama_toko||'').toLowerCase().includes(q) || (t.alamat||'').toLowerCase().includes(q) || (t.no_wa||'').includes(q));
+  $('listToko').innerHTML = list.length ? list.map(t => {
+    const exp = t.masa_aktif_sampai ? new Date(t.masa_aktif_sampai) : null;
+    const sisa = exp ? Math.ceil((exp - now) / 86400000) : 9999;
+    const isOff = t.aktif === false || sisa < 0;
+    const isWarn = !isOff && sisa <= 14;
+    const cls = isOff ? 'dead' : (isWarn ? 'warn-exp' : '');
+    const badge = t.aktif === false
+      ? '<span class="badge b-dg">NONAKTIF</span>'
+      : (sisa < 0 ? '<span class="badge b-dg">EXPIRED</span>' : (isWarn ? `<span class="badge b-warn">SISA ${sisa} HARI</span>` : `<span class="badge b-ok">AKTIF (${exp ? sisa + ' hr' : 'Selamanya'})</span>`));
+    const users = daftarProfil.filter(u => u.toko_id === t.id);
+    const userList = users.map(u => `<span style="background:#f1f5f9;padding:2px 7px;border-radius:6px;font-size:12px;">${esc(u.username)} (${esc(u.role)})</span>`).join(' ');
+    return `<div class="toko-item ${cls}">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+        <div>
+          <b style="font-size:16px;color:#0f1f3d;">${esc(t.nama_toko)}</b><br>
+          <small style="color:#475569;">📍 ${esc(t.alamat || '-')} · 📞 ${esc(t.no_wa || '-')}</small>
+        </div>
+        ${badge}
+      </div>
+      <div style="font-size:13px;margin-bottom:8px;">
+        <b>Masa Aktif s/d:</b> ${exp ? exp.toLocaleDateString('id-ID', {day:'numeric',month:'long',year:'numeric'}) : 'Tidak dibatasi'}
+      </div>
+      <div style="margin-bottom:10px;display:flex;gap:4px;flex-wrap:wrap;align-items:center;">
+        <small style="color:#64748b;font-weight:700;">Akun (${users.length}):</small> ${userList || '<small>-</small>'}
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;">
+        <button class="btn-sm ok" onclick="perpanjang('${esc(t.id)}','1m')">+1 Bulan</button>
+        <button class="btn-sm ok" onclick="perpanjang('${esc(t.id)}','6m')">+6 Bulan</button>
+        <button class="btn-sm ok" onclick="perpanjang('${esc(t.id)}','1y')">+1 Tahun</button>
+        <button class="btn-sm blue" onclick="bukaModalStaff('${esc(t.id)}','${esc(t.nama_toko)}')">👤 + User</button>
+        <button class="btn-sm ${t.aktif === false ? 'ok' : 'dg'}" onclick="toggleToko('${esc(t.id)}', ${t.aktif === false})">${t.aktif === false ? '✅ Aktifkan' : '🚫 Kunci'}</button>
+        ${t.no_wa ? `<a class="btn-sm warn" style="text-decoration:none;" target="_blank" href="https://wa.me/${esc(t.no_wa.replace(/\D/g,''))}">📲 WA</a>` : ''}
+      </div>
+    </div>`;
+  }).join('') : '<div style="text-align:center;color:#64748b;padding:16px;">Belum ada toko.</div>';
+}
+
+async function panggilEdge(payload) {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) throw new Error('Sesi berakhir, silakan login ulang');
+  const res = await fetch(`${SUPABASE_URL}/functions/v1/superadmin-manage`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${session.access_token}`,
+      'apikey': SUPABASE_ANON_KEY
+    },
+    body: JSON.stringify(payload)
+  });
+  const json = await res.json();
+  if (!res.ok || json.error) throw new Error(json.error || 'Gagal memanggil server');
+  return json;
+}
+
+async function buatTokoBaru() {
+  const nama_toko = ($('tNama').value || '').trim();
+  const email = ($('tEmail').value || '').trim();
+  const password = $('tPass').value || '';
+  if (!nama_toko || !email || password.length < 6) return flash('Nama toko, email, dan password (min 6 karakter) wajib diisi', 'err');
+  $('btnBuatToko').disabled = true; $('btnBuatToko').textContent = 'Memproses...';
+  try {
+    await panggilEdge({
+      action: 'create_tenant',
+      nama_toko,
+      alamat: $('tAlamat').value,
+      no_wa: $('tWa').value,
+      masa_aktif_sampai: hitungExp($('tPaket').value),
+      email,
+      password,
+      nama_pemilik: $('tPemilik').value,
+      username: $('tUsername').value
+    });
+    flash(`✅ Toko "${nama_toko}" & akun ${email} berhasil dibuat!`);
+    ['tNama','tWa','tAlamat','tEmail','tPass','tPemilik','tUsername'].forEach(id => $(id).value = '');
+    await muatData();
+  } catch (e) {
+    flash('Gagal: ' + e.message, 'err');
+  } finally {
+    $('btnBuatToko').disabled = false; $('btnBuatToko').textContent = '🚀 Buat Toko & Akun Otomatis';
+  }
+}
+
+async function perpanjang(id, paket) {
+  const t = daftarToko.find(x => x.id === id); if (!t) return;
+  const base = (t.masa_aktif_sampai && new Date(t.masa_aktif_sampai) > new Date()) ? new Date(t.masa_aktif_sampai) : new Date();
+  const baru = hitungExp(paket, base);
+  const { error } = await sb.from('toko').update({ masa_aktif_sampai: baru, aktif: true }).eq('id', id);
+  if (error) return flash('Gagal perpanjang: ' + error.message, 'err');
+  flash(`✅ Langganan ${t.nama_toko} diperpanjang s/d ${new Date(baru).toLocaleDateString('id-ID')}`);
+  await muatData();
+}
+
+async function toggleToko(id, aktifkan) {
+  const { error } = await sb.from('toko').update({ aktif: aktifkan }).eq('id', id);
+  if (error) return flash('Gagal ubah status: ' + error.message, 'err');
+  flash(aktifkan ? '✅ Toko diaktifkan kembali' : '🚫 Akses toko dikunci');
+  await muatData();
+}
+
+function bukaModalStaff(tokoId, namaToko) {
+  $('msTokoId').value = tokoId;
+  $('msTitle').textContent = '➕ Tambah User — ' + namaToko;
+  ['msEmail','msPass','msNama','msUsername'].forEach(id => $(id).value = '');
+  $('msRole').value = 'kasir';
+  $('modalStaff').style.display = 'block';
+}
+
+async function simpanStaffBaru() {
+  const toko_id = $('msTokoId').value;
+  const email = ($('msEmail').value || '').trim();
+  const password = $('msPass').value || '';
+  if (!email || password.length < 6) return flash('Email & password (min 6 karakter) wajib diisi', 'err');
+  $('btnBuatStaff').disabled = true; $('btnBuatStaff').textContent = 'Memproses...';
+  try {
+    await panggilEdge({
+      action: 'create_staff',
+      toko_id, email, password,
+      nama: $('msNama').value,
+      username: $('msUsername').value,
+      role: $('msRole').value
+    });
+    $('modalStaff').style.display = 'none';
+    flash(`✅ Akun ${email} berhasil ditambahkan!`);
+    await muatData();
+  } catch (e) {
+    flash('Gagal: ' + e.message, 'err');
+  } finally {
+    $('btnBuatStaff').disabled = false; $('btnBuatStaff').textContent = '✅ Buat Akun Karyawan';
+  }
+}
+
+(async function init() {
+  $('saPass').addEventListener('keypress', e => { if (e.key === 'Enter') saLogin(); });
+  const { data } = await sb.auth.getSession();
+  if (data?.session && await cekSuperadmin(data.session.user.id)) {
+    $('loginBox').classList.add('hidden');
+    await muatData();
+  }
+})();
+</script>
+</body>
+</html>
