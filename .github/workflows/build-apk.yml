@@ -37,9 +37,17 @@ jobs:
         run: |
           npm init -y
           npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
-          npx cap init "POS Watch Care" "com.poswatchcare.app" --web-dir www
+          npx cap init "HoroPOS" "com.horopos.app" --web-dir www
           npx cap add android
           npx cap sync android
+
+      - name: Pasang Ikon Aplikasi HoroPOS
+        run: |
+          if [ -f "icon.png" ]; then
+            mkdir -p assets
+            cp icon.png assets/icon.png
+            npx @capacitor/assets generate --android --iconBackgroundColor '#0f1f3d'
+          fi
 
       - name: Izinkan Akses Internet & Kamera di AndroidManifest
         run: |
@@ -57,5 +65,5 @@ jobs:
       - name: Upload File APK Siap Pasang
         uses: actions/upload-artifact@v4
         with:
-          name: POS-Watch-Care-APK
+          name: HoroPOS-APK
           path: android/app/build/outputs/apk/debug/app-debug.apk
