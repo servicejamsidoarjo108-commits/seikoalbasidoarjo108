@@ -641,6 +641,7 @@ async function login() {
     $('loginOverlay').classList.add('hidden');
     applyRoleUI();
     bukaMenu('home');
+    cekBannerLangganan();
     flash(tLogin('Login Berhasil!', 'Login Successful!', '登录成功！'));
   } catch (e) {
     console.error('Gagal login:', e);
@@ -5976,4 +5977,33 @@ async function toggleAktifKaryawan(userId) {
     };
   });
 })();
+
+// === BANNER PENGINGAT LANGGANAN H-7 ===
+function cekBannerLangganan() {
+  const lama = document.getElementById('bannerLanggananH7');
+  if (lama) lama.remove();
+
+  const toko = currentTenant?.toko;
+  if (!toko) return;
+
+  const tglExp = toko.masa_aktif_sampai || toko.expired_at || toko.masa_aktif || toko.aktif_hingga || toko.langganan_hingga;
+  if (!tglExp) return;
+
+  const sisaHari = Math.ceil((new Date(tglExp).setHours(23,59,59,999) - Date.now()) / 86400000);
+  if (sisaHari > 7 || sisaHari < 0) return;
+
+  const lang = localStorage.getItem('ta_lang') || 'id';
+  const pesan = lang === 'en'
+    ? `⚠️ Subscription expires in ${sisaHari} day(s). Please renew to avoid service interruption.`
+    : lang === 'zh'
+    ? `⚠️ 订阅将在 ${sisaHari} 天后到期，请及时续费以免影响使用。`
+    : `⚠️ Masa aktif langganan tersisa ${sisaHari} hari lagi. Segera perpanjang agar toko tidak terkunci.`;
+
+  const banner = document.createElement('div');
+  banner.id = 'bannerLanggananH7';
+  banner.style.cssText = 'background:#fef3c7;color:#92400e;border-bottom:2px solid #f59e0b;padding:10px 14px;text-align:center;font-size:13px;font-weight:700;position:sticky;top:0;z-index:999;';
+  banner.textContent = pesan;
+  document.body.prepend(banner);
+}
+
 
