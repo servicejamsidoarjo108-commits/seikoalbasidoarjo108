@@ -606,14 +606,21 @@ function setupRealtime() {
 async function login() {
   const btn = document.querySelector('#loginOverlay button');
   const setErr = m => { const el = $('loginErr'); if (el) el.textContent = m; };
+  const lang = localStorage.getItem('ta_lang') || 'id';
+  const tLogin = (id, en, zh) => lang === 'en' ? en : (lang === 'zh' ? zh : id);
+
   setErr('');
-  if (typeof supabaseClient === 'undefined' || !supabaseClient) return setErr('Koneksi database belum siap. Muat ulang halaman.');
+  if (typeof supabaseClient === 'undefined' || !supabaseClient) {
+    return setErr(tLogin('Koneksi database belum siap. Muat ulang halaman.', 'Database connection not ready. Please reload.', '数据库连接未就绪，请刷新页面。'));
+  }
 
   const user = txt('loginUser').toLowerCase();
   const pass = $('pinInput')?.value || '';
-  if (!user || !pass) return setErr('Username dan Password wajib diisi!');
+  if (!user || !pass) {
+    return setErr(tLogin('Username dan Password wajib diisi!', 'Username and Password are required!', '请输入用户名和密码！'));
+  }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'Memeriksa...'; }
+  if (btn) { btn.disabled = true; btn.textContent = tLogin('Memeriksa...', 'Checking...', '正在验证...'); }
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({ email: emailDariInput(user), password: pass });
     if (error) throw error;
@@ -625,7 +632,7 @@ async function login() {
     sessionStorage.setItem('ta_toko_id', tenant.toko_id);
     await daftarkanSesiTunggal(data.user?.id);
 
-    if (btn) btn.textContent = 'Memuat Data...';
+    if (btn) btn.textContent = tLogin('Memuat Data...', 'Loading Data...', '正在加载数据...');
     fotoSudahDimuat = false;
     await tarikSemuaData(true);
     setupRealtime();
@@ -634,15 +641,15 @@ async function login() {
     $('loginOverlay').classList.add('hidden');
     applyRoleUI();
     bukaMenu('home');
-    flash('Login Berhasil!');
+    flash(tLogin('Login Berhasil!', 'Login Successful!', '登录成功！'));
   } catch (e) {
     console.error('Gagal login:', e);
     try { await supabaseClient.auth.signOut(); } catch (_) { }
     sessionStorage.clear();
     currentTenant = { toko_id: null, toko: null, profil: null, pengaturan: null };
-    setErr(e.message || 'Login gagal');
+    setErr(e.message || tLogin('Login gagal', 'Login failed', '登录失败'));
   } finally {
-    if (btn) { btn.textContent = 'Masuk'; btn.disabled = false; }
+    if (btn) { btn.textContent = tLogin('Masuk', 'Sign In', '登录'); btn.disabled = false; }
   }
 }
 
