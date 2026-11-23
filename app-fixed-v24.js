@@ -2735,7 +2735,7 @@ function render() {
   if (homeUser) homeUser.innerHTML = `${lblLoginAs} <b>${esc(uName)}</b> (${esc(uRole)})`;
   if ($('userInfo')) $('userInfo').textContent = `${uName} (${uRole})`;
   if ($('userAvatar')) $('userAvatar').textContent = (uName || 'US').slice(0, 2).toUpperCase();
-  const menuAdmin = $('menuAdmin'); if (menuAdmin) menuAdmin.style.display = isAdmin() ? 'grid' : 'none';  if (typeof terapkanAksesMenu === 'function') terapkanAksesMenu();
+  const menuAdmin = $('menuAdmin'); if (menuAdmin) menuAdmin.style.display = isAdmin() ? 'grid' : 'none';  if (typeof terapkanAksesMenu === 'function') terapkanAksesMenu();}
 
 
   // 2. Dropdown
