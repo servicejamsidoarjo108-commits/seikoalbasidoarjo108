@@ -692,7 +692,7 @@ function bukaMenu(tabId) {
   aturTombolHitungStok(tabId);
   render();
     if (tabId === 'setting') { isiFormSetting(true); muatPrefApiSetting(); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); if (typeof tampilkanPanelAksesMenu === 'function') tampilkanPanelAksesMenu(); } if (typeof terapkanBahasa === 'function') terapkanBahasa();
-                             }
+ }
 
 // === PRODUK & STOK ===
 async function simpanProduk() {
