@@ -691,7 +691,7 @@ function bukaMenu(tabId) {
   window.scrollTo(0, 0);
   aturTombolHitungStok(tabId);
   render();
-    if (tabId === 'setting') { isiFormSetting(true); muatPrefApiSetting(); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); if (typeof tampilkanPanelAksesMenu === 'function') tampilkanPanelAksesMenu(); } if (typeof terapkanBahasa === 'function') terapkanBahasa();
+    if (tabId === 'setting') { isiFormSetting(true); muatPrefApiSetting(); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); if (typeof tampilkanPanelAksesMenu === 'function') tampilkanPanelAksesMenu(); } if (typeof terapkanBahasa === 'function') terapkanBahasa();}
  }
 
 // === PRODUK & STOK ===
