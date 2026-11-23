@@ -4317,14 +4317,15 @@ function bukaShiftClosing() {
       <label>Catatan Tutup Kasir (Opsional)</label>
       <input id="scCatatan" placeholder="Contoh: Setor ke pemilik, sisa modal laci 200rb" style="margin-bottom:12px;">
       <div style="font-size:12px;color:#15803d;background:#f0fdf4;border:1px solid #bbf7d0;padding:8px 10px;border-radius:8px;margin-bottom:10px;">
-        📲 Laporan hasil penjualan &amp; tutup kasir hari ini otomatis dikirim ke WA Pemilik saat disimpan.
+        📲 Laporan hasil penjualan &amp; tutup kasir hari ini otomatis dikirim ke Pemilik saat disimpan.
       </div>
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
-        <button type="button" class="btn ok" onclick="simpanShiftClosing(true, true)">💾 Simpan, Cetak &amp; WA</button>
-        <button type="button" class="btn blue" onclick="simpanShiftClosing(false, true)">📲 Simpan &amp; Kirim WA</button>
+        <button type="button" class="btn ok" onclick="simpanShiftClosing(true, true)">💾 Simpan, Cetak &amp; Kirim</button>
+        <button type="button" class="btn blue" onclick="simpanShiftClosing(false, true)">📲 Simpan &amp; Kirim</button>
       </div>
     </div>`;
   document.body.appendChild(ov);
+  if (typeof terapkanBahasa === 'function') terapkanBahasa();
   $('scFisik').focus();
 }
 
