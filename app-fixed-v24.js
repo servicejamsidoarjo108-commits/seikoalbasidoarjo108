@@ -5561,6 +5561,34 @@ const I18N_DICT = {
   'Aktifkan': { en: 'Enable', zh: '启用' },
   'AKTIF': { en: 'ACTIVE', zh: '启用' },
   'NONAKTIF': { en: 'INACTIVE', zh: '已停用' },
+    // --- Tutup Kasir (Netral) ---
+  'Laporan hasil penjualan & tutup kasir hari ini otomatis dikirim ke Pemilik saat disimpan.': {
+    en: "Today's sales & closing report will be automatically sent to the Owner when saved.",
+    zh: '保存后，今日销售及结账报告将自动发送给店主。'
+  },
+  'Simpan, Cetak & Kirim': { en: 'Save, Print & Send', zh: '保存、打印并发送' },
+  'Simpan & Kirim': { en: 'Save & Send', zh: '保存并发送' },
+
+  // --- Isi Kas Kecil (Netral) ---
+  'Khusus Admin/Pemilik — tanpa batas nominal, untuk modal awal atau isi ulang kas kecil.': {
+    en: 'Admin/Owner only — no amount limit, for initial float or petty cash top-up.',
+    zh: '仅限管理员/店主 — 无限额，用于初始备用金或零用金充值。'
+  },
+
+  // --- Pengaturan Hak Akses Menu ---
+  'PENGATURAN HAK AKSES MENU (KHUSUS PEMILIK)': {
+    en: 'MENU ACCESS CONTROL (OWNER ONLY)',
+    zh: '菜单访问权限设置（仅限店主）'
+  },
+  'Atur menu apa saja yang boleh dibuka oleh Kasir atau Admin. Akun Pemilik selalu punya akses penuh.': {
+    en: 'Manage which menus Cashier or Admin can access. Owner account always has full access.',
+    zh: '设置收银员或管理员可以访问的菜单。店主账号始终拥有完整权限。'
+  },
+  'Pilih Jabatan yang Diatur': { en: 'Select Role to Configure', zh: '选择要设置的角色' },
+  'Simpan Hak Akses': { en: 'Save Access Rights', zh: '保存权限设置' },
+  'Semua Stok & Harga': { en: 'All Stock & Prices', zh: '全部库存与价格' },
+  'Laporan & Kartu Audit': { en: 'Reports & Audit Card', zh: '报表与审计卡' },
+  'Setting (Printer/Bahasa)': { en: 'Settings (Printer/Language)', zh: '设置（打印机/语言）' },
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
