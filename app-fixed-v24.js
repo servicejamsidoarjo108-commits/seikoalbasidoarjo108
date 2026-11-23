@@ -6082,6 +6082,26 @@ function terapkanAksesMenu() {
     const adaTombolAdmin = Array.from(menuAdmin.querySelectorAll('button')).some(b => b.style.display !== 'none');
     menuAdmin.style.display = (isPemilik() || adaTombolAdmin) ? 'grid' : 'none';
   }
+    // Rapikan grid menu agar dinamis (tombol ganjil melebar penuh, blok kosong disembunyikan)
+  const wadahMenu = new Set();
+  document.querySelectorAll('#home button[onclick*="bukaMenu"]').forEach(btn => {
+    if (btn.parentElement) wadahMenu.add(btn.parentElement);
+  });
+
+  wadahMenu.forEach(box => {
+    const semuaTombol = Array.from(box.children).filter(el => el.matches('button[onclick*="bukaMenu"]'));
+    semuaTombol.forEach(el => { el.style.gridColumn = ''; });
+
+    const tombolAktif = semuaTombol.filter(el => el.style.display !== 'none');
+    if (tombolAktif.length === 0) {
+      box.style.display = 'none';
+    } else {
+      box.style.display = 'grid';
+      if (tombolAktif.length % 2 === 1) {
+        tombolAktif[tombolAktif.length - 1].style.gridColumn = '1 / -1';
+      }
+    }
+  });
 }
 
 function tampilkanPanelAksesMenu() {
