@@ -691,8 +691,7 @@ function bukaMenu(tabId) {
   window.scrollTo(0, 0);
   aturTombolHitungStok(tabId);
   render();
-  if (tabId === 'setting') { isiFormSetting(true); muatPrefApiSetting(); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); } if (typeof terapkanBahasa === 'function') terapkanBahasa(); }
-}
+    if (tabId === 'setting') { isiFormSetting(true); muatPrefApiSetting(); if (isPemilik()) { pasangUILogoSetting(); renderPreviewLogo(); if (typeof tampilkanPanelAksesMenu === 'function') tampilkanPanelAksesMenu(); } if (typeof terapkanBahasa === 'function') terapkanBahasa(); }
 
 // === PRODUK & STOK ===
 async function simpanProduk() {
@@ -2735,7 +2734,8 @@ function render() {
   if (homeUser) homeUser.innerHTML = `${lblLoginAs} <b>${esc(uName)}</b> (${esc(uRole)})`;
   if ($('userInfo')) $('userInfo').textContent = `${uName} (${uRole})`;
   if ($('userAvatar')) $('userAvatar').textContent = (uName || 'US').slice(0, 2).toUpperCase();
-  const menuAdmin = $('menuAdmin'); if (menuAdmin) menuAdmin.style.display = isAdmin() ? 'grid' : 'none';
+  const menuAdmin = $('menuAdmin'); if (menuAdmin) menuAdmin.style.display = isAdmin() ? 'grid' : 'none';  if (typeof terapkanAksesMenu === 'function') terapkanAksesMenu();
+
 
   // 2. Dropdown
   const optBank = '<option value="">-- pilih rekening --</option>' + (db.bank || []).map(b => `<option value="${esc(b.id)}">${esc(b.nama)}${b.no ? ' (' + esc(b.no) + ')' : ''}</option>`).join('');
@@ -6005,5 +6005,134 @@ function cekBannerLangganan() {
   banner.textContent = pesan;
   document.body.prepend(banner);
 }
+// === PENGATURAN HAK AKSES MENU PER ROLE (KHUSUS PEMILIK) ===
+const DAFTAR_MENU_AKSES = [
+  { id: 'kasir', label: 'Kasir' },
+  { id: 'servis', label: 'Servis' },
+  { id: 'baterai', label: 'Baterai' },
+  { id: 'produk', label: 'Produk & Stock' },
+  { id: 'sparepart', label: 'Spare Part' },
+  { id: 'laporan', label: 'Laporan' },
+  { id: 'pelanggan', label: 'Pelanggan' },
+  { id: 'karyawan', label: 'Karyawan & Absensi' },
+  { id: 'kas', label: 'Kas' },
+  { id: 'supplier', label: 'Supplier' },
+  { id: 'keuangan', label: 'Laporan Keuangan' },
+  { id: 'semua_stok', label: 'Semua Stok & Harga' },
+  { id: 'laporan_audit', label: 'Laporan & Kartu Audit' },
+  { id: 'setting', label: 'Setting (Printer/Bahasa)' }
+];
+
+let _defaultMenuByRole = null;
+let _aksesMenuLoadedTokoId = null;
+
+function _simpanDefaultMenuRole() {
+  if (!_defaultMenuByRole && typeof MENU_BY_ROLE === 'object') {
+    _defaultMenuByRole = {
+      kasir: [...(MENU_BY_ROLE.kasir || [])],
+      admin: [...(MENU_BY_ROLE.admin || [])]
+    };
+  }
+}
+
+async function muatAksesMenuCloud() {
+  if (!currentTenant || !currentTenant.toko_id) return;
+  if (_aksesMenuLoadedTokoId === currentTenant.toko_id) return;
+  _aksesMenuLoadedTokoId = currentTenant.toko_id;
+  try {
+    const { data } = await supabaseClient
+      .from('toko')
+      .select('akses_menu')
+      .eq('id', currentTenant.toko_id)
+      .maybeSingle();
+    if (data && data.akses_menu && typeof data.akses_menu === 'object') {
+      if (!currentTenant.toko) currentTenant.toko = {};
+      currentTenant.toko.akses_menu = data.akses_menu;
+      terapkanAksesMenu();
+    }
+  } catch (e) {
+    console.warn('Gagal memuat akses_menu:', e);
+  }
+}
+
+function terapkanAksesMenu() {
+  _simpanDefaultMenuRole();
+  muatAksesMenuCloud();
+
+  const custom = (currentTenant && currentTenant.toko && currentTenant.toko.akses_menu) || {};
+  if (_defaultMenuByRole) {
+    MENU_BY_ROLE.kasir = Array.isArray(custom.kasir) ? custom.kasir : [..._defaultMenuByRole.kasir];
+    MENU_BY_ROLE.admin = Array.isArray(custom.admin) ? custom.admin : [..._defaultMenuByRole.admin];
+  }
+
+  const role = (getRole() || '').toLowerCase();
+  const allowed = MENU_BY_ROLE[role] || [];
+
+  document.querySelectorAll('#home button[onclick^="bukaMenu("]').forEach(btn => {
+    const m = (btn.getAttribute('onclick') || '').match(/bukaMenu\(['"]([^'"]+)['"]\)/);
+    if (!m) return;
+    const menuId = m[1];
+    const boleh = isPemilik() || allowed.includes(menuId);
+    btn.style.display = boleh ? 'flex' : 'none';
+  });
+
+  const menuAdmin = $('menuAdmin');
+  if (menuAdmin) {
+    const adaTombolAdmin = Array.from(menuAdmin.querySelectorAll('button')).some(b => b.style.display !== 'none');
+    menuAdmin.style.display = (isPemilik() || adaTombolAdmin) ? 'grid' : 'none';
+  }
+}
+
+function tampilkanPanelAksesMenu() {
+  const card = $('cardHakAksesMenu');
+  if (!card) return;
+  if (!isPemilik()) {
+    card.style.display = 'none';
+    return;
+  }
+  card.style.display = 'block';
+  renderCheckboxAksesMenu();
+}
+
+function renderCheckboxAksesMenu() {
+  _simpanDefaultMenuRole();
+  const container = $('listCheckboxAksesMenu');
+  const selRole = $('aksesRolePilih');
+  if (!container || !selRole) return;
+
+  const role = selRole.value;
+  const custom = (currentTenant && currentTenant.toko && currentTenant.toko.akses_menu) || {};
+  const aktif = Array.isArray(custom[role])
+    ? custom[role]
+    : ((_defaultMenuByRole && _defaultMenuByRole[role]) || MENU_BY_ROLE[role] || []);
+
+  container.innerHTML = DAFTAR_MENU_AKSES.map(m => `
+    <label style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;background:#f8fafc;cursor:pointer;margin:0;font-weight:600;font-size:13px;">
+      <input type="checkbox" class="chk-akses-menu" value="${m.id}" ${aktif.includes(m.id) ? 'checked' : ''} style="width:18px;height:18px;flex-shrink:0;">
+      <span>${m.label}</span>
+    </label>
+  `).join('');
+}
+
+async function simpanAksesMenu() {
+  if (!isPemilik()) return flash('Hanya Pemilik yang bisa mengubah hak akses.', 'err');
+  const role = $('aksesRolePilih') ? $('aksesRolePilih').value : 'kasir';
+  const terpilih = Array.from(document.querySelectorAll('.chk-akses-menu:checked')).map(el => el.value);
+
+  try {
+    const aksesLama = (currentTenant && currentTenant.toko && currentTenant.toko.akses_menu) || {};
+    const aksesBaru = { ...aksesLama, [role]: terpilih };
+
+    await dbOk(supabaseClient.from('toko').update({ akses_menu: aksesBaru }).eq('id', currentTenant.toko_id));
+    if (currentTenant.toko) currentTenant.toko.akses_menu = aksesBaru;
+
+    terapkanAksesMenu();
+    await catatLog('AKSES_MENU', `Mengubah hak akses menu untuk ${role.toUpperCase()} (${terpilih.length} menu)`);
+    flash(`Hak akses menu ${role.toUpperCase()} berhasil disimpan!`);
+  } catch (e) {
+    flash('Gagal menyimpan hak akses: ' + e.message, 'err');
+  }
+}
+
 
 
