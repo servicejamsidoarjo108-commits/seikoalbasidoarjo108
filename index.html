@@ -1380,6 +1380,19 @@ main { max-width: 1120px; }
 
   <!-- TAB 5: SISTEM & AUDIT -->
   <div id="stab_sistem" class="stab-pane" style="display:none;">
+        <div class="card" id="cardHakAksesMenu" style="display:none;border:2px solid #0f1f3d;">
+      <h3>🔐 Pengaturan Hak Akses Menu (Khusus Pemilik)</h3>
+      <p style="font-size:13px;color:#475569;margin-top:0">Atur menu apa saja yang boleh dibuka oleh Kasir atau Admin. Akun Pemilik selalu punya akses penuh.</p>
+      <div style="margin-bottom:12px;">
+        <label>Pilih Jabatan yang Diatur</label>
+        <select id="aksesRolePilih" onchange="renderCheckboxAksesMenu()">
+          <option value="kasir">Kasir</option>
+          <option value="admin">Admin</option>
+        </select>
+      </div>
+      <div id="listCheckboxAksesMenu" style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:12px;"></div>
+      <button type="button" class="btn ok" onclick="simpanAksesMenu()">💾 Simpan Hak Akses</button>
+    </div>
     <div class="card">
       <h3>🛠️ Audit Sistem Otomatis</h3>
       <p style="font-size:12px;color:#64748b">Klik untuk mengecek apakah semua fungsi dan elemen HTML berjalan normal.</p>
