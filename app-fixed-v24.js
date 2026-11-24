@@ -2966,12 +2966,19 @@ function render() {
     const btnKartu = s.tgl_garansi_servis_sampai ? `<button class="btn-sm blue" onclick="cetakKartuGaransiServis('${id}')">Kartu</button><button class="btn-sm ok" onclick="generateDigitalWarranty('${id}', 'servis')">📸 E-Warranty</button>` : '';
     const btnKlaim = bisaKlaimGaransi(s) ? `<button class="btn-sm warn" onclick="mulaiKlaimGaransi('${id}')">Klaim (${getRules().maxKlaim - (s.klaim_count || 0)}x)</button>` : '';
     const lblStatus = { antri: '✔ Diterima', proses: '⚙️ Dikerjakan', selesai: '✅ Selesai', diambil: '📦 Sudah Diambil' }[s.status] || s.status.toUpperCase();
+    const _l = (typeof _getWaLang === 'function') ? _getWaLang() : 'id';
+    const _t = {
+      id: { keluhan: 'Keluhan', kondisi: 'Kondisi Awal', total: 'Total', lunas: 'LUNAS', sisa: 'Sisa', garansi: 'Garansi s/d', diambil: 'Diambil' },
+      en: { keluhan: 'Issue', kondisi: 'Initial Condition', total: 'Total', lunas: 'PAID', sisa: 'Balance', garansi: 'Warranty until', diambil: 'Picked up' },
+      zh: { keluhan: '故障', kondisi: '初始外观', total: '总计', lunas: '已结清', sisa: '余额', garansi: '保修至', diambil: '已取件' }
+    }[_l] || {};
+
     return `<div class="servis-item ${esc(s.status)}"><h4><span><span class="ticket-id-pill">${id}</span> <b style="margin-left:6px;color:#0f1f3d;">${esc(s.customer)}</b></span> <span class="badge ${esc(s.status)}">${lblStatus}</span></h4>
-      <p><b style="color:#0f1f3d;">${esc(s.produk)}</b>${s.keluhan ? ' · Keluhan: ' + esc(s.keluhan) : ''}</p>
-      ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<p style="color:#dc2626; font-size:11px; margin-top:2px;"><b>⚠️ Kondisi Awal:</b> ${esc(s.kondisi_fisik)}</p>` : ''}
-      <p>Total: ${rp(s.biaya_pelanggan)} ${s.paid ? '<span class="badge ok">LUNAS</span>' : `<span class="badge warn">Sisa ${rp(s.sisa)}</span>`}</p>
-      ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">Garansi s/d ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
-      ${s.tgl_diambil ? `<p style="font-size:11px;color:#15803d;font-weight:700;">✅ Diambil: ${new Date(s.tgl_diambil).toLocaleString('id-ID')} (${esc(s.diambil_oleh || s.customer)})</p>` : ''}
+      <p><b style="color:#0f1f3d;">${esc(s.produk)}</b>${s.keluhan ? ' · ' + _t.keluhan + ': ' + esc(s.keluhan) : ''}</p>
+      ${s.kondisi_fisik && s.kondisi_fisik !== '-' ? `<p style="color:#dc2626; font-size:11px; margin-top:2px;"><b>⚠️ ${_t.kondisi}:</b> ${esc(s.kondisi_fisik)}</p>` : ''}
+      <p>${_t.total}: ${rp(s.biaya_pelanggan)} ${s.paid ? `<span class="badge ok">${_t.lunas}</span>` : `<span class="badge warn">${_t.sisa} ${rp(s.sisa)}</span>`}</p>
+      ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">${_t.garansi} ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
+      ${s.tgl_diambil ? `<p style="font-size:11px;color:#15803d;font-weight:700;">✅ ${_t.diambil}: ${new Date(s.tgl_diambil).toLocaleString('id-ID')} (${esc(s.diambil_oleh || s.customer)})</p>` : ''}
       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
         ${s.status === 'diambil'
           ? (s.ttd_ambil || s.tgl_diambil ? `<button class="btn-sm ok" onclick="lihatBuktiAmbil('${id}')">✍️ Bukti Ambil</button>` : '')
