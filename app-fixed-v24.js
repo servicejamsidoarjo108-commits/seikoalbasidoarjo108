@@ -7042,7 +7042,7 @@ async function simpanAksesMenu() {
 (function () {
   const modalMap = {
     en: [
-      [/ISI SALDO \/ TOP-UP KAS KECIL/g, 'TOP-UP PETTY CASH BALANCE'],
+      [/ISI SALDO \/ TOP-UP KAS KECIL/gi, 'TOP-UP PETTY CASH BALANCE'],
       [/Nominal Isi Kas Kecil/g, 'Petty Cash Top-Up Amount'],
       [/Contoh:\s*1000000/g, 'e.g. 1000000'],
       [/Isi Ulang \/ Saldo Awal Kas Kecil/g, 'Top-Up / Opening Petty Cash Balance'],
