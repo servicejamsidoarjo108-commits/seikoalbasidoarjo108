@@ -2034,7 +2034,15 @@ function cetakViaRawBT(html) {
 }
 
 function cetakHTML(html) {
-  html = typeof trStruk === 'function' ? trStruk(html) : html;
+  if (typeof trStruk === 'function') {
+    const _imgs = [];
+    html = html.replace(/data:image\/[a-zA-Z0-9.+-]+;base64,[A-Za-z0-9+/=]+/g, m => {
+      _imgs.push(m);
+      return `__IMG_SAFE_${_imgs.length - 1}__`;
+    });
+    html = trStruk(html);
+    html = html.replace(/__IMG_SAFE_(\d+)__/g, (_, i) => _imgs[i]);
+  }
   // 1. Jika mode Bluetooth Web aktif & terhubung (Chrome)
   if (localStorage.getItem('ta_bt_aktif') === '1' && btCharacteristic) {
     const teks = htmlKeTeksStruk(html);
