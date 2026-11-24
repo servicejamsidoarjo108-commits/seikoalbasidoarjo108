@@ -7066,14 +7066,15 @@ async function simpanAksesMenu() {
     return out;
   }
 
-  if (typeof window.flash === 'function' && !window.flash.__i18nWrapped) {
-  const _flash = window.flash;
-  const wrappedFlash = function (text, type) {
-    return _flash.call(this, trFlash(text), type);
-  };
-  wrappedFlash.__i18nWrapped = true;
-  window.flash = wrappedFlash;
-}
+    if (typeof window.flash === 'function' && !window.flash.__i18nWrapped) {
+    const _flash = window.flash;
+    const wrappedFlash = function (text, type) {
+      return _flash.call(this, trFlash(text), type);
+    };
+    wrappedFlash.__i18nWrapped = true;
+    window.flash = wrappedFlash;
+  }
+})();
 
 // === AUTO-TRANSLATE MODAL DINAMIS (Top-Up Kas Kecil, dll.) ===
 (function () {
