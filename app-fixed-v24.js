@@ -6944,6 +6944,14 @@ async function simpanAksesMenu() {
       [/✅ Absen Pulang berhasil dicatat!/g, '✅ 下班打卡成功！'],
       [/Mode Huruf Besar AKTIF/g, '大字体模式已开启'],
       [/Mode Huruf Normal/g, '标准字体模式'],
+      [/Pengaturan MDR disimpan!?/gi, '费率规则已保存！'],
+      [/Aturan diskon disimpan!?/gi, '折扣规则已保存！'],
+      [/Aturan garansi & baterai disimpan!?/gi, '保修与电池规则已保存！'],
+      [/Identitas disimpan!?/gi, '店铺信息已保存！'],
+      [/Pengaturan WhatsApp API disimpan & disinkronkan!?/gi, 'WhatsApp API 设置已保存并同步！'],
+      [/Pengaturan Telegram Bot disimpan!?/gi, 'Telegram 机器人设置已保存！'],
+      [/Logo disimpan, akan tampil di nota/gi, '图标已保存，将显示在小票上'],
+      [/Logo dihapus/gi, '图标已删除'],
 
       // Prefix Error Umum
       [/^Gagal menyimpan:\s*/g, '保存失败：'],
@@ -7038,6 +7046,14 @@ async function simpanAksesMenu() {
       [/✅ Absen Pulang berhasil dicatat!/g, '✅ Clock-out recorded!'],
       [/Mode Huruf Besar AKTIF/g, 'Large Font Mode ON'],
       [/Mode Huruf Normal/g, 'Normal Font Mode'],
+      [/Pengaturan MDR disimpan!?/gi, 'MDR settings saved!'],
+      [/Aturan diskon disimpan!?/gi, 'Discount rules saved!'],
+      [/Aturan garansi & baterai disimpan!?/gi, 'Warranty & battery rules saved!'],
+      [/Identitas disimpan!?/gi, 'Store identity saved!'],
+      [/Pengaturan WhatsApp API disimpan & disinkronkan!?/gi, 'WhatsApp API settings saved & synced!'],
+      [/Pengaturan Telegram Bot disimpan!?/gi, 'Telegram Bot settings saved!'],
+      [/Logo disimpan, akan tampil di nota/gi, 'Logo saved, it will appear on receipts'],
+      [/Logo dihapus/gi, 'Logo removed'],
 
       // General Error Prefixes
       [/^Gagal menyimpan:\s*/g, 'Failed to save: '],
@@ -7050,8 +7066,15 @@ async function simpanAksesMenu() {
     return out;
   }
 
-  window.flash = (text, type) => _flash(trFlash(text), type);
-})();
+  if (typeof window.flash === 'function' && !window.flash.__i18nWrapped) {
+  const _flash = window.flash;
+  const wrappedFlash = function (text, type) {
+    return _flash.call(this, trFlash(text), type);
+  };
+  wrappedFlash.__i18nWrapped = true;
+  window.flash = wrappedFlash;
+}
+
 // === AUTO-TRANSLATE MODAL DINAMIS (Top-Up Kas Kecil, dll.) ===
 (function () {
   const modalMap = {
