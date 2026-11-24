@@ -6983,6 +6983,8 @@ async function simpanAksesMenu() {
       [/Backup penuh \(\.json\) berhasil diunduh!/g, '完整备份 (.json) 已下载！'],
       [/Hak akses menu\s+(\w+)\s+berhasil disimpan!?/gi, '$1 菜单权限已保存！'],
       [/Gagal menyimpan hak akses:\s*/gi, '保存菜单权限失败：'],
+      [/Pilih file logo dulu/gi, '请先选择图标文件'],
+
 
       // Prefix Error Umum
       [/^Gagal menyimpan:\s*/g, '保存失败：'],
@@ -7100,6 +7102,8 @@ async function simpanAksesMenu() {
 
       [/Hak akses menu\s+(\w+)\s+berhasil disimpan!?/gi, 'Menu access for $1 saved!'],
       [/Gagal menyimpan hak akses:\s*/gi, 'Failed to save menu access: '],
+      [/Pilih file logo dulu/gi, 'Please choose a logo file first'],
+
       
       // General Error Prefixes
       [/^Gagal menyimpan:\s*/g, 'Failed to save: '],
