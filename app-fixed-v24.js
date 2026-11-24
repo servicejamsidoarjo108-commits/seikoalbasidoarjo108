@@ -5746,6 +5746,13 @@ const I18N_DICT = {
   'Preview Nota / Struk': { en: 'Receipt / Ticket Preview', zh: '小票 / 工单预览' },
   'Kembali': { en: 'Back', zh: '返回' },
   'WA Terima': { en: 'WA Receipt', zh: 'WA 收件通知' },
+  'KARYAWAN': { en: 'STAFF', zh: '员工' },
+  'HADIR': { en: 'PRESENT', zh: '出勤' },
+  'KOMISI': { en: 'COMMISSION', zh: '提成' },
+  'PEMILIK': { en: 'OWNER', zh: '店主' },
+  'KASIR': { en: 'CASHIER', zh: '收银员' },
+  'ADMIN': { en: 'ADMIN', zh: '管理员' },
+  'TEKNISI': { en: 'TECHNICIAN', zh: '技师' },
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
