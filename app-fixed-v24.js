@@ -6963,6 +6963,7 @@ async function simpanAksesMenu() {
       [/Kartu digital berhasil dibuat!/g, '电子保修卡已生成！'],
       [/Gagal membuat gambar/g, '生成图片失败'],
       [/Garansi servis tidak valid/g, '维修保修无效'],
+      [/Servis dihapus & stok\/kas dikembalikan secara atomik/gi, '维修单已删除，库存与现金已自动回滚'],
       [/Data baterai tidak valid/g, '电池数据无效'],
       [/Library html2canvas belum dimuat/g, 'html2canvas 组件未加载'],
 
@@ -7081,6 +7082,7 @@ async function simpanAksesMenu() {
       [/Kartu digital berhasil dibuat!/g, 'Digital warranty card created!'],
       [/Gagal membuat gambar/g, 'Failed to generate image'],
       [/Garansi servis tidak valid/g, 'Invalid service warranty'],
+      [/Servis dihapus & stok\/kas dikembalikan secara atomik/gi, 'Service deleted & stock/cash atomically restored'],
       [/Data baterai tidak valid/g, 'Invalid battery data'],
       [/Library html2canvas belum dimuat/g, 'html2canvas library not loaded'],
 
