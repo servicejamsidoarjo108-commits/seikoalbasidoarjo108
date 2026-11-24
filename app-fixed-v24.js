@@ -7392,7 +7392,17 @@ async function simpanAksesMenu() {
     [/Menyimpan\.\.\./gi, 'Saving...'],
     [/Status: Gagal menghubungkan/gi, 'Status: Connection failed'],
     [/Pop-up diblokir browser\. Izinkan pop-up untuk mencetak barcode\./gi, 'Pop-up blocked by browser. Allow pop-ups to print barcode.'],
-
+    [/Periode Laba Rugi & Arus Kas:/g, 'Profit & Loss & Cash Flow Period:'],
+    [/\(Neraca menampilkan posisi saat ini\)\./g, '(Balance Sheet shows current position).'],
+    [/\bJanuari (\d{4})/g, 'January $1'],
+    [/\bFebruari (\d{4})/g, 'February $1'],
+    [/\bMaret (\d{4})/g, 'March $1'],
+    [/\bMei (\d{4})/g, 'May $1'],
+    [/\bJuni (\d{4})/g, 'June $1'],
+    [/\bJuli (\d{4})/g, 'July $1'],
+    [/\bAgustus (\d{4})/g, 'August $1'],
+    [/\bOktober (\d{4})/g, 'October $1'],
+    [/\bDesember (\d{4})/g, 'December $1']
 
   ];
 
@@ -7422,7 +7432,20 @@ async function simpanAksesMenu() {
     [/Menyimpan\.\.\./gi, '保存中...'],
     [/Status: Gagal menghubungkan/gi, '状态：连接失败'],
     [/Pop-up diblokir browser\. Izinkan pop-up untuk mencetak barcode\./gi, '浏览器拦截了弹窗。请允许弹窗以打印条形码。'],
-
+    [/Periode Laba Rugi & Arus Kas:/g, '损益表及现金流量表期间：'],
+    [/\(Neraca menampilkan posisi saat ini\)\./g, '（资产负债表显示当前累计位置）。'],
+    [/\bJanuari (\d{4})/g, '$1年1月'],
+    [/\bFebruari (\d{4})/g, '$1年2月'],
+    [/\bMaret (\d{4})/g, '$1年3月'],
+    [/\bApril (\d{4})/g, '$1年4月'],
+    [/\bMei (\d{4})/g, '$1年5月'],
+    [/\bJuni (\d{4})/g, '$1年6月'],
+    [/\bJuli (\d{4})/g, '$1年7月'],
+    [/\bAgustus (\d{4})/g, '$1年8月'],
+    [/\bSeptember (\d{4})/g, '$1年9月'],
+    [/\bOktober (\d{4})/g, '$1年10月'],
+    [/\bNovember (\d{4})/g, '$1年11月'],
+    [/\bDesember (\d{4})/g, '$1年12月']
 
   ];
 
