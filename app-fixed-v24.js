@@ -7634,9 +7634,9 @@ async function simpanAksesMenu() {
 
   window.trFlash = function (msg) {
     if (typeof msg !== 'string') return msg;
-    const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
-    if (lang === 'id') return msg;
-    const idx = lang === 'zh' ? 1 : 0;
+    const probe = _prevTrFlash('Jam berhasil ditambahkan ke list');
+    if (probe === 'Jam berhasil ditambahkan ke list') return msg;
+    const idx = /[\u4e00-\u9fff]/.test(probe) ? 1 : 0;
 
     if (EXACT[msg]) return EXACT[msg][idx];
 
