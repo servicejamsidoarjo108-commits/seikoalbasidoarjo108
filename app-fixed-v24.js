@@ -5589,6 +5589,19 @@ const I18N_DICT = {
   'Semua Stok & Harga': { en: 'All Stock & Prices', zh: '全部库存与价格' },
   'Laporan & Kartu Audit': { en: 'Reports & Audit Card', zh: '报表与审计卡' },
   'Setting (Printer/Bahasa)': { en: 'Settings (Printer/Language)', zh: '设置（打印机/语言）' },
+    // --- Judul Hak Akses (Title Case) ---
+  'Pengaturan Hak Akses Menu (Khusus Pemilik)': {
+    en: 'Menu Access Control (Owner Only)',
+    zh: '菜单访问权限设置（仅限店主）'
+  },
+
+  // --- Isi Popup Tutup Kasir ---
+  'Tunai Masuk Hari Ini': { en: 'Cash In Today', zh: '今日现金收入' },
+  'Tunai Keluar (Kas Kecil/dll)': { en: 'Cash Out (Petty Cash/etc)', zh: '今日现金支出（零用金等）' },
+  'Seharusnya di Laci (Sistem)': { en: 'Expected in Drawer (System)', zh: '系统应有现金' },
+  'Non-Tunai (QRIS/Transfer/EDC)': { en: 'Non-Cash (QRIS/Transfer/EDC)', zh: '非现金（QRIS/转账/刷卡）' },
+  'Hitung Uang Tunai Fisik di Laci (Rp) *': { en: 'Count Physical Cash in Drawer (Rp) *', zh: '清点抽屉实际现金 (Rp) *' },
+  'Catatan Tutup Kasir (Opsional)': { en: 'Closing Note (Optional)', zh: '结账备注（可选）' },
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
