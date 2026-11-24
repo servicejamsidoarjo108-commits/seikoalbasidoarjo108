@@ -781,13 +781,13 @@ main { max-width: 1120px; }
         </div>
         <label>Pilih Cepat Keluhan (bisa klik lebih dari satu)</label>
         <div class="tap-group">
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jam Mati')">Jam Mati</button>
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Servis Total')">Servis Total</button>
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Kaca')">Ganti Kaca</button>
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Ganti Mesin')">Ganti Mesin</button>
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Kemasukan Air')">Kemasukan Air</button>
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Jarum Lepas')">Jarum Lepas</button>
-          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan('Potong Rantai')">Potong Rantai</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Jam Mati</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Servis Total</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Ganti Kaca</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Ganti Mesin</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Kemasukan Air</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Jarum Lepas</button>
+          <button type="button" class="tap-btn warn-tap" onclick="tambahKeluhan(this.textContent.trim())">Potong Rantai</button>
         </div>
         <label>Catatan Teknisi</label><textarea id="sCatatan" rows="2" placeholder="Kondisi awal, dsb" style="margin-bottom:10px"></textarea>
 
