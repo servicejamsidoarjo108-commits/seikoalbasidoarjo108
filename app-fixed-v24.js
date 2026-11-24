@@ -7362,7 +7362,10 @@ async function simpanAksesMenu() {
     [/^Lanjutkan$/g, 'Continue'],
     [/Preview Nota \/ Struk/g, 'Receipt / Ticket Preview'],
     [/✕ Kembali/g, '✕ Back'],
-    [/\bKlaim\s*\(/g, 'Claim (']
+    [/\bKlaim\s*\(/g, 'Claim ('],
+    [/\bKeluhan:/g, 'Issue:'],
+    [/\bBiaya:/g, 'Cost:']
+
   ];
 
   const MAP_ZH = [
@@ -7375,7 +7378,10 @@ async function simpanAksesMenu() {
     [/^Lanjutkan$/g, '继续'],
     [/Preview Nota \/ Struk/g, '小票 / 工单预览'],
     [/✕ Kembali/g, '✕ 返回'],
-    [/\bKlaim\s*\(/g, '保修索赔 (']
+    [/\bKlaim\s*\(/g, '保修索赔 ('],
+    [/\bKeluhan:/g, '故障：'],
+    [/\bBiaya:/g, '费用：']
+
   ];
 
   function translateNodes(root) {
