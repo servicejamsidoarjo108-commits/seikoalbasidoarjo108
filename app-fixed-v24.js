@@ -6845,6 +6845,193 @@ async function simpanAksesMenu() {
   window.prompt = (m, d) => _prompt(trPopup(m), d);
 })();
 
+// === AUTO-TRANSLATE SEMUA NOTIFIKASI / WARNING (flash) ===
+(function () {
+  if (typeof window.flash !== 'function') return;
+  const _flash = window.flash;
+
+  function trFlash(msg) {
+    if (typeof msg !== 'string') return msg;
+    const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+    if (lang === 'id') return msg;
+
+    const map = lang === 'zh' ? [
+      // Servis & Kas Kecil (dari screenshot)
+      [/Lunasi sisa tagihan dulu sebelum jam diambil\./g, '取表前请先结清余款。'],
+      [/Nominal harus antara Rp1 - Rp500\.000/g, '金额必须在 1 至 500,000 之间'],
+
+      // Akses & Validasi Umum
+      [/Akses ditolak\. Hanya Admin yang bisa mengubah produk\./g, '拒绝访问。仅管理员可修改商品。'],
+      [/Akses ditolak\. Hanya Admin\/Pemilik yang bisa menghapus\./g, '拒绝访问。仅管理员/店主可删除。'],
+      [/Akses ditolak\.?/g, '拒绝访问。'],
+      [/Khusus Pemilik/g, '仅限店主'],
+      [/Hanya Pemilik yang bisa menghapus produk/g, '仅店主可删除商品'],
+      [/Hanya Pemilik yang bisa menghapus transaksi penjualan/g, '仅店主可删除销售记录'],
+      [/Hanya Pemilik yang bisa mengubah pengaturan\./g, '仅店主可修改设置。'],
+      [/Hanya Pemilik yang bisa mengubah hak akses\./g, '仅店主可修改权限。'],
+      [/Hanya Pemilik yang bisa mengubah logo/g, '仅店主可修改图标'],
+      [/Hanya Pemilik yang bisa mengatur daftar beban/g, '仅店主可管理固定支出'],
+      [/Hanya Pemilik yang bisa mengubah beban/g, '仅店主可修改固定支出'],
+      [/Hanya Pemilik yang bisa menghapus beban/g, '仅店主可删除固定支出'],
+      [/Hanya Pemilik yang bisa menghapus riwayat audit/g, '仅店主可删除盘点记录'],
+      [/Hanya Pemilik yang bisa mengekspor backup data/g, '仅店主可导出备份数据'],
+      [/Hanya Pemilik yang bisa mengunduh backup penuh/g, '仅店主可下载完整备份'],
+      [/Hanya Pemilik yang bisa menghapus/g, '仅店主可删除'],
+      [/Hanya Admin\/Pemilik yang bisa mengisi saldo kas kecil/g, '仅管理员/店主可充值备用金'],
+      [/Lengkapi kolom wajib/g, '请填写必填项'],
+      [/Lengkapi Nama dan Produk/g, '请填写客户姓名和商品'],
+      [/Lengkapi nominal & keterangan/g, '请填写金额和说明'],
+      [/Username dan password wajib diisi/g, '请输入用户名和密码'],
+      [/Nama wajib diisi/g, '请填写名称'],
+      [/Nama Pelanggan wajib diisi/g, '请填写客户姓名'],
+      [/Nama penerima wajib diisi/g, '请填写取件人姓名'],
+      [/Nama beban wajib diisi/g, '请填写支出名称'],
+      [/Nama bank wajib/g, '请填写银行名称'],
+      [/Nama tidak boleh kosong/g, '名称不能为空'],
+      [/Keterangan wajib diisi/g, '请填写说明'],
+      [/Catatan audit wajib diisi/g, '请填写盘点备注'],
+      [/Alasan penyesuaian wajib diisi/g, '请填写调整原因'],
+      [/Nominal tidak valid/g, '金额无效'],
+      [/Nominal harus lebih dari 0/g, '金额必须大于 0'],
+      [/Data tidak valid/g, '数据无效'],
+      [/Qty tidak valid/g, '数量无效'],
+      [/Harga\/stok tidak boleh negatif/g, '价格/库存不能为负数'],
+      [/Pilih rekening bank tujuan terlebih dahulu untuk transaksi non-tunai/g, '非现金交易请先选择收款银行账户'],
+      [/Pilih rekening bank terlebih dahulu/g, '请先选择银行账户'],
+
+      // Kasir, Stok, Servis & Baterai
+      [/Keranjang kosong/g, '购物车为空'],
+      [/Keranjang baterai masih kosong/g, '电池列表为空'],
+      [/Uang kurang/g, '收款金额不足'],
+      [/Pilih produk/g, '请选择商品'],
+      [/Stok tidak cukup/g, '库存不足'],
+      [/Stok tidak mencukupi!/g, '库存不足！'],
+      [/Stok habis/g, '已售罄'],
+      [/Stok baterai habis!/g, '电池库存不足！'],
+      [/Stok baterai tidak mencukupi!/g, '电池库存不足！'],
+      [/Transaksi sedang diproses, mohon tunggu\.\.\./g, '交易处理中，请稍候...'],
+      [/Transaksi berhasil/g, '交易成功'],
+      [/List kosong\. Klik "Tambah Jam Ini ke List"\./g, '列表为空，请先点击“添加手表到工单”。'],
+      [/Jam berhasil ditambahkan ke list/g, '手表已添加到列表'],
+      [/Semua servis berhasil disimpan!/g, '所有维修单已保存！'],
+      [/Servis sudah diambil, status tidak bisa diubah kembali\./g, '该维修单已取件，无法再次更改状态。'],
+      [/Pelanggan wajib tanda tangan di kotak terlebih dahulu/g, '请先让客户在方框内签名'],
+      [/Isi Nama Produk \/ Jam terlebih dahulu!/g, '请先填写商品/手表名称！'],
+      [/Pilih Tipe Baterai terlebih dahulu!/g, '请先选择电池型号！'],
+      [/Baterai berhasil ditambahkan ke list/g, '电池已添加到列表'],
+      [/Kas kecil dicatat/g, '零用现金已记录'],
+      [/Kas dicatat/g, '现金记录已保存'],
+      [/Produk diperbarui/g, '商品已更新'],
+      [/Produk baru ditambahkan/g, '新商品已添加'],
+      [/Disimpan/g, '已保存'],
+      [/Dihapus/g, '已删除'],
+
+      // Absensi & Tampilan
+      [/Anda sudah Absen Masuk hari ini!/g, '您今天已经上班打卡了！'],
+      [/Anda belum Absen Masuk hari ini!/g, '您今天尚未上班打卡！'],
+      [/Anda sudah Absen Pulang hari ini!/g, '您今天已经下班打卡了！'],
+      [/✅ Absen Masuk berhasil dicatat!/g, '✅ 上班打卡成功！'],
+      [/✅ Absen Pulang berhasil dicatat!/g, '✅ 下班打卡成功！'],
+      [/Mode Huruf Besar AKTIF/g, '大字体模式已开启'],
+      [/Mode Huruf Normal/g, '标准字体模式'],
+
+      // Prefix Error Umum
+      [/^Gagal menyimpan:\s*/g, '保存失败：'],
+      [/^Gagal menghapus:\s*/g, '删除失败：'],
+      [/^Gagal:\s*/g, '失败：']
+    ] : [
+      // Service & Petty Cash (EN)
+      [/Lunasi sisa tagihan dulu sebelum jam diambil\./g, 'Please settle the remaining balance before watch pickup.'],
+      [/Nominal harus antara Rp1 - Rp500\.000/g, 'Amount must be between 1 and 500,000'],
+
+      // Access & Validation
+      [/Akses ditolak\. Hanya Admin yang bisa mengubah produk\./g, 'Access denied. Only Admin can edit products.'],
+      [/Akses ditolak\. Hanya Admin\/Pemilik yang bisa menghapus\./g, 'Access denied. Only Admin/Owner can delete.'],
+      [/Akses ditolak\.?/g, 'Access denied.'],
+      [/Khusus Pemilik/g, 'Owner only'],
+      [/Hanya Pemilik yang bisa menghapus produk/g, 'Only Owner can delete products'],
+      [/Hanya Pemilik yang bisa menghapus transaksi penjualan/g, 'Only Owner can delete sales transactions'],
+      [/Hanya Pemilik yang bisa mengubah pengaturan\./g, 'Only Owner can change settings.'],
+      [/Hanya Pemilik yang bisa mengubah hak akses\./g, 'Only Owner can change menu access.'],
+      [/Hanya Pemilik yang bisa mengubah logo/g, 'Only Owner can change the logo'],
+      [/Hanya Pemilik yang bisa mengatur daftar beban/g, 'Only Owner can manage fixed expenses'],
+      [/Hanya Pemilik yang bisa mengubah beban/g, 'Only Owner can edit fixed expenses'],
+      [/Hanya Pemilik yang bisa menghapus beban/g, 'Only Owner can delete fixed expenses'],
+      [/Hanya Pemilik yang bisa menghapus riwayat audit/g, 'Only Owner can delete audit history'],
+      [/Hanya Pemilik yang bisa mengekspor backup data/g, 'Only Owner can export backup data'],
+      [/Hanya Pemilik yang bisa mengunduh backup penuh/g, 'Only Owner can download full backup'],
+      [/Hanya Pemilik yang bisa menghapus/g, 'Only Owner can delete'],
+      [/Hanya Admin\/Pemilik yang bisa mengisi saldo kas kecil/g, 'Only Admin/Owner can top up petty cash'],
+      [/Lengkapi kolom wajib/g, 'Please fill in all required fields'],
+      [/Lengkapi Nama dan Produk/g, 'Please fill in Customer Name and Product'],
+      [/Lengkapi nominal & keterangan/g, 'Please fill in amount & description'],
+      [/Username dan password wajib diisi/g, 'Username and password are required'],
+      [/Nama wajib diisi/g, 'Name is required'],
+      [/Nama Pelanggan wajib diisi/g, 'Customer name is required'],
+      [/Nama penerima wajib diisi/g, 'Recipient name is required'],
+      [/Nama beban wajib diisi/g, 'Expense name is required'],
+      [/Nama bank wajib/g, 'Bank name is required'],
+      [/Nama tidak boleh kosong/g, 'Name cannot be empty'],
+      [/Keterangan wajib diisi/g, 'Description is required'],
+      [/Catatan audit wajib diisi/g, 'Audit note is required'],
+      [/Alasan penyesuaian wajib diisi/g, 'Adjustment reason is required'],
+      [/Nominal tidak valid/g, 'Invalid amount'],
+      [/Nominal harus lebih dari 0/g, 'Amount must be greater than 0'],
+      [/Data tidak valid/g, 'Invalid data'],
+      [/Qty tidak valid/g, 'Invalid quantity'],
+      [/Harga\/stok tidak boleh negatif/g, 'Price/stock cannot be negative'],
+      [/Pilih rekening bank tujuan terlebih dahulu untuk transaksi non-tunai/g, 'Please select a destination bank account for non-cash transactions'],
+      [/Pilih rekening bank terlebih dahulu/g, 'Please select a bank account first'],
+
+      // POS, Stock, Service & Battery
+      [/Keranjang kosong/g, 'Cart is empty'],
+      [/Keranjang baterai masih kosong/g, 'Battery list is empty'],
+      [/Uang kurang/g, 'Insufficient payment'],
+      [/Pilih produk/g, 'Select a product'],
+      [/Stok tidak cukup/g, 'Insufficient stock'],
+      [/Stok tidak mencukupi!/g, 'Insufficient stock!'],
+      [/Stok habis/g, 'Out of stock'],
+      [/Stok baterai habis!/g, 'Battery out of stock!'],
+      [/Stok baterai tidak mencukupi!/g, 'Insufficient battery stock!'],
+      [/Transaksi sedang diproses, mohon tunggu\.\.\./g, 'Processing transaction, please wait...'],
+      [/Transaksi berhasil/g, 'Transaction successful'],
+      [/List kosong\. Klik "Tambah Jam Ini ke List"\./g, 'List is empty. Click "Add Watch to List".'],
+      [/Jam berhasil ditambahkan ke list/g, 'Watch added to list'],
+      [/Semua servis berhasil disimpan!/g, 'All services saved!'],
+      [/Servis sudah diambil, status tidak bisa diubah kembali\./g, 'Service already picked up, status cannot be changed.'],
+      [/Pelanggan wajib tanda tangan di kotak terlebih dahulu/g, 'Customer must sign in the box first'],
+      [/Isi Nama Produk \/ Jam terlebih dahulu!/g, 'Please enter Product / Watch Name first!'],
+      [/Pilih Tipe Baterai terlebih dahulu!/g, 'Please select Battery Type first!'],
+      [/Baterai berhasil ditambahkan ke list/g, 'Battery added to list'],
+      [/Kas kecil dicatat/g, 'Petty cash recorded'],
+      [/Kas dicatat/g, 'Cash entry recorded'],
+      [/Produk diperbarui/g, 'Product updated'],
+      [/Produk baru ditambahkan/g, 'New product added'],
+      [/Disimpan/g, 'Saved'],
+      [/Dihapus/g, 'Deleted'],
+
+      // Attendance & Display
+      [/Anda sudah Absen Masuk hari ini!/g, 'You have already clocked in today!'],
+      [/Anda belum Absen Masuk hari ini!/g, 'You have not clocked in today!'],
+      [/Anda sudah Absen Pulang hari ini!/g, 'You have already clocked out today!'],
+      [/✅ Absen Masuk berhasil dicatat!/g, '✅ Clock-in recorded!'],
+      [/✅ Absen Pulang berhasil dicatat!/g, '✅ Clock-out recorded!'],
+      [/Mode Huruf Besar AKTIF/g, 'Large Font Mode ON'],
+      [/Mode Huruf Normal/g, 'Normal Font Mode'],
+
+      // General Error Prefixes
+      [/^Gagal menyimpan:\s*/g, 'Failed to save: '],
+      [/^Gagal menghapus:\s*/g, 'Failed to delete: '],
+      [/^Gagal:\s*/g, 'Failed: ']
+    ];
+
+    let out = msg;
+    for (const [rgx, rep] of map) out = out.replace(rgx, rep);
+    return out;
+  }
+
+  window.flash = (text, type) => _flash(trFlash(text), type);
+})();
 
 
 
