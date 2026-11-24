@@ -7,11 +7,14 @@
 <style>
   body { font-family: system-ui, sans-serif; background: #f4f6f9; margin: 0; padding: 20px; display: flex; justify-content: center; }
   .card { background: #fff; padding: 20px; border-radius: 12px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+  .lang-bar { display: flex; justify-content: flex-end; gap: 4px; margin-bottom: 10px; }
+  .lang-btn { width: auto; padding: 4px 10px; font-size: 12px; font-weight: 600; background: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; border-radius: 6px; cursor: pointer; }
+  .lang-btn.active { background: #0284c7; color: #fff; border-color: #0284c7; }
   h2 { text-align: center; color: #0f172a; margin-top: 0; }
   .sub { text-align: center; font-size: 13px; color: #64748b; margin-bottom: 15px; }
   input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 16px; text-align: center; }
-  button { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
-  button:disabled { opacity: .6; cursor: default; }
+  #btnLacak { width: 100%; padding: 12px; background: #0284c7; color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: bold; cursor: pointer; }
+  #btnLacak:disabled { opacity: .6; cursor: default; }
   #hasil { display: none; margin-top: 20px; border-top: 1px dashed #cbd5e1; padding-top: 20px; }
   .row { display: flex; justify-content: space-between; gap: 10px; margin-bottom: 6px; font-size: 14px; }
   .label { color: #64748b; }
@@ -35,20 +38,26 @@
 <body>
 
 <div class="card">
-  <h2>⌚ Lacak Servis</h2>
-  <p class="sub">Masukkan Nomor Servis Anda</p>
+  <div class="lang-bar">
+    <button type="button" class="lang-btn" data-lang="id">ID</button>
+    <button type="button" class="lang-btn" data-lang="en">EN</button>
+    <button type="button" class="lang-btn" data-lang="zh">中文</button>
+  </div>
+
+  <h2 id="txtTitle">⌚ Lacak Servis</h2>
+  <p class="sub" id="txtSub">Masukkan Nomor Servis Anda</p>
 
   <input type="text" id="inputSrv" placeholder="Contoh: SRV1731234567890abcd" autocomplete="off" autocapitalize="off">
   <button id="btnLacak">Cari Status</button>
   <div id="errorBox" class="error-box" role="alert"></div>
 
   <div id="hasil">
-    <h3 style="text-align:center; margin:0 0 5px; color:#0284c7;">Status Servis Anda</h3>
+    <h3 id="txtHasilTitle" style="text-align:center; margin:0 0 5px; color:#0284c7;">Status Servis Anda</h3>
     <div id="ringkasan" style="text-align:center; font-size:13px; color:#475569; margin-bottom:12px;"></div>
     <div id="listBarang"></div>
     <div class="total-box">
-      <div class="row"><span class="label" style="font-weight:bold;color:#0f172a;">TOTAL BIAYA</span><span class="value" id="resTotal" style="color:#0284c7;font-size:16px;">Rp 0</span></div>
-      <div class="row"><span class="label">Sisa Tagihan</span><span class="value" id="resSisa">Rp 0</span></div>
+      <div class="row"><span class="label" id="txtTotalLbl" style="font-weight:bold;color:#0f172a;">TOTAL BIAYA</span><span class="value" id="resTotal" style="color:#0284c7;font-size:16px;">Rp 0</span></div>
+      <div class="row"><span class="label" id="txtSisaLbl">Sisa Tagihan</span><span class="value" id="resSisa">Rp 0</span></div>
     </div>
   </div>
 </div>
@@ -59,100 +68,39 @@
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
   const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
-  const STATUS = {
-    antri:    { label: 'Antri',                     warna: '#fbbf24' },
-    proses:   { label: 'Sedang Dikerjakan',         warna: '#3b82f6' },
-    selesai:  { label: 'Selesai - Siap Diambil',    warna: '#16a34a' },
-    diambil:  { label: 'Sudah Diambil',             warna: '#94a3b8' }
-  };
 
-  function tampilError(pesan) {
-    const el = $('errorBox');
-    el.textContent = pesan;
-    el.style.display = pesan ? 'block' : 'none';
-  }
-
-  if (!window.supabase) { tampilError('Gagal memuat library Supabase. Periksa koneksi internet lalu muat ulang halaman.'); return; }
-
-  const supabaseClient = window.supabase.createClient(
-    'https://khgooqasgscsxgegdqzc.supabase.co',
-    'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd'
-  );
-
-  function barisItem(item, index) {
-    const st = STATUS[item.status] || { label: item.status || '-', warna: '#fbbf24' };
-    const kelasBadge = STATUS[item.status] ? item.status : '';
-    const lunas = item.paid || (item.sisa || 0) <= 0;
-    const garansi = item.tgl_garansi_servis_sampai
-      ? new Date(item.tgl_garansi_servis_sampai + 'T00:00:00').toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' }) + ' pukul 23:59'
-      : '';
-    const rincian = [
-      ['Jasa Servis', item.jasa], ['Spare Part', item.total_parts], ['Baterai', item.total_baterai]
-    ].filter(r => (r[1] || 0) > 0).map(r => `<div class="row"><span class="label">${r[0]}</span><span class="value">${rp(r[1])}</span></div>`).join('');
-    const barisDp = (item.dp || 0) > 0 ? `<div class="row"><span class="label">DP (sudah dibayar)</span><span class="value">${rp(item.dp)}</span></div>` : '';
-
-    return `<div class="item" style="border-left-color:${st.warna}">
-      <div class="head"><span class="judul">${index + 1}. ${esc(item.produk)}</span><span class="badge ${kelasBadge}">${esc(st.label)}</span></div>
-      <div class="detail">No: <b>${esc(item.id)}</b></div>
-      <div class="detail">Keluhan: ${esc(item.keluhan || '-')}</div>
-      ${item.kondisi_fisik && item.kondisi_fisik !== '-' ? `<div class="detail warn">⚠️ Kondisi awal: ${esc(item.kondisi_fisik)}</div>` : ''}
-      <div style="margin-top:6px;border-top:1px dashed #cbd5e1;padding-top:6px;">
-        ${rincian}
-        <div class="row"><span class="label">Biaya</span><span class="value">${rp(item.biaya_pelanggan)}</span></div>
-        ${barisDp}
-        <div class="row"><span class="label">Pembayaran</span><span class="${lunas ? 'lunas' : 'sisa'}">${lunas ? 'LUNAS' : 'Sisa ' + rp(item.sisa)}</span></div>
-        ${garansi ? `<div class="row"><span class="label">Garansi s/d</span><span class="value">${esc(garansi)}</span></div>` : ''}
-      </div>
-    </div>`;
-  }
-
-  async function prosesLacak() {
-    const params = new URLSearchParams(window.location.search);
-    const keyword = $('inputSrv').value.trim();
-    const idUrl = params.get('id'), groupUrl = params.get('group_id');
-
-    let pId = null, pGroup = null;
-    if (keyword) {
-      // Nomor yang diawali GRP adalah nomor nota gabungan
-      if (/^grp/i.test(keyword)) pGroup = keyword; else pId = keyword;
-    } else {
-      pId = idUrl; pGroup = groupUrl;
-    }
-    if (!pId && !pGroup) { tampilError('Masukkan nomor servis terlebih dahulu.'); return; }
-
-    const btn = $('btnLacak');
-    btn.textContent = 'Mencari...'; btn.disabled = true;
-    tampilError('');
-    $('hasil').style.display = 'none';
-
-    try {
-      const { data, error } = await supabaseClient.rpc('lacak_servis', { p_id: pId, p_group_id: pGroup });
-      if (error) throw new Error(error.message);
-      if (!data || !data.length) { tampilError('Data servis tidak ditemukan. Pastikan nomor sudah benar.'); return; }
-
-      const totalBiaya = data.reduce((s, x) => s + (Number(x.biaya_pelanggan) || 0), 0);
-      const totalSisa = data.reduce((s, x) => s + (Number(x.sisa) || 0), 0);
-
-      $('ringkasan').innerHTML = `Pelanggan: <b>${esc(data[0].customer)}</b>` + (data.length > 1 ? `<br><span style="font-size:12px;color:#94a3b8">${data.length} barang</span>` : '');
-      $('listBarang').innerHTML = data.map(barisItem).join('');
-      $('resTotal').textContent = rp(totalBiaya);
-      const elSisa = $('resSisa');
-      elSisa.textContent = totalSisa > 0 ? rp(totalSisa) : 'LUNAS';
-      elSisa.className = 'value ' + (totalSisa > 0 ? 'sisa' : 'lunas');
-      $('hasil').style.display = 'block';
-    } catch (err) {
-      tampilError('Terjadi kesalahan: ' + err.message);
-    } finally {
-      btn.textContent = 'Cari Status'; btn.disabled = false;
-    }
-  }
-
-  $('btnLacak').addEventListener('click', prosesLacak);
-  $('inputSrv').addEventListener('keypress', e => { if (e.key === 'Enter') prosesLacak(); });
-
-  const awal = new URLSearchParams(window.location.search);
-  if (awal.get('id') || awal.get('group_id')) prosesLacak();
-})();
-</script>
-</body>
-</html>
+  const DICT = {
+    id: {
+      pageTitle: 'Lacak Servis - Toko Seiko Alba',
+      title: '⌚ Lacak Servis',
+      sub: 'Masukkan Nomor Servis Anda',
+      placeholder: 'Contoh: SRV1731234567890abcd',
+      btnCari: 'Cari Status',
+      btnMencari: 'Mencari...',
+      hasilTitle: 'Status Servis Anda',
+      totalBiaya: 'TOTAL BIAYA',
+      sisaTagihan: 'Sisa Tagihan',
+      pelanggan: 'Pelanggan',
+      barang: 'barang',
+      no: 'No',
+      keluhan: 'Keluhan',
+      kondisiAwal: 'Kondisi awal',
+      jasa: 'Jasa Servis',
+      part: 'Spare Part',
+      baterai: 'Baterai',
+      biaya: 'Biaya',
+      dp: 'DP (sudah dibayar)',
+      pembayaran: 'Pembayaran',
+      lunas: 'LUNAS',
+      sisa: 'Sisa ',
+      garansi: 'Garansi s/d',
+      pukul: 'pukul 23:59',
+      locale: 'id-ID',
+      errLib: 'Gagal memuat library Supabase. Periksa koneksi internet lalu muat ulang halaman.',
+      errKosong: 'Masukkan nomor servis terlebih dahulu.',
+      errNotFound: 'Data servis tidak ditemukan. Pastikan nomor sudah benar.',
+      errGen: 'Terjadi kesalahan: ',
+      status: {
+        antri:   { label: 'Antri',                  warna: '#fbbf24' },
+        proses:  { label: 'Sedang Dikerjakan',      warna: '#3b82f6' },
+        selesai: { label: 'Selesai - Siap Diambil', warna:
