@@ -3176,7 +3176,7 @@ function render() {
           <div class="ic-title">👤 ${esc(p.nama)}</div>
           <div style="font-size:13px;color:#475569;font-weight:600;">📞 ${esc(p.telp || '-')}</div>
         </div>
-        <span class="badge warn" style="white-space:nowrap;">⭐ ${p.poin || 0} Poin</span>
+        <span class="badge warn" style="white-space:nowrap;">⭐ ${p.poin || 0} ${({ id: 'Poin', en: 'Pts', zh: '积分' })[_getWaLang()] || 'Poin'}</span>
       </div>
       <div class="ic-grid" style="margin-bottom:10px;">
         <div class="ic-cell" style="grid-column:span 2;flex-direction:row;justify-content:space-between;align-items:center;">
