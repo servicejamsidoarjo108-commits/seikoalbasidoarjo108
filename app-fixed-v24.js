@@ -6087,6 +6087,7 @@ function terapkanBahasa() {
     if (!el.dataset.i18nPh) el.dataset.i18nPh = el.getAttribute('placeholder') || '';
     if (el.dataset.i18nPh) el.setAttribute('placeholder', terjemahkanTeks(el.dataset.i18nPh, lang));
   });
+  if (typeof terapkanMataUangUI === 'function') terapkanMataUangUI();
 }
 terapkanBahasa();
 
