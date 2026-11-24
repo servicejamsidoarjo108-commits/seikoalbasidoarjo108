@@ -5968,7 +5968,7 @@ const STRUK_DICT = [
   ['Metode', 'Method', '方式'],
   ['Simpan nota ini', 'Please keep this ticket', '请妥善保管此单据'],
   ['Simpan kartu ini', 'Please keep this card', '请妥善保管此保修卡'],
-  ['Terima kasih telah berbelanja', 'Thank you for your business', '感谢您的惠顾']
+  ['Terima kasih telah berbelanja', 'Thank you for your business', '感谢您的惠顾'],
   ['No HP:', 'Phone:', '电话:'],
   ['Tgl:', 'Date:', '日期:'],
   ['Biaya:', 'Cost:', '费用:'],
@@ -6109,8 +6109,16 @@ function terapkanBahasa() {
       [/Ubah status\s+([^\s]+)\s+menjadi\s+selesai/gi, '将工单 $1 状态更改为已完成'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+proses/gi, '将工单 $1 状态更改为维修中'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+diambil/gi, '将工单 $1 状态更改为已取件'],
-      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, '已为客户保存 $1 项维修：']
+      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, '已为客户保存 $1 项维修：'],
+      [/Ubah nama\s+(.+?)\s+menjadi\s+(.+)/gi, '将员工 $1 的姓名修改为 $2'],
+      [/Nama karyawan diperbarui menjadi\s+/gi, '员工姓名已更新为 '],
+      [/Nonaktifkan karyawan\s+/gi, '停用员工 '],
+      [/Aktifkan karyawan\s+/gi, '启用员工 ']
     ] : [
+      [/Ubah nama\s+(.+?)\s+menjadi\s+(.+)/gi, 'Changed name of $1 to $2'],
+      [/Nama karyawan diperbarui menjadi\s+/gi, 'Employee name updated to '],
+      [/Nonaktifkan karyawan\s+/gi, 'Deactivated employee '],
+      [/Aktifkan karyawan\s+/gi, 'Activated employee '],
       [/\(pemilik\)/gi, '(owner)'],
       [/\(kasir\)/gi, '(cashier)'],
       [/\(admin\)/gi, '(admin)'],
@@ -6121,6 +6129,7 @@ function terapkanBahasa() {
       [/Ubah status\s+([^\s]+)\s+menjadi\s+diambil/gi, 'Changed status of $1 to picked up'],
       [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, 'Saved $1 service(s) for ']
     ];
+
 
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
     let node;
