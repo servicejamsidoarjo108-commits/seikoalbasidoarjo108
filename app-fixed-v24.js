@@ -7066,7 +7066,7 @@ async function simpanAksesMenu() {
       [/Konfirmasi, Cetak & WA/g, 'Confirm, Print & WA'],
     ],
     zh: [
-      [/ISI SALDO \/ TOP-UP KAS KECIL/g, '零用现金充值'],
+      [/ISI SALDO \/ TOP-UP KAS KECIL/gi, '零用现金充值'],
       [/Nominal Isi Kas Kecil/g, '零用金充值金额'],
       [/Contoh:\s*1000000/g, '例如：1000000'],
       [/Isi Ulang \/ Saldo Awal Kas Kecil/g, '零用金充值 / 期初余额'],
