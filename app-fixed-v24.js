@@ -5753,6 +5753,10 @@ const I18N_DICT = {
   'KASIR': { en: 'CASHIER', zh: '收银员' },
   'ADMIN': { en: 'ADMIN', zh: '管理员' },
   'TEKNISI': { en: 'TECHNICIAN', zh: '技师' },
+  'Cash': { en: 'Cash', zh: '现金' },
+  'Debit BCA': { en: 'BCA Debit', zh: 'BCA 借记卡' },
+  'CC BCA': { en: 'BCA Credit Card', zh: 'BCA 信用卡' },
+
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
