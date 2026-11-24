@@ -6003,6 +6003,18 @@ const STRUK_DICT = [
   ['>Spare part<', '>Spare Parts<', '>配件<'],
   ['>Baterai<', '>Battery<', '>电池<'],
   ['>SISA<', '>BALANCE<', '>余款<'],
+  ['DAFTAR SEMUA STOK & HARGA', 'ALL STOCK & PRICE LIST', '全部库存与价格清单'],
+  ['Dicetak:', 'Printed:', '打印时间:'],
+  ['Total Nilai Modal:', 'Total Cost Value:', '总成本价值:'],
+  ['Total Nilai Jual:', 'Total Retail Value:', '总零售价值:'],
+  ['>Tipe<', '>Type<', '>类型<'],
+  ['>Nama Barang<', '>Item Name<', '>商品名称<'],
+  ['>Stok<', '>Stock<', '>库存<'],
+  ['>Harga Beli<', '>Cost Price<', '>进价<'],
+  ['>Harga Jual<', '>Selling Price<', '>售价<'],
+  ['>JAM<', '>WATCH<', '>手表<'],
+  ['>BATERAI<', '>BATTERY<', '>电池<'],
+
 ];
 
 function trStruk(html) {
