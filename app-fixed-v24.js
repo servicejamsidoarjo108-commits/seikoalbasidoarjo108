@@ -6101,35 +6101,152 @@ function terapkanBahasa() {
     // 1d. Terjemahkan Log Aktivitas & Role "(pemilik)"
   if (lang !== 'id') {
     const logMap = lang === 'zh' ? [
+      // Role & Auth
       [/\(pemilik\)/gi, '(店主)'],
       [/\(kasir\)/gi, '(收银员)'],
       [/\(admin\)/gi, '(管理员)'],
       [/Berhasil masuk sistem/g, '成功登录系统'],
       [/User keluar dari sistem/g, '用户退出系统'],
+      [/\s*-\s*diproses oleh\s+/gi, ' - 处理人：'],
+
+      // Absensi & Karyawan
+      [/(.+?)\s+absen masuk/gi, '$1 上班打卡'],
+      [/(.+?)\s+absen pulang/gi, '$1 下班打卡'],
+      [/Ubah nama karyawan\s+(.+?)\s*->\s*(.+)/gi, '将员工姓名 $1 修改为 $2'],
+      [/Aktifkan akun\s+/gi, '启用账号 '],
+      [/Nonaktifkan akun\s+/gi, '停用账号 '],
+      [/Mengubah hak akses menu untuk\s+([^\s(]+)\s*\((\d+)\s+menu\)/gi, '修改了 $1 的菜单权限（$2 项菜单）'],
+
+      // Servis
+      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, '已为客户保存 $1 项维修：'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+selesai/gi, '将工单 $1 状态更改为已完成'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+proses/gi, '将工单 $1 状态更改为维修中'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+diambil/gi, '将工单 $1 状态更改为已取件'],
-      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, '已为客户保存 $1 项维修：'],
-      [/Ubah nama\s+(.+?)\s+menjadi\s+(.+)/gi, '将员工 $1 的姓名修改为 $2'],
-      [/Nama karyawan diperbarui menjadi\s+/gi, '员工姓名已更新为 '],
-      [/Nonaktifkan karyawan\s+/gi, '停用员工 '],
-      [/Aktifkan karyawan\s+/gi, '启用员工 ']
+      [/Servis\s+([^\s]+)\s+diambil oleh\s+(.+?)\s*\(diserahkan\s+(.+?)\)/gi, '维修单 $1 已由 $2 取件（经手人：$3）'],
+      [/Menghapus servis\s+(.+?),\s*(\d+)\s+baris kas\/MDR dibatalkan/gi, '删除了维修单 $1，已撤销 $2 条现金/手续费记录'],
+
+      // Penjualan & Baterai
+      [/Penjualan\s+(.+?)\s+via\s+tunai/gi, '现金销售 $1'],
+      [/Penjualan\s+(.+?)\s+via\s+([^\s(]+)/gi, '销售 $1（支付方式：$2）'],
+      [/Menghapus transaksi penjualan\s+/gi, '删除了销售记录 '],
+      [/Ganti baterai\s+(\d+)\s+item untuk\s+/gi, '更换 $1 块电池，客户：'],
+      [/Jual baterai eceran\s+(.+?)\s+via\s+/gi, '零售电池 $1，支付方式：'],
+      [/Menambah stok baterai:\s*/gi, '增加电池库存：'],
+      [/Mengubah data baterai:\s*/gi, '修改电池信息：'],
+      [/Menghapus riwayat baterai ID:\s*/gi, '删除电池记录 ID：'],
+      [/Menghapus tipe baterai ID:\s*/gi, '删除电池型号 ID：'],
+
+      // Produk, Sparepart, Supplier, Pelanggan, Audit
+      [/Tambah\/Restock produk:\s*/gi, '新增/补货商品：'],
+      [/Edit produk:\s*/gi, '编辑商品：'],
+      [/Menghapus produk ID:\s*/gi, '删除商品 ID：'],
+      [/Restock\s+(\d+)\s+(.+?)\s*\(Modal:/gi, '补货 $1 件 $2（成本：'],
+      [/Simpan sparepart:\s*/gi, '保存配件：'],
+      [/Mengubah data sparepart:\s*/gi, '修改配件信息：'],
+      [/Menghapus sparepart ID:\s*/gi, '删除配件 ID：'],
+      [/Simpan data supplier:\s*/gi, '保存供应商：'],
+      [/Hapus supplier ID:\s*/gi, '删除供应商 ID：'],
+      [/Menghapus pelanggan ID:\s*/gi, '删除客户 ID：'],
+      [/Audit stok:\s*(\d+)\s+barang disesuaikan\./gi, '库存盘点：已调整 $1 件商品。'],
+      [/Menghapus riwayat audit\s+/gi, '删除盘点记录 '],
+      [/,\s*selisih\s+/gi, '，差异 '],
+
+      // Kas, Bank, Beban Tetap & Tutup Kasir
+      [/Input kas\s+/gi, '录入现金 '],
+      [/Input\s+(masuk|keluar)\s*-\s*/gi, '录入 $1 - '],
+      [/Isi saldo kas kecil sebesar\s+/gi, '充值备用金 '],
+      [/Menghapus kas\s+/gi, '删除现金记录 '],
+      [/Menambah rekening bank:\s*/gi, '新增银行账户：'],
+      [/Mengubah saldo awal\s+(.+?)\s+menjadi\s+/gi, '将 $1 的期初余额修改为 '],
+      [/Menghapus rekening ID:\s*/gi, '删除银行账户 ID：'],
+      [/Menambah beban tetap:\s*/gi, '新增固定支出：'],
+      [/Mengubah beban tetap:\s*/gi, '修改固定支出：'],
+      [/Menghapus beban tetap:\s*/gi, '删除固定支出：'],
+      [/\btgl\s+/gi, '日期 '],
+      [/Tutup kasir oleh\s+(.+?)\s*\|\s*Sistem:\s*(.+?)\s*\|\s*Fisik:\s*(.+?)\s*\|\s*Selisih:\s*(.+?)\s*\|\s*Non-Tunai:/gi, '结班收银：$1 | 系统：$2 | 实盘：$3 | 差异：$4 | 非现金：'],
+      [/\|\s*Ket:\s*/gi, '| 备注：'],
+
+      // Pengaturan & Backup
+      [/Mengubah Identitas Toko/gi, '修改了店铺信息'],
+      [/Mengubah logo toko/gi, '修改了店铺图标'],
+      [/Menghapus logo toko/gi, '删除了店铺图标'],
+      [/Mengubah aturan komisi karyawan/gi, '修改了员工提成规则'],
+      [/Ekspor data CSV:\s*/gi, '导出 CSV 数据：'],
+      [/Mengunduh backup lengkap JSON/gi, '下载了完整 JSON 备份']
     ] : [
-      [/Ubah nama\s+(.+?)\s+menjadi\s+(.+)/gi, 'Changed name of $1 to $2'],
-      [/Nama karyawan diperbarui menjadi\s+/gi, 'Employee name updated to '],
-      [/Nonaktifkan karyawan\s+/gi, 'Deactivated employee '],
-      [/Aktifkan karyawan\s+/gi, 'Activated employee '],
+      // Role & Auth
       [/\(pemilik\)/gi, '(owner)'],
       [/\(kasir\)/gi, '(cashier)'],
       [/\(admin\)/gi, '(admin)'],
       [/Berhasil masuk sistem/g, 'Logged into system'],
       [/User keluar dari sistem/g, 'User logged out'],
+      [/\s*-\s*diproses oleh\s+/gi, ' - processed by '],
+
+      // Absensi & Karyawan
+      [/(.+?)\s+absen masuk/gi, '$1 clocked in'],
+      [/(.+?)\s+absen pulang/gi, '$1 clocked out'],
+      [/Ubah nama karyawan\s+(.+?)\s*->\s*(.+)/gi, 'Changed employee name $1 -> $2'],
+      [/Aktifkan akun\s+/gi, 'Activated account '],
+      [/Nonaktifkan akun\s+/gi, 'Deactivated account '],
+      [/Mengubah hak akses menu untuk\s+([^\s(]+)\s*\((\d+)\s+menu\)/gi, 'Changed menu access for $1 ($2 menus)'],
+
+      // Servis
+      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, 'Saved $1 service(s) for '],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+selesai/gi, 'Changed status of $1 to completed'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+proses/gi, 'Changed status of $1 to in progress'],
       [/Ubah status\s+([^\s]+)\s+menjadi\s+diambil/gi, 'Changed status of $1 to picked up'],
-      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, 'Saved $1 service(s) for ']
-    ];
+      [/Servis\s+([^\s]+)\s+diambil oleh\s+(.+?)\s*\(diserahkan\s+(.+?)\)/gi, 'Service $1 picked up by $2 (handed over by $3)'],
+      [/Menghapus servis\s+(.+?),\s*(\d+)\s+baris kas\/MDR dibatalkan/gi, 'Deleted service $1, $2 cash/MDR row(s) reversed'],
 
+      // Penjualan & Baterai
+      [/Penjualan\s+(.+?)\s+via\s+tunai/gi, 'Sale $1 via cash'],
+      [/Penjualan\s+(.+?)\s+via\s+([^\s(]+)/gi, 'Sale $1 via $2'],
+      [/Menghapus transaksi penjualan\s+/gi, 'Deleted sales transaction '],
+      [/Ganti baterai\s+(\d+)\s+item untuk\s+/gi, 'Replaced $1 battery item(s) for '],
+      [/Jual baterai eceran\s+(.+?)\s+via\s+/gi, 'Retail battery sale $1 via '],
+      [/Menambah stok baterai:\s*/gi, 'Added battery stock: '],
+      [/Mengubah data baterai:\s*/gi, 'Updated battery data: '],
+      [/Menghapus riwayat baterai ID:\s*/gi, 'Deleted battery history ID: '],
+      [/Menghapus tipe baterai ID:\s*/gi, 'Deleted battery type ID: '],
+
+      // Produk, Sparepart, Supplier, Pelanggan, Audit
+      [/Tambah\/Restock produk:\s*/gi, 'Added/Restocked product: '],
+      [/Edit produk:\s*/gi, 'Edited product: '],
+      [/Menghapus produk ID:\s*/gi, 'Deleted product ID: '],
+      [/Restock\s+(\d+)\s+(.+?)\s*\(Modal:/gi, 'Restocked $1 $2 (Cost:'],
+      [/Simpan sparepart:\s*/gi, 'Saved spare part: '],
+      [/Mengubah data sparepart:\s*/gi, 'Updated spare part: '],
+      [/Menghapus sparepart ID:\s*/gi, 'Deleted spare part ID: '],
+      [/Simpan data supplier:\s*/gi, 'Saved supplier: '],
+      [/Hapus supplier ID:\s*/gi, 'Deleted supplier ID: '],
+      [/Menghapus pelanggan ID:\s*/gi, 'Deleted customer ID: '],
+      [/Audit stok:\s*(\d+)\s+barang disesuaikan\./gi, 'Stock audit: $1 item(s) adjusted.'],
+      [/Menghapus riwayat audit\s+/gi, 'Deleted audit history '],
+      [/,\s*selisih\s+/gi, ', diff '],
+
+      // Kas, Bank, Beban Tetap & Tutup Kasir
+      [/Input kas\s+/gi, 'Cash entry '],
+      [/Input\s+(masuk|keluar)\s*-\s*/gi, 'Entry $1 - '],
+      [/Isi saldo kas kecil sebesar\s+/gi, 'Topped up petty cash by '],
+      [/Menghapus kas\s+/gi, 'Deleted cash entry '],
+      [/Menambah rekening bank:\s*/gi, 'Added bank account: '],
+      [/Mengubah saldo awal\s+(.+?)\s+menjadi\s+/gi, 'Changed opening balance of $1 to '],
+      [/Menghapus rekening ID:\s*/gi, 'Deleted bank account ID: '],
+      [/Menambah beban tetap:\s*/gi, 'Added fixed expense: '],
+      [/Mengubah beban tetap:\s*/gi, 'Updated fixed expense: '],
+      [/Menghapus beban tetap:\s*/gi, 'Deleted fixed expense: '],
+      [/\btgl\s+/gi, 'date '],
+      [/Tutup kasir oleh\s+(.+?)\s*\|\s*Sistem:\s*(.+?)\s*\|\s*Fisik:\s*(.+?)\s*\|\s*Selisih:\s*(.+?)\s*\|\s*Non-Tunai:/gi, 'Shift closed by $1 | System: $2 | Actual: $3 | Diff: $4 | Non-Cash:'],
+      [/\|\s*Ket:\s*/gi, '| Note: '],
+
+      // Pengaturan & Backup
+      [/Mengubah Identitas Toko/gi, 'Updated Store Identity'],
+      [/Mengubah logo toko/gi, 'Updated store logo'],
+      [/Menghapus logo toko/gi, 'Removed store logo'],
+      [/Mengubah aturan komisi karyawan/gi, 'Updated employee commission rules'],
+      [/Ekspor data CSV:\s*/gi, 'Exported CSV data: '],
+      [/Mengunduh backup lengkap JSON/gi, 'Downloaded full JSON backup']
+    ];
 
     const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
     let node;
