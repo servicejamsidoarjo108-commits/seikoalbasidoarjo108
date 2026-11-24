@@ -7130,6 +7130,76 @@ async function simpanAksesMenu() {
   }).observe(document.body, { childList: true });
 })();
 
+// === AUTO-TRANSLATE QUICK-TEXT KELUHAN & KONDISI FISIK (ID <-> EN <-> ZH) ===
+(function () {
+  const quickDict = [
+    // [Indonesia, English, Mandarin]
+    ['Mati total', 'Dead / Not running', '手表停走'],
+    ['Servis lengkap', 'Full overhaul', '全面保养'],
+    ['Overhaul', 'Full overhaul', '全面保养'],
+    ['Ganti baterai', 'Battery replacement', '更换电池'],
+    ['Ganti kaca', 'Crystal replacement', '更换表镜'],
+    ['Ganti tali', 'Strap replacement', '更换表带'],
+    ['Potong rantai', 'Bracelet resize', '截表带'],
+    ['Ganti springbar', 'Springbar replacement', '换生耳'],
+    ['Kemasukan air', 'Water damage', '进水'],
+    ['Berembun', 'Foggy / Moisture', '起雾'],
+    ['Jalan lambat', 'Running slow', '走时偏慢'],
+    ['Jalan cepat', 'Running fast', '走时偏快'],
+    ['Crown lepas', 'Loose crown', '表冠脱落'],
+    ['Jarum lepas', 'Loose hands', '指针脱落'],
+    ['Polishing', 'Polishing', '抛光翻新'],
+
+    // Kondisi Fisik
+    ['Kaca Baret', 'Scratched Crystal', '表镜划痕'],
+    ['Kaca Retak', 'Cracked Crystal', '表镜裂纹'],
+    ['Kaca Pecah', 'Broken Crystal', '表镜破碎'],
+    ['Casing Baret', 'Scratched Case', '表壳划痕'],
+    ['Rantai Baret', 'Scratched Bracelet', '表带划痕'],
+    ['Mesin Mati', 'Movement Dead', '机芯停走'],
+    ['Mesin Berkarat', 'Rusted Movement', '机芯生锈'],
+    ['Crown Hilang', 'Missing Crown', '表冠缺失'],
+    ['Tanpa Tali', 'No Strap', '无表带'],
+    ['Mulus', 'Good Condition', '外观完好']
+  ];
+
+  function trQuickText(root) {
+    if (!root) return;
+    const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+    const targetIdx = lang === 'en' ? 1 : (lang === 'zh' ? 2 : 0);
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    let n;
+    while ((n = walker.nextNode())) {
+      if (!n.parentElement || ['SCRIPT', 'STYLE', 'INPUT', 'TEXTAREA'].includes(n.parentElement.tagName)) continue;
+      let t = n.nodeValue;
+      const orig = t;
+      for (const row of quickDict) {
+        const target = row[targetIdx];
+        for (let i = 0; i < 3; i++) {
+          if (i === targetIdx) continue;
+          const esc = row[i].replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const rgx = new RegExp(esc, 'gi');
+          if (rgx.test(t)) t = t.replace(rgx, target);
+        }
+      }
+      if (t !== orig) n.nodeValue = t;
+    }
+  }
+
+  const area = document.getElementById('listServis') || document.body;
+  new MutationObserver(() => trQuickText(area)).observe(area, { childList: true, subtree: true });
+
+  if (typeof window.terapkanBahasa === 'function') {
+    const _orig = window.terapkanBahasa;
+    window.terapkanBahasa = function () {
+      _orig.apply(this, arguments);
+      trQuickText(document.getElementById('listServis') || document.body);
+    };
+  }
+})();
+
+
 
 
 
