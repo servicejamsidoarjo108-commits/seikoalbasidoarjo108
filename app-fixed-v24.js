@@ -5602,6 +5602,12 @@ const I18N_DICT = {
   'Non-Tunai (QRIS/Transfer/EDC)': { en: 'Non-Cash (QRIS/Transfer/EDC)', zh: '非现金（QRIS/转账/刷卡）' },
   'Hitung Uang Tunai Fisik di Laci (Rp) *': { en: 'Count Physical Cash in Drawer (Rp) *', zh: '清点抽屉实际现金 (Rp) *' },
   'Catatan Tutup Kasir (Opsional)': { en: 'Closing Note (Optional)', zh: '结账备注（可选）' },
+  'Masukkan jumlah uang fisik...': { en: 'Enter physical cash amount...', zh: '请输入实际现金金额...' },
+  'Contoh: Setor ke pemilik, sisa modal laci 200rb': { en: 'e.g., Deposit to owner, keep 200k float', zh: '例如：上交店主，留存20万备用金' },
+  'Tanggal': { en: 'Date', zh: '日期' },
+  'Transaksi Hari Ini': { en: "Today's Transactions", zh: '今日交易' },
+  'Jual': { en: 'Sales', zh: '销售' },
+  'Potongan MDR Hari Ini': { en: "Today's MDR Fee", zh: '今日手续费 (MDR)' },
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
