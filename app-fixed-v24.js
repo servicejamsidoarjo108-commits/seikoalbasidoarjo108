@@ -109,6 +109,22 @@ function formatNama(str) {
 
 function flash(text, type = 'ok') {
   const el = $('msg'); if (!el) return;
+  const _flLang = (typeof _getWaLang === 'function') ? _getWaLang() : 'id';
+  const _flDict = {
+    'Lengkapi Nama dan Produk': { en: 'Please fill in Name and Product', zh: '请填写姓名和产品' },
+    'Anda sudah Absen Masuk hari ini!': { en: 'You have already clocked in today!', zh: '您今天已经上班打卡了！' },
+    'Anda belum Absen Masuk hari ini!': { en: 'You have not clocked in today!', zh: '您今天尚未上班打卡了！' },
+    'Anda sudah Absen Pulang hari ini!': { en: 'You have already clocked out today!', zh: '您今天已经下班打卡了！' },
+    '✅ Absen Masuk berhasil dicatat!': { en: '✅ Clock-in recorded!', zh: '✅ 上班打卡成功！' },
+    '✅ Absen Pulang berhasil dicatat!': { en: '✅ Clock-out recorded!', zh: '✅ 下班打卡成功！' },
+    'Aturan komisi disimpan!': { en: 'Commission rules saved!', zh: '提成规则已保存！' },
+    'Keranjang masih kosong!': { en: 'Cart is empty!', zh: '购物车为空！' },
+    'Data berhasil disimpan!': { en: 'Data saved successfully!', zh: '数据保存成功！' }
+  };
+  if (_flLang !== 'id') {
+    if (_flDict[text] && _flDict[text][_flLang]) text = _flDict[text][_flLang];
+    else if (typeof I18N_DICT !== 'undefined' && I18N_DICT[text] && I18N_DICT[text][_flLang]) text = I18N_DICT[text][_flLang];
+  }
   el.textContent = text; el.className = 'msg ' + type;
   clearTimeout(window.__msgT);
   window.__msgT = setTimeout(() => { el.className = 'msg'; el.textContent = ''; }, 3500);
