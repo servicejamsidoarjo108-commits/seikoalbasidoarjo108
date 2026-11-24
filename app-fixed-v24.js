@@ -83,6 +83,10 @@ function rp(n) {
     maximumFractionDigits: cfg.dec
   });
 }
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('setMataUang');
+  if (el) el.value = getMataUang();
+});
 
 document.addEventListener('DOMContentLoaded', () => {
   const el = document.getElementById('setMataUang');
