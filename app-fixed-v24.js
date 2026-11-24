@@ -6952,9 +6952,16 @@ async function simpanAksesMenu() {
       [/Pengaturan Telegram Bot disimpan!?/gi, 'Telegram 机器人设置已保存！'],
       [/Logo disimpan, akan tampil di nota/gi, '图标已保存，将显示在小票上'],
       [/Logo dihapus/gi, '图标已删除'],
+      [/Mode Bluetooth APK \(RawBT\) diaktifkan! Pastikan aplikasi RawBT sudah terpasang & terhubung ke printer\./g, '蓝牙 APK (RawBT) 模式已开启！请确保已安装 RawBT 并连接打印机。'],
+      [/Printer Bluetooth terhubung!/g, '蓝牙打印机已连接！'],
+      [/✅ Tes cetak dikirim ke printer!/g, '✅ 测试打印已发送至打印机！'],
+      [/Mode Cetak Bluetooth AKTIF/g, '蓝牙打印模式已开启'],
+      [/Mode Preview Struk AKTIF/g, '小票预览模式已开启'],
+      [/✅ Pesan tes berhasil terkirim ke Telegram!/g, '✅ 测试消息已发送至 Telegram！'],
+      [/File Excel \(CSV\)\s+(.+?)\s+berhasil diunduh!/g, '$1 的 Excel (CSV) 文件已下载！'],
+      [/Backup penuh \(\.json\) berhasil diunduh!/g, '完整备份 (.json) 已下载！'],
       [/Hak akses menu\s+(\w+)\s+berhasil disimpan!?/gi, '$1 菜单权限已保存！'],
       [/Gagal menyimpan hak akses:\s*/gi, '保存菜单权限失败：'],
-
 
       // Prefix Error Umum
       [/^Gagal menyimpan:\s*/g, '保存失败：'],
@@ -7057,10 +7064,18 @@ async function simpanAksesMenu() {
       [/Pengaturan Telegram Bot disimpan!?/gi, 'Telegram Bot settings saved!'],
       [/Logo disimpan, akan tampil di nota/gi, 'Logo saved, it will appear on receipts'],
       [/Logo dihapus/gi, 'Logo removed'],
+      [/Mode Bluetooth APK \(RawBT\) diaktifkan! Pastikan aplikasi RawBT sudah terpasang & terhubung ke printer\./g, 'Bluetooth APK (RawBT) mode enabled! Make sure RawBT is installed & connected to the printer.'],
+      [/Printer Bluetooth terhubung!/g, 'Bluetooth printer connected!'],
+      [/✅ Tes cetak dikirim ke printer!/g, '✅ Test print sent to printer!'],
+      [/Mode Cetak Bluetooth AKTIF/g, 'Bluetooth Print Mode ON'],
+      [/Mode Preview Struk AKTIF/g, 'Receipt Preview Mode ON'],
+      [/✅ Pesan tes berhasil terkirim ke Telegram!/g, '✅ Test message sent to Telegram!'],
+      [/File Excel \(CSV\)\s+(.+?)\s+berhasil diunduh!/g, 'Excel (CSV) file for $1 downloaded!'],
+      [/Backup penuh \(\.json\) berhasil diunduh!/g, 'Full backup (.json) downloaded!'],
+
       [/Hak akses menu\s+(\w+)\s+berhasil disimpan!?/gi, 'Menu access for $1 saved!'],
       [/Gagal menyimpan hak akses:\s*/gi, 'Failed to save menu access: '],
-
-
+      
       // General Error Prefixes
       [/^Gagal menyimpan:\s*/g, 'Failed to save: '],
       [/^Gagal menghapus:\s*/g, 'Failed to delete: '],
