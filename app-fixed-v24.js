@@ -6155,6 +6155,7 @@ function tampilkanPanelAksesMenu() {
   }
   card.style.display = 'block';
   renderCheckboxAksesMenu();
+  if (typeof terapkanBahasa === 'function') terapkanBahasa();
 }
 
 function renderCheckboxAksesMenu() {
