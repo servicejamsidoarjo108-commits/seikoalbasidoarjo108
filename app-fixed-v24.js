@@ -83,8 +83,10 @@ function rp(n) {
     maximumFractionDigits: cfg.dec
   });
 }
-document.addEventListener('DOMContentLoaded', () => {
+function terapkanMataUangUI() {
   const cur = getMataUang();
+  const cfg = CURRENCY_MAP[cur];
+  const symClean = cfg.sym.trim();
   const el = document.getElementById('setMataUang');
   if (el) el.value = cur;
 
@@ -158,7 +160,30 @@ document.addEventListener('DOMContentLoaded', () => {
       btn.onclick = () => setKasKecilCepat(tx.tp, n.v, tx.d);
     }
   });
+
+  // 4. Sapu otomatis sisa teks "(Rp)" dan "Rp 0" di seluruh halaman jika bukan IDR
+  if (cur !== 'IDR') {
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.parentElement && ['SCRIPT', 'STYLE', 'OPTION'].includes(node.parentElement.tagName)) continue;
+      let t = node.nodeValue;
+      if (t.includes('(Rp)') || t.includes('Rp 0') || t.includes('RP500,000')) {
+        node.nodeValue = t
+          .replace(/\(Rp\)/g, `(${symClean})`)
+          .replace(/\bRp 0\b/g, `${cfg.sym}0`)
+          .replace(/RP500,000/g, `${symClean}500`);
+      }
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  terapkanMataUangUI();
+  setTimeout(terapkanMataUangUI, 400);
+  setTimeout(terapkanMataUangUI, 1200);
 });
+
 const nowISO = () => new Date().toISOString();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const genId = prefix => prefix + Date.now() + Math.random().toString(36).substring(2, 6);
