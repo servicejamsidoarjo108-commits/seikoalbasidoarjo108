@@ -2288,31 +2288,121 @@ function shareStrukDigital(trxId) {
 function waServisSelesai(id) {
   const s = db.servis.find(x => x.id === id); if (!s || !s.telp) return;
   const toko = getToko(), garis = '=========================';
-  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\nTelp: ${toko.telp}\n${garis}\n*UPDATE SERVIS*\n${garis}\nPelanggan: ${s.customer}\nBarang: ${s.produk}\n*No:* ${s.id}\nStatus Saat Ini: *${s.status.toUpperCase()}*\n${garis}\n`;
-  text += `🔍 *Pantau status servis Anda secara real-time di sini:*\n${linkLacak('id', s.id)}\n${garis}\n`;
-  if (s.paid) text += 'Status Pembayaran: *LUNAS*\n';
-  else if (s.sisa > 0) text += `Sisa Tagihan: *${rp(s.sisa)}*\n`;
+  const lang = _getWaLang();
+  const locale = lang === 'zh' ? 'zh-CN' : (lang === 'en' ? 'en-US' : 'id-ID');
+
+  const statusMap = {
+    id: { antri: 'ANTRI', proses: 'PROSES', selesai: 'SELESAI', diambil: 'DIAMBIL' },
+    en: { antri: 'RECEIVED', proses: 'IN PROGRESS', selesai: 'COMPLETED', diambil: 'PICKED UP' },
+    zh: { antri: '已收件', proses: '维修中', selesai: '已完成', diambil: '已取件' }
+  }[lang] || {};
+  const statusTxt = statusMap[s.status] || s.status.toUpperCase();
+
+  const T = {
+    id: {
+      telp: 'Telp', judul: 'UPDATE SERVIS', pelanggan: 'Pelanggan', barang: 'Barang',
+      no: 'No', status: 'Status Saat Ini',
+      lacak: 'Pantau status servis Anda secara real-time di sini:',
+      lunas: 'Status Pembayaran: *LUNAS*', sisa: 'Sisa Tagihan',
+      garansi: tgl => `Garansi servis s/d *${tgl} pukul 23:59*`,
+      sk: 'SYARAT & KETENTUAN:'
+    },
+    en: {
+      telp: 'Phone', judul: 'SERVICE UPDATE', pelanggan: 'Customer', barang: 'Item',
+      no: 'No', status: 'Current Status',
+      lacak: 'Track your service status in real-time here:',
+      lunas: 'Payment Status: *PAID*', sisa: 'Balance Due',
+      garansi: tgl => `Service warranty valid until *${tgl} at 23:59*`,
+      sk: 'TERMS & CONDITIONS:'
+    },
+    zh: {
+      telp: '电话', judul: '维修进度更新', pelanggan: '客户', barang: '手表型号',
+      no: '单号', status: '当前状态',
+      lacak: '点击此处实时查询您的维修进度：',
+      lunas: '付款状态：*已结清*', sisa: '应付余额',
+      garansi: tgl => `维修保修有效期至 *${tgl} 23:59*`,
+      sk: '条款与条件：'
+    }
+  }[lang] || {};
+
+  let text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\n${T.telp}: ${toko.telp}\n${garis}\n*${T.judul}*\n${garis}\n${T.pelanggan}: ${s.customer}\n${T.barang}: ${s.produk}\n*${T.no}:* ${s.id}\n${T.status}: *${statusTxt}*\n${garis}\n`;
+  text += `🔍 *${T.lacak}*\n${linkLacak('id', s.id)}\n${garis}\n`;
+  if (s.paid) text += `${T.lunas}\n`;
+  else if (s.sisa > 0) text += `${T.sisa}: *${rp(s.sisa)}*\n`;
   if (s.status === 'selesai' && s.tgl_garansi_servis_sampai) {
-    text += `${garis}\nGaransi servis s/d *${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} pukul 23:59*\n`;
+    const tglExp = new Date(s.tgl_garansi_servis_sampai).toLocaleDateString(locale);
+    text += `${garis}\n${T.garansi(tglExp)}\n`;
   }
-  if (toko.syarat_singkat) text += `${garis}\n*SYARAT & KETENTUAN:*\n${toko.syarat_singkat}\n`;
+  if (toko.syarat_singkat) text += `${garis}\n*${T.sk}*\n${toko.syarat_singkat}\n`;
   text += `${garis}\n${toko.footer}`;
   openWA(s.telp, text);
+}
+
+function _getWaLang() {
+  if (typeof currentLang !== 'undefined' && currentLang) return currentLang;
+  return localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
 }
 
 function waServisMasuk(id) {
   const s = db.servis.find(x => x.id === id);
   if (!s || !s.telp) return alert('Nomor HP tidak ada');
   const toko = getToko(), garis = '=========================';
-  const text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\n${garis}\n*TANDA TERIMA SERVIS*\n${garis}\nHalo *${s.customer}*, jam Anda telah kami terima.\n\n*No Servis:* ${s.id}\n*Barang:* ${s.produk}\n*Keluhan:* ${s.keluhan || '-'}\n\n*⚠️ KONDISI AWAL (Telah Dicek):*\n_${s.kondisi_fisik || 'Normal / Tidak ada catatan'}._\n\nMohon simpan pesan ini. Jika ada kondisi yang tidak tercatat, segera hubungi kami.\n\n🔍 *Lacak status servis:*\n${linkLacak('id', s.id)}\n${garis}\n${toko.syarat_singkat ? '*SYARAT & KETENTUAN:*\n' + toko.syarat_singkat + '\n' + garis + '\n' : ''}${toko.footer}`;
+  const lang = _getWaLang();
+
+  const T = {
+    id: {
+      judul: 'TANDA TERIMA SERVIS',
+      halo: `Halo *${s.customer}*, jam Anda telah kami terima.`,
+      no: 'No Servis', barang: 'Barang', keluhan: 'Keluhan',
+      kondisiHdr: '⚠️ KONDISI AWAL (Telah Dicek):',
+      kondisiDef: 'Normal / Tidak ada catatan',
+      simpan: 'Mohon simpan pesan ini. Jika ada kondisi yang tidak tercatat, segera hubungi kami.',
+      lacak: 'Lacak status servis:',
+      sk: 'SYARAT & KETENTUAN:'
+    },
+    en: {
+      judul: 'SERVICE RECEIPT',
+      halo: `Hello *${s.customer}*, we have received your watch.`,
+      no: 'Service No', barang: 'Item', keluhan: 'Issue',
+      kondisiHdr: '⚠️ INITIAL CONDITION (Checked):',
+      kondisiDef: 'Normal / No notes',
+      simpan: 'Please keep this message. If any condition is not recorded, please contact us immediately.',
+      lacak: 'Track service status:',
+      sk: 'TERMS & CONDITIONS:'
+    },
+    zh: {
+      judul: '维修收件凭证',
+      halo: `您好 *${s.customer}*，我们已收到您的手表。`,
+      no: '维修单号', barang: '手表型号', keluhan: '故障描述',
+      kondisiHdr: '⚠️ 初始外观状况（已检查）：',
+      kondisiDef: '正常 / 无备注',
+      simpan: '请妥善保存此消息。如有未记录的外观状况，请立即联系我们。',
+      lacak: '查询维修进度：',
+      sk: '条款与条件：'
+    }
+  }[lang] || {};
+
+  const text = `*${toko.nama.toUpperCase()}*\n${toko.alamat}\n${garis}\n*${T.judul}*\n${garis}\n${T.halo}\n\n*${T.no}:* ${s.id}\n*${T.barang}:* ${s.produk}\n*${T.keluhan}:* ${s.keluhan || '-'}\n\n*${T.kondisiHdr}*\n_${s.kondisi_fisik || T.kondisiDef}._\n\n${T.simpan}\n\n🔍 *${T.lacak}*\n${linkLacak('id', s.id)}\n${garis}\n${toko.syarat_singkat ? `*${T.sk}*\n` + toko.syarat_singkat + '\n' + garis + '\n' : ''}${toko.footer}`;
   openWA(s.telp, text);
 }
 
 function waReminderBaterai(id) {
   const b = db.baterai.find(x => x.id === id); if (!b || !b.telp) return;
   const toko = getToko();
+  const lang = _getWaLang();
+  const locale = lang === 'zh' ? 'zh-CN' : (lang === 'en' ? 'en-US' : 'id-ID');
   const sisaHari = Math.ceil((new Date(b.tgl_expired + 'T23:59:59') - new Date()) / 86400000);
-  openWA(b.telp, `*${toko.nama.toUpperCase()}*\nGaransi Baterai ${b.produk} (${b.tipe})\nBerakhir: ${new Date(b.tgl_expired).toLocaleDateString('id-ID')}\nStatus: ${sisaHari < 0 ? 'HABIS' : 'Sisa ' + sisaHari + ' hari'}`);
+  const expStr = new Date(b.tgl_expired).toLocaleDateString(locale);
+
+  let msg = '';
+  if (lang === 'en') {
+    msg = `*${toko.nama.toUpperCase()}*\nBattery Warranty ${b.produk} (${b.tipe})\nExpires: ${expStr}\nStatus: ${sisaHari < 0 ? 'EXPIRED' : sisaHari + ' days left'}`;
+  } else if (lang === 'zh') {
+    msg = `*${toko.nama.toUpperCase()}*\n电池保修 ${b.produk} (${b.tipe})\n到期日期：${expStr}\n状态：${sisaHari < 0 ? '已过期' : '剩余 ' + sisaHari + ' 天'}`;
+  } else {
+    msg = `*${toko.nama.toUpperCase()}*\nGaransi Baterai ${b.produk} (${b.tipe})\nBerakhir: ${expStr}\nStatus: ${sisaHari < 0 ? 'HABIS' : 'Sisa ' + sisaHari + ' hari'}`;
+  }
+  openWA(b.telp, msg);
 }
 
 function waAdminLaporan() {
@@ -2337,24 +2427,59 @@ function waAdminLaporan() {
   const spLow = db.sparePart.filter(s => s.stok <= s.min_stok);
   const batLow = db.stokBaterai.filter(b => b.stok <= b.min_stok);
 
-  const tgl = new Date().toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+  const lang = _getWaLang();
+  const locale = lang === 'zh' ? 'zh-CN' : (lang === 'en' ? 'en-US' : 'id-ID');
+  const tgl = new Date().toLocaleDateString(locale, { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
   const jam = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
   const garis = '=========================', tipis = '-------------------------';
 
-  let text = `*${toko.nama.toUpperCase()}*\n${garis}\n*LAPORAN HARIAN*\n${tgl}\nDikirim: ${jam}\n${garis}\n*OMZET HARI INI*\n${tipis}\n`;
-  text += `- Penjualan Jam : ${rp(omzetJual)}\n  (${trxHari.length} transaksi)\n`;
-  text += `- Servis selesai: ${rp(omzetServis)}\n  (${servisHari.length} servis)\n`;
-  text += `- Baterai       : ${rp(omzetBat)}\n  (${batHari.length} ganti)\n${tipis}\n*TOTAL: ${rp(totalOmzet)}*\n`;
-  if (mdrHari > 0) text += `Biaya Bank (MDR): -${rp(mdrHari)}\nNet Diterima    : ${rp(totalOmzet - mdrHari)}\n`;
-  text += `${garis}\n*STATUS TOKO*\n${tipis}\nServis Aktif: ${servisAktif}\nPiutang Servis: ${rp(piutangTotal)} (${piutang.length} nota)\n${garis}\n`;
+  const T = {
+    id: {
+      judul: 'LAPORAN HARIAN', dikirim: 'Dikirim', omzet: 'OMZET HARI INI',
+      jual: 'Penjualan Jam ', trx: 'transaksi',
+      servis: 'Servis selesai', srv: 'servis',
+      bat: 'Baterai       ', ganti: 'ganti',
+      total: 'TOTAL', mdr: 'Biaya Bank (MDR)', net: 'Net Diterima    ',
+      status: 'STATUS TOKO', aktif: 'Servis Aktif', piutang: 'Piutang Servis', nota: 'nota',
+      low: '⚠️ STOK MENIPIS', prod: 'Produk', part: 'Part', batLbl: 'Baterai',
+      auto: '_Laporan otomatis dari Sistem Toko_'
+    },
+    en: {
+      judul: 'DAILY REPORT', dikirim: 'Sent', omzet: "TODAY'S REVENUE",
+      jual: 'Watch Sales   ', trx: 'transactions',
+      servis: 'Completed Srv ', srv: 'services',
+      bat: 'Battery       ', ganti: 'replaced',
+      total: 'TOTAL', mdr: 'Bank Fee (MDR)  ', net: 'Net Received    ',
+      status: 'STORE STATUS', aktif: 'Active Services', piutang: 'Unpaid Services', nota: 'tickets',
+      low: '⚠️ LOW STOCK', prod: 'Products', part: 'Parts', batLbl: 'Battery',
+      auto: '_Automated report from Store System_'
+    },
+    zh: {
+      judul: '每日营业报表', dikirim: '发送时间', omzet: '今日营业额',
+      jual: '手表销售', trx: '笔交易',
+      servis: '完成维修', srv: '单维修',
+      bat: '更换电池', ganti: '次更换',
+      total: '总计', mdr: '银行手续费 (MDR)', net: '实收净额',
+      status: '门店状态', aktif: '进行中维修', piutang: '未结维修款', nota: '张工单',
+      low: '⚠️ 库存不足', prod: '手表产品', part: '配件', batLbl: '电池',
+      auto: '_系统自动生成报表_'
+    }
+  }[lang] || {};
+
+  let text = `*${toko.nama.toUpperCase()}*\n${garis}\n*${T.judul}*\n${tgl}\n${T.dikirim}: ${jam}\n${garis}\n*${T.omzet}*\n${tipis}\n`;
+  text += `- ${T.jual}: ${rp(omzetJual)}\n  (${trxHari.length} ${T.trx})\n`;
+  text += `- ${T.servis}: ${rp(omzetServis)}\n  (${servisHari.length} ${T.srv})\n`;
+  text += `- ${T.bat}: ${rp(omzetBat)}\n  (${batHari.length} ${T.ganti})\n${tipis}\n*${T.total}: ${rp(totalOmzet)}*\n`;
+  if (mdrHari > 0) text += `${T.mdr}: -${rp(mdrHari)}\n${T.net}: ${rp(totalOmzet - mdrHari)}\n`;
+  text += `${garis}\n*${T.status}*\n${tipis}\n${T.aktif}: ${servisAktif}\n${T.piutang}: ${rp(piutangTotal)} (${piutang.length} ${T.nota})\n${garis}\n`;
   if (prodLow.length || spLow.length || batLow.length) {
-    text += `*⚠️ STOK MENIPIS*\n${tipis}\n`;
-    if (prodLow.length) text += `Produk: ${prodLow.map(p => p.nama + ' (' + p.stok + ')').join(', ')}\n`;
-    if (spLow.length) text += `Part: ${spLow.map(s => s.nama + ' (' + s.stok + ')').join(', ')}\n`;
-    if (batLow.length) text += `Baterai: ${batLow.map(b => b.tipe + ' (' + b.stok + ')').join(', ')}\n`;
+    text += `*${T.low}*\n${tipis}\n`;
+    if (prodLow.length) text += `${T.prod}: ${prodLow.map(p => p.nama + ' (' + p.stok + ')').join(', ')}\n`;
+    if (spLow.length) text += `${T.part}: ${spLow.map(s => s.nama + ' (' + s.stok + ')').join(', ')}\n`;
+    if (batLow.length) text += `${T.batLbl}: ${batLow.map(b => b.tipe + ' (' + b.stok + ')').join(', ')}\n`;
     text += `${garis}\n`;
   }
-  text += `${toko.footer}\n_Laporan otomatis dari Sistem Toko_`;
+  text += `${toko.footer}\n${T.auto}`;
   openWA(toko.telp, text);
   kirimTelegram(text);
 }
