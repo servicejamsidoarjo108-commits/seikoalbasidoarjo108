@@ -5608,6 +5608,9 @@ const I18N_DICT = {
   'Transaksi Hari Ini': { en: "Today's Transactions", zh: '今日交易' },
   'Jual': { en: 'Sales', zh: '销售' },
   'Potongan MDR Hari Ini': { en: "Today's MDR Fee", zh: '今日手续费 (MDR)' },
+  'Preview Nota / Struk': { en: 'Receipt / Ticket Preview', zh: '小票 / 工单预览' },
+  'Kembali': { en: 'Back', zh: '返回' },
+  'WA Terima': { en: 'WA Receipt', zh: 'WA 收件通知' },
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
@@ -5651,6 +5654,10 @@ const STRUK_DICT = [
   ['Simpan nota ini', 'Please keep this ticket', '请妥善保管此单据'],
   ['Simpan kartu ini', 'Please keep this card', '请妥善保管此保修卡'],
   ['Terima kasih telah berbelanja', 'Thank you for your business', '感谢您的惠顾']
+  ['No HP:', 'Phone:', '电话:'],
+  ['Tgl:', 'Date:', '日期:'],
+  ['Biaya:', 'Cost:', '费用:'],
+  ['DP', 'Deposit', '定金'],
 ];
 
 function trStruk(html) {
