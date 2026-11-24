@@ -7032,6 +7032,76 @@ async function simpanAksesMenu() {
 
   window.flash = (text, type) => _flash(trFlash(text), type);
 })();
+// === AUTO-TRANSLATE MODAL DINAMIS (Top-Up Kas Kecil, dll.) ===
+(function () {
+  const modalMap = {
+    en: [
+      [/ISI SALDO \/ TOP-UP KAS KECIL/g, 'TOP-UP PETTY CASH BALANCE'],
+      [/Nominal Isi Kas Kecil/g, 'Petty Cash Top-Up Amount'],
+      [/Contoh:\s*1000000/g, 'e.g. 1000000'],
+      [/Isi Ulang \/ Saldo Awal Kas Kecil/g, 'Top-Up / Opening Petty Cash Balance'],
+      [/^Keterangan$/g, 'Description'],
+      [/^Batal$/g, 'Cancel'],
+      [/Simpan Saldo/g, 'Save Balance'],
+      [/^300rb$/g, '300k'],
+      [/^500rb$/g, '500k'],
+      [/^1 Juta$/g, '1M'],
+      [/^2 Juta$/g, '2M']
+    ],
+    zh: [
+      [/ISI SALDO \/ TOP-UP KAS KECIL/g, '零用现金充值'],
+      [/Nominal Isi Kas Kecil/g, '零用金充值金额'],
+      [/Contoh:\s*1000000/g, '例如：1000000'],
+      [/Isi Ulang \/ Saldo Awal Kas Kecil/g, '零用金充值 / 期初余额'],
+      [/^Keterangan$/g, '说明'],
+      [/^Batal$/g, '取消'],
+      [/Simpan Saldo/g, '保存余额'],
+      [/^300rb$/g, '30万'],
+      [/^500rb$/g, '50万'],
+      [/^1 Juta$/g, '100万'],
+      [/^2 Juta$/g, '200万']
+    ]
+  };
+
+  function translateNode(root) {
+    const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+    const rules = modalMap[lang];
+    if (rules) {
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+      let n;
+      while ((n = walker.nextNode())) {
+        let t = n.nodeValue;
+        const orig = t;
+        for (const [rgx, rep] of rules) t = t.replace(rgx, rep);
+        if (t !== orig) n.nodeValue = t;
+      }
+      root.querySelectorAll('input, textarea').forEach(el => {
+        if (el.placeholder) {
+          let ph = el.placeholder;
+          for (const [rgx, rep] of rules) ph = ph.replace(rgx, rep);
+          el.placeholder = ph;
+        }
+        if (el.value) {
+          let v = el.value;
+          for (const [rgx, rep] of rules) v = v.replace(rgx, rep);
+          if (v !== el.value) el.value = v;
+        }
+      });
+    }
+    if (typeof terapkanMataUangUI === 'function') terapkanMataUangUI();
+  }
+
+  new MutationObserver(muts => {
+    for (const m of muts) {
+      for (const node of m.addedNodes) {
+        if (node.nodeType === 1 && node.tagName === 'DIV') {
+          translateNode(node);
+        }
+      }
+    }
+  }).observe(document.body, { childList: true });
+})();
+
 
 
 
