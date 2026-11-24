@@ -1064,7 +1064,10 @@ function tambahKeKeranjangServis() {
   if (!checkRequired(['sNama', 'sProduk'])) return flash('Lengkapi Nama dan Produk', 'err');
 
   const customer = formatNama($('sNama').value), telp = txt('sHp');
-  const listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => cb.value);
+    const listKondisi = Array.from(document.querySelectorAll('.chk-kondisi:checked')).map(cb => {
+    const lbl = document.querySelector(`label[for="${cb.id}"]`);
+    return lbl ? lbl.textContent.trim() : cb.value;
+  });
   const kondisiLain = txt('sKondisiLain');
   if (kondisiLain) listKondisi.push(kondisiLain);
   const kondisiFisik = listKondisi.length ? listKondisi.join(', ') : '-';
