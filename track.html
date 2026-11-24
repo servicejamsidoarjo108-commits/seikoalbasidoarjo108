@@ -103,4 +103,212 @@
       status: {
         antri:   { label: 'Antri',                  warna: '#fbbf24' },
         proses:  { label: 'Sedang Dikerjakan',      warna: '#3b82f6' },
-        selesai: { label: 'Selesai - Siap Diambil', warna:
+        selesai: { label: 'Selesai - Siap Diambil', warna: '#16a34a' },
+        diambil: { label: 'Sudah Diambil',          warna: '#94a3b8' }
+      }
+    },
+    en: {
+      pageTitle: 'Track Service - Toko Seiko Alba',
+      title: '⌚ Track Service',
+      sub: 'Enter Your Service Number',
+      placeholder: 'Example: SRV1731234567890abcd',
+      btnCari: 'Check Status',
+      btnMencari: 'Searching...',
+      hasilTitle: 'Your Service Status',
+      totalBiaya: 'TOTAL COST',
+      sisaTagihan: 'Balance Due',
+      pelanggan: 'Customer',
+      barang: 'items',
+      no: 'No',
+      keluhan: 'Issue',
+      kondisiAwal: 'Initial condition',
+      jasa: 'Service Fee',
+      part: 'Spare Parts',
+      baterai: 'Battery',
+      biaya: 'Cost',
+      dp: 'Deposit (paid)',
+      pembayaran: 'Payment',
+      lunas: 'PAID',
+      sisa: 'Balance ',
+      garansi: 'Warranty until',
+      pukul: 'at 23:59',
+      locale: 'en-US',
+      errLib: 'Failed to load Supabase library. Please check your internet connection and reload.',
+      errKosong: 'Please enter your service number first.',
+      errNotFound: 'Service record not found. Please check the number.',
+      errGen: 'An error occurred: ',
+      status: {
+        antri:   { label: 'Queued',                 warna: '#fbbf24' },
+        proses:  { label: 'In Progress',            warna: '#3b82f6' },
+        selesai: { label: 'Ready for Pickup',       warna: '#16a34a' },
+        diambil: { label: 'Picked Up',              warna: '#94a3b8' }
+      }
+    },
+    zh: {
+      pageTitle: '维修进度查询 - Toko Seiko Alba',
+      title: '⌚ 维修进度查询',
+      sub: '请输入您的维修单号',
+      placeholder: '示例：SRV1731234567890abcd',
+      btnCari: '查询状态',
+      btnMencari: '查询中...',
+      hasilTitle: '您的维修状态',
+      totalBiaya: '总费用',
+      sisaTagihan: '应付余额',
+      pelanggan: '客户',
+      barang: '件商品',
+      no: '单号',
+      keluhan: '故障',
+      kondisiAwal: '初始外观',
+      jasa: '维修工费',
+      part: '配件费',
+      baterai: '电池费',
+      biaya: '费用',
+      dp: '定金（已付）',
+      pembayaran: '付款状态',
+      lunas: '已结清',
+      sisa: '余额 ',
+      garansi: '保修至',
+      pukul: '23:59',
+      locale: 'zh-CN',
+      errLib: '无法加载数据组件，请检查网络后刷新页面。',
+      errKosong: '请先输入维修单号。',
+      errNotFound: '未找到维修记录，请确认单号是否正确。',
+      errGen: '发生错误：',
+      status: {
+        antri:   { label: '排队中',       warna: '#fbbf24' },
+        proses:  { label: '维修中',       warna: '#3b82f6' },
+        selesai: { label: '已完成·可取件', warna: '#16a34a' },
+        diambil: { label: '已取件',       warna: '#94a3b8' }
+      }
+    }
+  };
+
+  const urlParams = new URLSearchParams(window.location.search);
+  let lang = urlParams.get('lang') || localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+  if (!DICT[lang]) lang = 'id';
+  let lastData = null;
+
+  function T() { return DICT[lang]; }
+
+  function applyLang() {
+    const t = T();
+    document.documentElement.lang = lang;
+    document.title = t.pageTitle;
+    $('txtTitle').textContent = t.title;
+    $('txtSub').textContent = t.sub;
+    $('inputSrv').placeholder = t.placeholder;
+    if (!$('btnLacak').disabled) $('btnLacak').textContent = t.btnCari;
+    $('txtHasilTitle').textContent = t.hasilTitle;
+    $('txtTotalLbl').textContent = t.totalBiaya;
+    $('txtSisaLbl').textContent = t.sisaTagihan;
+    document.querySelectorAll('.lang-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.lang === lang);
+    });
+    if (lastData) renderHasil(lastData);
+  }
+
+  document.querySelectorAll('.lang-btn').forEach(b => {
+    b.addEventListener('click', () => {
+      lang = b.dataset.lang;
+      try { localStorage.setItem('ta_lang', lang); } catch (e) {}
+      applyLang();
+    });
+  });
+
+  function tampilError(pesan) {
+    const el = $('errorBox');
+    el.textContent = pesan;
+    el.style.display = pesan ? 'block' : 'none';
+  }
+
+  applyLang();
+
+  if (!window.supabase) { tampilError(T().errLib); return; }
+
+  const supabaseClient = window.supabase.createClient(
+    'https://khgooqasgscsxgegdqzc.supabase.co',
+    'sb_publishable_2adK53mvsJXzoDerImtgNQ_zpfe-6Hd'
+  );
+
+  function barisItem(item, index) {
+    const t = T();
+    const st = t.status[item.status] || { label: item.status || '-', warna: '#fbbf24' };
+    const kelasBadge = t.status[item.status] ? item.status : '';
+    const lunas = item.paid || (item.sisa || 0) <= 0;
+    const garansi = item.tgl_garansi_servis_sampai
+      ? new Date(item.tgl_garansi_servis_sampai + 'T00:00:00').toLocaleDateString(t.locale, { day: 'numeric', month: 'long', year: 'numeric' }) + ' ' + t.pukul
+      : '';
+    const rincian = [
+      [t.jasa, item.jasa], [t.part, item.total_parts], [t.baterai, item.total_baterai]
+    ].filter(r => (r[1] || 0) > 0).map(r => `<div class="row"><span class="label">${r[0]}</span><span class="value">${rp(r[1])}</span></div>`).join('');
+    const barisDp = (item.dp || 0) > 0 ? `<div class="row"><span class="label">${t.dp}</span><span class="value">${rp(item.dp)}</span></div>` : '';
+
+    return `<div class="item" style="border-left-color:${st.warna}">
+      <div class="head"><span class="judul">${index + 1}. ${esc(item.produk)}</span><span class="badge ${kelasBadge}">${esc(st.label)}</span></div>
+      <div class="detail">${t.no}: <b>${esc(item.id)}</b></div>
+      <div class="detail">${t.keluhan}: ${esc(item.keluhan || '-')}</div>
+      ${item.kondisi_fisik && item.kondisi_fisik !== '-' ? `<div class="detail warn">⚠️ ${t.kondisiAwal}: ${esc(item.kondisi_fisik)}</div>` : ''}
+      <div style="margin-top:6px;border-top:1px dashed #cbd5e1;padding-top:6px;">
+        ${rincian}
+        <div class="row"><span class="label">${t.biaya}</span><span class="value">${rp(item.biaya_pelanggan)}</span></div>
+        ${barisDp}
+        <div class="row"><span class="label">${t.pembayaran}</span><span class="${lunas ? 'lunas' : 'sisa'}">${lunas ? t.lunas : t.sisa + rp(item.sisa)}</span></div>
+        ${garansi ? `<div class="row"><span class="label">${t.garansi}</span><span class="value">${esc(garansi)}</span></div>` : ''}
+      </div>
+    </div>`;
+  }
+
+  function renderHasil(data) {
+    const t = T();
+    const totalBiaya = data.reduce((s, x) => s + (Number(x.biaya_pelanggan) || 0), 0);
+    const totalSisa = data.reduce((s, x) => s + (Number(x.sisa) || 0), 0);
+
+    $('ringkasan').innerHTML = `${t.pelanggan}: <b>${esc(data[0].customer)}</b>` + (data.length > 1 ? `<br><span style="font-size:12px;color:#94a3b8">${data.length} ${t.barang}</span>` : '');
+    $('listBarang').innerHTML = data.map(barisItem).join('');
+    $('resTotal').textContent = rp(totalBiaya);
+    const elSisa = $('resSisa');
+    elSisa.textContent = totalSisa > 0 ? rp(totalSisa) : t.lunas;
+    elSisa.className = 'value ' + (totalSisa > 0 ? 'sisa' : 'lunas');
+    $('hasil').style.display = 'block';
+  }
+
+  async function prosesLacak() {
+    const params = new URLSearchParams(window.location.search);
+    const keyword = $('inputSrv').value.trim();
+    const idUrl = params.get('id'), groupUrl = params.get('group_id');
+
+    let pId = null, pGroup = null;
+    if (keyword) {
+      if (/^grp/i.test(keyword)) pGroup = keyword; else pId = keyword;
+    } else {
+      pId = idUrl; pGroup = groupUrl;
+    }
+    if (!pId && !pGroup) { tampilError(T().errKosong); return; }
+
+    const btn = $('btnLacak');
+    btn.textContent = T().btnMencari; btn.disabled = true;
+    tampilError('');
+    $('hasil').style.display = 'none';
+
+    try {
+      const { data, error } = await supabaseClient.rpc('lacak_servis', { p_id: pId, p_group_id: pGroup });
+      if (error) throw new Error(error.message);
+      if (!data || !data.length) { lastData = null; tampilError(T().errNotFound); return; }
+
+      lastData = data;
+      renderHasil(data);
+    } catch (err) {
+      tampilError(T().errGen + err.message);
+    } finally {
+      btn.textContent = T().btnCari; btn.disabled = false;
+    }
+  }
+
+  $('btnLacak').addEventListener('click', prosesLacak);
+  $('inputSrv').addEventListener('keypress', e => { if (e.key === 'Enter') prosesLacak(); });
+
+  if (urlParams.get('id') || urlParams.get('group_id')) prosesLacak();
+})();
+</script>
+</body>
+</html>
