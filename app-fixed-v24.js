@@ -6011,13 +6011,39 @@ function renderKaryawan() {
   const absAll = db.absensi || [];
   const komAll = db.komisi || [];
 
+  const _l = (typeof _getWaLang === 'function') ? _getWaLang() : 'id';
+  const _tk = {
+    id: {
+      belum: 'Belum Absen Masuk hari ini', masukJam: 'Masuk jam', blmPulang: 'Belum Pulang', selesai: 'Selesai',
+      hari: 'hari', karyawan: 'Karyawan', hadir: 'Hadir', komisi: 'Komisi',
+      masuk: 'Masuk', pulang: 'Pulang',
+      emptyAbs: 'Belum ada data absensi.', emptyKom: 'Belum ada data komisi.',
+      roles: { pemilik: 'PEMILIK', owner: 'PEMILIK', admin: 'ADMIN', kasir: 'KASIR', teknisi: 'TEKNISI' }
+    },
+    en: {
+      belum: 'Not clocked in today', masukJam: 'Clocked in at', blmPulang: 'Not clocked out', selesai: 'Completed',
+      hari: 'days', karyawan: 'Staff', hadir: 'Present', komisi: 'Commission',
+      masuk: 'In', pulang: 'Out',
+      emptyAbs: 'No attendance records yet.', emptyKom: 'No commission records yet.',
+      roles: { pemilik: 'OWNER', owner: 'OWNER', admin: 'ADMIN', kasir: 'CASHIER', teknisi: 'TECHNICIAN' }
+    },
+    zh: {
+      belum: '今日尚未上班打卡', masukJam: '上班打卡', blmPulang: '未下班打卡', selesai: '已完成',
+      hari: '天', karyawan: '员工', hadir: '出勤', komisi: '提成',
+      masuk: '上班', pulang: '下班',
+      emptyAbs: '暂无考勤记录。', emptyKom: '暂无提成记录。',
+      roles: { pemilik: '店主', owner: '店主', admin: '管理员', kasir: '收银员', teknisi: '技师' }
+    }
+  }[_l] || {};
+  const trRole = r => (_tk.roles && _tk.roles[String(r || '').toLowerCase()]) || String(r || '').toUpperCase();
+
   // Status absensi hari ini untuk user yang login
   const hariIni = absAll.find(a => a.user_name === user && a.tanggal === today);
   const stBox = $('absensiStatusBox');
   if (stBox) {
-    if (!hariIni) stBox.innerHTML = `👤 <b>${esc(user)}</b> — <span style="color:#b45309">Belum Absen Masuk hari ini</span>`;
-    else if (!hariIni.jam_pulang) stBox.innerHTML = `👤 <b>${esc(user)}</b> — <span style="color:#15803d">✅ Masuk jam ${jam(hariIni.jam_masuk)}</span> (Belum Pulang)`;
-    else stBox.innerHTML = `👤 <b>${esc(user)}</b> — <span style="color:#15803d">✅ Selesai (${jam(hariIni.jam_masuk)} – ${jam(hariIni.jam_pulang)})</span>`;
+    if (!hariIni) stBox.innerHTML = `👤 <b>${esc(user)}</b> — <span style="color:#b45309">${_tk.belum}</span>`;
+    else if (!hariIni.jam_pulang) stBox.innerHTML = `👤 <b>${esc(user)}</b> — <span style="color:#15803d">✅ ${_tk.masukJam} ${jam(hariIni.jam_masuk)}</span> (${_tk.blmPulang})`;
+    else stBox.innerHTML = `👤 <b>${esc(user)}</b> — <span style="color:#15803d">✅ ${_tk.selesai} (${jam(hariIni.jam_masuk)} – ${jam(hariIni.jam_pulang)})</span>`;
   }
   if ($('btnAbsenMasuk')) $('btnAbsenMasuk').disabled = !!hariIni;
   if ($('btnAbsenPulang')) $('btnAbsenPulang').disabled = !hariIni || !!hariIni.jam_pulang;
@@ -6039,7 +6065,7 @@ function renderKaryawan() {
   const absBln = absView.filter(a => a.tanggal && new Date(a.tanggal + 'T00:00:00').getMonth() === bln && new Date(a.tanggal + 'T00:00:00').getFullYear() === thn);
   const komBln = komView.filter(k => k.waktu && new Date(k.waktu).getMonth() === bln && new Date(k.waktu).getFullYear() === thn);
 
-  if ($('karHadirBln')) $('karHadirBln').textContent = `${absBln.length} hari`;
+  if ($('karHadirBln')) $('karHadirBln').textContent = `${absBln.length} ${_tk.hari}`;
   if ($('karKomisiBln')) $('karKomisiBln').textContent = rp(komBln.reduce((s, k) => s + (Number(k.nominal_komisi) || 0), 0));
 
   // Rekap per karyawan (khusus Admin/Pemilik)
@@ -6049,8 +6075,8 @@ function renderKaryawan() {
       absBln.forEach(a => { if (!map[a.user_name]) map[a.user_name] = { hadir: 0, komisi: 0 }; map[a.user_name].hadir++; });
       komBln.forEach(k => { if (!map[k.user_name]) map[k.user_name] = { hadir: 0, komisi: 0 }; map[k.user_name].komisi += (Number(k.nominal_komisi) || 0); });
       const rows = Object.entries(map);
-      setHTML('listRekapKaryawan', rows.length ? `<table><thead><tr><th>Karyawan</th><th>Hadir</th><th>Komisi</th></tr></thead><tbody>` +
-        rows.map(([u, v]) => `<tr><td><b>${esc(u)}</b></td><td>${v.hadir} hari</td><td style="color:#15803d;font-weight:800;">${rp(v.komisi)}</td></tr>`).join('') + '</tbody></table>' : '');
+      setHTML('listRekapKaryawan', rows.length ? `<table><thead><tr><th>${_tk.karyawan}</th><th>${_tk.hadir}</th><th>${_tk.komisi}</th></tr></thead><tbody>` +
+        rows.map(([u, v]) => `<tr><td><b>${esc(u)}</b></td><td>${v.hadir} ${_tk.hari}</td><td style="color:#15803d;font-weight:800;">${rp(v.komisi)}</td></tr>`).join('') + '</tbody></table>' : '');
     } else {
       setHTML('listRekapKaryawan', '');
     }
@@ -6059,14 +6085,14 @@ function renderKaryawan() {
   setHTML('listAbsensi', absView.length ? absView.slice(0, 30).map(a => `
     <div class="item-card">
       <div class="ic-head" style="margin-bottom:4px;">
-        <div><b>${esc(a.user_name)}</b> <span class="badge proses">${esc((a.role || '').toUpperCase())}</span></div>
+        <div><b>${esc(a.user_name)}</b> <span class="badge proses">${esc(trRole(a.role))}</span></div>
         <div style="font-size:12px;color:#475569;font-weight:700;">${esc(a.tanggal)}</div>
       </div>
       <div style="font-size:13px;color:#0f1f3d;">
-        🟢 Masuk: <b>${a.jam_masuk ? jam(a.jam_masuk) : '-'}</b> &nbsp;|&nbsp; 🔴 Pulang: <b>${a.jam_pulang ? jam(a.jam_pulang) : '-'}</b>
+        🟢 ${_tk.masuk}: <b>${a.jam_masuk ? jam(a.jam_masuk) : '-'}</b> &nbsp;|&nbsp; 🔴 ${_tk.pulang}: <b>${a.jam_pulang ? jam(a.jam_pulang) : '-'}</b>
       </div>
       ${a.catatan ? `<div style="font-size:12px;color:#64748b;margin-top:2px;">📝 ${esc(a.catatan)}</div>` : ''}
-    </div>`).join('') : '<div class="empty">Belum ada data absensi.</div>');
+    </div>`).join('') : `<div class="empty">${_tk.emptyAbs}</div>`);
 
   setHTML('listKomisi', komView.length ? komView.slice(0, 30).map(k => `
     <div style="font-size:13px;border-bottom:1px solid #e2e8f0;padding:8px 4px;display:flex;justify-content:space-between;align-items:center;gap:8px;">
@@ -6075,9 +6101,8 @@ function renderKaryawan() {
         <div style="color:#0f172a;font-weight:600;">${esc(k.keterangan || '-')}</div>
       </div>
       <b style="color:#15803d;white-space:nowrap;">+${rp(k.nominal_komisi)}</b>
-    </div>`).join('') : '<div class="empty">Belum ada data komisi.</div>');
+    </div>`).join('') : `<div class="empty">${_tk.emptyKom}</div>`);
 }
-
 
 // ==========================================================
 //  FITUR V22: KELOLA NAMA & STATUS KARYAWAN (KHUSUS PEMILIK)
