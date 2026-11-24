@@ -7387,7 +7387,11 @@ async function simpanAksesMenu() {
     [/^BATERAI$/g, 'BATTERY'],
     [/Kirim Hasil Hitung/g, 'Submit Count Result'],
     [/\bRIWAYAT:/g, 'HISTORY:'],
-    [/Belum ada riwayat\./g, 'No history yet.']
+    [/Belum ada riwayat\./g, 'No history yet.'],
+    [/Memproses\.\.\./gi, 'Processing...'],
+    [/Menyimpan\.\.\./gi, 'Saving...'],
+    [/Status: Gagal menghubungkan/gi, 'Status: Connection failed'],
+    [/Pop-up diblokir browser\. Izinkan pop-up untuk mencetak barcode\./gi, 'Pop-up blocked by browser. Allow pop-ups to print barcode.'],
 
 
   ];
@@ -7414,6 +7418,11 @@ async function simpanAksesMenu() {
     [/Kirim Hasil Hitung/g, '提交盘点结果'],
     [/\bRIWAYAT:/g, '历史记录：'],
     [/Belum ada riwayat\./g, '暂无历史记录。'],
+    [/Memproses\.\.\./gi, '处理中...'],
+    [/Menyimpan\.\.\./gi, '保存中...'],
+    [/Status: Gagal menghubungkan/gi, '状态：连接失败'],
+    [/Pop-up diblokir browser\. Izinkan pop-up untuk mencetak barcode\./gi, '浏览器拦截了弹窗。请允许弹窗以打印条形码。'],
+
 
   ];
 
@@ -7436,7 +7445,8 @@ async function simpanAksesMenu() {
   const obs = new MutationObserver(muts => {
     for (const m of muts) {
       m.addedNodes.forEach(n => {
-        if (n.nodeType === 1) translateNodes(n);
+                if (n.nodeType === 1) translateNodes(n);
+        else if (n.nodeType === 3 && n.parentNode) translateNodes(n.parentNode);
       });
     }
   });
