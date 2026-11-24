@@ -84,13 +84,80 @@ function rp(n) {
   });
 }
 document.addEventListener('DOMContentLoaded', () => {
+  const cur = getMataUang();
   const el = document.getElementById('setMataUang');
-  if (el) el.value = getMataUang();
-});
+  if (el) el.value = cur;
 
-document.addEventListener('DOMContentLoaded', () => {
-  const el = document.getElementById('setMataUang');
-  if (el) el.value = getMataUang();
+  // 1. Tombol Cepat Diskon
+  const presetDiskon = {
+    IDR: [{ lbl: '10rb', val: 10000 }, { lbl: '20rb', val: 20000 }],
+    USD: [{ lbl: '$5',   val: 5 },     { lbl: '$10',  val: 10 }],
+    CNY: [{ lbl: '¥10',  val: 10 },    { lbl: '¥20',  val: 20 }],
+    SGD: [{ lbl: 'S$5',  val: 5 },     { lbl: 'S$10', val: 10 }],
+    MYR: [{ lbl: 'RM5',  val: 5 },     { lbl: 'RM10', val: 10 }]
+  }[cur] || [{ lbl: '10rb', val: 10000 }, { lbl: '20rb', val: 20000 }];
+
+  const d1 = document.getElementById('btnDiskonNom1');
+  const d2 = document.getElementById('btnDiskonNom2');
+  if (d1) { d1.textContent = presetDiskon[0].lbl; d1.onclick = () => setDiskonCepat('nominal', presetDiskon[0].val); }
+  if (d2) { d2.textContent = presetDiskon[1].lbl; d2.onclick = () => setDiskonCepat('nominal', presetDiskon[1].val); }
+
+  // 2. Tombol Cepat Bayar
+  const presetBayar = {
+    IDR: [{ lbl: '50rb', val: 50000 }, { lbl: '100rb', val: 100000 }, { lbl: '200rb', val: 200000 }, { lbl: '500rb', val: 500000 }],
+    USD: [{ lbl: '$10',  val: 10 },    { lbl: '$20',   val: 20 },     { lbl: '$50',   val: 50 },     { lbl: '$100',  val: 100 }],
+    CNY: [{ lbl: '¥50',  val: 50 },    { lbl: '¥100',  val: 100 },    { lbl: '¥200',  val: 200 },    { lbl: '¥500',  val: 500 }],
+    SGD: [{ lbl: 'S$10', val: 10 },    { lbl: 'S$20',  val: 20 },     { lbl: 'S$50',  val: 50 },     { lbl: 'S$100', val: 100 }],
+    MYR: [{ lbl: 'RM10', val: 10 },    { lbl: 'RM20',  val: 20 },     { lbl: 'RM50',  val: 50 },     { lbl: 'RM100', val: 100 }]
+  }[cur] || [{ lbl: '50rb', val: 50000 }, { lbl: '100rb', val: 100000 }, { lbl: '200rb', val: 200000 }, { lbl: '500rb', val: 500000 }];
+
+  presetBayar.forEach((p, i) => {
+    const btn = document.getElementById('btnBayarNom' + (i + 1));
+    if (btn) { btn.textContent = p.lbl; btn.onclick = () => setBayarCepat(p.val); }
+  });
+
+  // 3. Tombol Cepat Kas Kecil
+  const _kkLang = (typeof _getWaLang === 'function') ? _getWaLang() : 'id';
+  const kkText = {
+    id: [
+      { t: '+ Potong Rantai', d: 'Jasa potong rantai', tp: 'masuk' },
+      { t: '+ Potong Rantai', d: 'Jasa potong rantai', tp: 'masuk' },
+      { t: '+ Springbar',     d: 'Ganti springbar / pen', tp: 'masuk' },
+      { t: '- Beli Galon',    d: 'Beli air galon', tp: 'keluar' },
+      { t: '- Makan/Minum',   d: 'Beli makan/minum', tp: 'keluar' }
+    ],
+    en: [
+      { t: '+ Link Resize',    d: 'Strap link resize', tp: 'masuk' },
+      { t: '+ Link Resize',    d: 'Strap link resize', tp: 'masuk' },
+      { t: '+ Springbar',      d: 'Replace springbar / pin', tp: 'masuk' },
+      { t: '- Drinking Water', d: 'Buy drinking water', tp: 'keluar' },
+      { t: '- Food/Drinks',    d: 'Food & drinks', tp: 'keluar' }
+    ],
+    zh: [
+      { t: '+ 截表带', d: '截表带服务', tp: 'masuk' },
+      { t: '+ 截表带', d: '截表带服务', tp: 'masuk' },
+      { t: '+ 换生耳', d: '更换生耳/表针', tp: 'masuk' },
+      { t: '- 桶装水', d: '购买桶装水', tp: 'keluar' },
+      { t: '- 餐饮费', d: '餐饮支出', tp: 'keluar' }
+    ]
+  }[_kkLang] || [];
+
+  const kkNom = {
+    IDR: [{ l: '15rb', v: 15000 }, { l: '20rb', v: 20000 }, { l: '10rb', v: 10000 }, { l: '20rb', v: 20000 }, { l: '25rb', v: 25000 }],
+    USD: [{ l: '$5',   v: 5 },     { l: '$10',  v: 10 },    { l: '$3',   v: 3 },     { l: '$5',   v: 5 },     { l: '$10',  v: 10 }],
+    CNY: [{ l: '¥10',  v: 10 },    { l: '¥20',  v: 20 },    { l: '¥10',  v: 10 },    { l: '¥15',  v: 15 },    { l: '¥25',  v: 25 }],
+    SGD: [{ l: 'S$5',  v: 5 },     { l: 'S$10', v: 10 },    { l: 'S$3',  v: 3 },     { l: 'S$5',  v: 5 },     { l: 'S$10', v: 10 }],
+    MYR: [{ l: 'RM5',  v: 5 },     { l: 'RM10', v: 10 },    { l: 'RM5',  v: 5 },     { l: 'RM10', v: 10 },    { l: 'RM15', v: 15 }]
+  }[cur] || [{ l: '15rb', v: 15000 }, { l: '20rb', v: 20000 }, { l: '10rb', v: 10000 }, { l: '20rb', v: 20000 }, { l: '25rb', v: 25000 }];
+
+  kkNom.forEach((n, i) => {
+    const btn = document.getElementById('btnKK' + (i + 1));
+    const tx = kkText[i];
+    if (btn && tx) {
+      btn.textContent = `${tx.t} ${n.l}`;
+      btn.onclick = () => setKasKecilCepat(tx.tp, n.v, tx.d);
+    }
+  });
 });
 const nowISO = () => new Date().toISOString();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
