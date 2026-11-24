@@ -6952,6 +6952,9 @@ async function simpanAksesMenu() {
       [/Pengaturan Telegram Bot disimpan!?/gi, 'Telegram 机器人设置已保存！'],
       [/Logo disimpan, akan tampil di nota/gi, '图标已保存，将显示在小票上'],
       [/Logo dihapus/gi, '图标已删除'],
+      [/Hak akses menu\s+(\w+)\s+berhasil disimpan!?/gi, '$1 菜单权限已保存！'],
+      [/Gagal menyimpan hak akses:\s*/gi, '保存菜单权限失败：'],
+
 
       // Prefix Error Umum
       [/^Gagal menyimpan:\s*/g, '保存失败：'],
@@ -7054,6 +7057,9 @@ async function simpanAksesMenu() {
       [/Pengaturan Telegram Bot disimpan!?/gi, 'Telegram Bot settings saved!'],
       [/Logo disimpan, akan tampil di nota/gi, 'Logo saved, it will appear on receipts'],
       [/Logo dihapus/gi, 'Logo removed'],
+      [/Hak akses menu\s+(\w+)\s+berhasil disimpan!?/gi, 'Menu access for $1 saved!'],
+      [/Gagal menyimpan hak akses:\s*/gi, 'Failed to save menu access: '],
+
 
       // General Error Prefixes
       [/^Gagal menyimpan:\s*/g, 'Failed to save: '],
