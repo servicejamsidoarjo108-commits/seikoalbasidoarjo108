@@ -6929,8 +6929,12 @@ async function simpanAksesMenu() {
       [/Pilih tipe baterai terlebih dahulu!?/gi, '请先选择电池型号！'],
       [/📤 Mengirim pesan WA via API\.\.\./g, '📤 正在通过 API 发送 WhatsApp 消息...'],
       [/✅ Pesan WA terkirim otomatis via API!/g, '✅ WhatsApp 消息已通过 API 自动发送！'],
-
-
+      [/Membuat kartu digital\.\.\./g, '正在生成电子保修卡...'],
+      [/Kartu digital berhasil dibuat!/g, '电子保修卡已生成！'],
+      [/Gagal membuat gambar/g, '生成图片失败'],
+      [/Garansi servis tidak valid/g, '维修保修无效'],
+      [/Data baterai tidak valid/g, '电池数据无效'],
+      [/Library html2canvas belum dimuat/g, 'html2canvas 组件未加载'],
 
       // Absensi & Tampilan
       [/Anda sudah Absen Masuk hari ini!/g, '您今天已经上班打卡了！'],
@@ -7019,8 +7023,12 @@ async function simpanAksesMenu() {
       [/Pilih tipe baterai terlebih dahulu!?/gi, 'Please select a battery type first'],
       [/📤 Mengirim pesan WA via API\.\.\./g, '📤 Sending WA message via API...'],
       [/✅ Pesan WA terkirim otomatis via API!/g, '✅ WA message sent automatically via API!'],
-
-
+      [/Membuat kartu digital\.\.\./g, 'Generating digital warranty card...'],
+      [/Kartu digital berhasil dibuat!/g, 'Digital warranty card created!'],
+      [/Gagal membuat gambar/g, 'Failed to generate image'],
+      [/Garansi servis tidak valid/g, 'Invalid service warranty'],
+      [/Data baterai tidak valid/g, 'Invalid battery data'],
+      [/Library html2canvas belum dimuat/g, 'html2canvas library not loaded'],
 
       // Attendance & Display
       [/Anda sudah Absen Masuk hari ini!/g, 'You have already clocked in today!'],
@@ -7203,6 +7211,58 @@ async function simpanAksesMenu() {
     };
   }
 })();
+
+// === AUTO-TRANSLATE KARTU E-WARRANTY SEBELUM RENDER PNG ===
+(function () {
+  const cardDict = {
+    en: [
+      [/KARTU GARANSI SERVIS/gi, 'SERVICE E-WARRANTY CARD'],
+      [/KARTU GARANSI BATERAI/gi, 'BATTERY E-WARRANTY CARD'],
+      [/GARANSI SERVIS/gi, 'SERVICE WARRANTY'],
+      [/GARANSI BATERAI/gi, 'BATTERY WARRANTY'],
+      [/^Pelanggan$/g, 'Customer'],
+      [/^Produk \/ Jam$/g, 'Product / Watch'],
+      [/^Tanggal Mulai$/g, 'Start Date'],
+      [/^Berlaku Sampai$/g, 'Valid Until']
+    ],
+    zh: [
+      [/KARTU GARANSI SERVIS/gi, '手表维修电子保修卡'],
+      [/KARTU GARANSI BATERAI/gi, '电池更换电子保修卡'],
+      [/GARANSI SERVIS/gi, '维修保修'],
+      [/GARANSI BATERAI/gi, '电池保修'],
+      [/^Pelanggan$/g, '客户'],
+      [/^Produk \/ Jam$/g, '商品 / 手表'],
+      [/^Tanggal Mulai$/g, '开始日期'],
+      [/^Berlaku Sampai$/g, '有效期至']
+    ]
+  };
+
+  function patchHtml2Canvas() {
+    if (typeof window.html2canvas !== 'function' || window.html2canvas.__i18nPatched) return;
+    const _h2c = window.html2canvas;
+    window.html2canvas = function (el, opts) {
+      const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+      const rules = cardDict[lang];
+      if (el && rules) {
+        const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, null, false);
+        let n;
+        while ((n = walker.nextNode())) {
+          let t = n.nodeValue.trim();
+          if (!t) continue;
+          let out = n.nodeValue;
+          for (const [rgx, rep] of rules) out = out.replace(rgx, rep);
+          if (out !== n.nodeValue) n.nodeValue = out;
+        }
+      }
+      return _h2c.call(this, el, opts);
+    };
+    window.html2canvas.__i18nPatched = true;
+  }
+
+  patchHtml2Canvas();
+  window.addEventListener('load', patchHtml2Canvas);
+})();
+
 
 
 
