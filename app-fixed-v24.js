@@ -4973,11 +4973,18 @@ function renderForecastStok() {
     return;
   }
 
+    const _pLang = (typeof _getWaLang === 'function') ? _getWaLang() : 'id';
+  const _uTxt = ({ id: 'unit', en: 'pcs', zh: '件' })[_pLang] || 'unit';
+  const _hLagi = ({ id: 'hari lagi', en: 'days left', zh: '天后售罄' })[_pLang] || 'hari lagi';
+  const _h90 = ({ id: '> 90 hari', en: '> 90 days', zh: '> 90 天' })[_pLang] || '> 90 hari';
+  const _habis = ({ id: 'HABIS', en: 'OUT OF STOCK', zh: '已售罄' })[_pLang] || 'HABIS';
+  const _cukup = ({ id: 'Cukup', en: 'Sufficient', zh: '充足' })[_pLang] || 'Cukup';
+
   el.innerHTML = hasil.map(x => {
     const kritis = x.estimasiHari <= 7;
     const waspada = !kritis && x.estimasiHari <= 14;
     const badgeSt = kritis ? '<span class="badge danger">🚨 KRITIS</span>' : (waspada ? '<span class="badge warn">⚠️ SEGERA RESTOCK</span>' : '<span class="badge ok">✅ AMAN</span>');
-    const teksHari = x.estimasiHari >= 999 ? '> 90 hari' : (x.stok === 0 ? 'HABIS' : `~${x.estimasiHari} hari lagi`);
+    const teksHari = x.estimasiHari >= 999 ? _h90 : (x.stok === 0 ? _habis : `~${x.estimasiHari} ${_hLagi}`);
     return `<div class="item-card ${kritis ? 'low-stock' : ''}">
       <div class="ic-head">
         <div>
@@ -4987,11 +4994,11 @@ function renderForecastStok() {
         <div class="ic-stock ${kritis ? 'low' : ''}">Stok: ${x.stok}</div>
       </div>
       <div class="ic-grid">
-        <div class="ic-cell"><span class="ic-lbl">Keluar (30 Hari)</span><span class="ic-val">${x.keluar30} unit</span></div>
+        <div class="ic-cell"><span class="ic-lbl">Keluar (30 Hari)</span><span class="ic-val">${x.keluar30} ${_uTxt}</span></div>
         <div class="ic-cell"><span class="ic-lbl">Estimasi Habis</span><span class="ic-val ${kritis ? 'danger' : ''}">${teksHari}</span></div>
         <div class="ic-cell" style="grid-column:span 2;border-top:1px dashed #cbd5e1;padding-top:6px;flex-direction:row;justify-content:space-between;align-items:center;">
           <span class="ic-lbl">Rekomendasi Beli (Stok 30 Hari)</span>
-          <span class="ic-val ok">${x.saranBeli > 0 ? '+' + x.saranBeli + ' unit' : 'Cukup'}</span>
+          <span class="ic-val ok">${x.saranBeli > 0 ? '+' + x.saranBeli + ' ' + _uTxt : _cukup}</span>
         </div>
       </div>
     </div>`;
