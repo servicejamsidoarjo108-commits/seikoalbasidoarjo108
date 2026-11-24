@@ -7366,7 +7366,14 @@ async function simpanAksesMenu() {
     [/✕ Kembali/g, '✕ Back'],
     [/\bKlaim\s*\(/g, 'Claim ('],
     [/\bKeluhan:/g, 'Issue:'],
-    [/\bBiaya:/g, 'Cost:']
+    [/\bBiaya:/g, 'Cost:'],
+    [/Hitung Stok Fisik/g, 'Physical Stock Count'],
+    [/Hitung barang di rak lalu isi jumlahnya di sini\./g, 'Count items on the shelf and enter the quantities here.'],
+    [/Hasil ini hanya draft/g, 'This result is a draft only'],
+    [/untuk dicocokkan Admin\/Pemilik — jumlahnya tidak langsung mengubah stok\./g, 'for Admin/Owner verification — quantities do not immediately change stock.'],
+    [/^JAM$/g, 'WATCH'],
+    [/^BATERAI$/g, 'BATTERY'],
+    [/Kirim Hasil Hitung/g, 'Submit Count Result']
 
   ];
 
@@ -7382,7 +7389,14 @@ async function simpanAksesMenu() {
     [/✕ Kembali/g, '✕ 返回'],
     [/\bKlaim\s*\(/g, '保修索赔 ('],
     [/\bKeluhan:/g, '故障：'],
-    [/\bBiaya:/g, '费用：']
+    [/\bBiaya:/g, '费用：'],
+    [/Hitung Stok Fisik/g, '实物库存盘点'],
+    [/Hitung barang di rak lalu isi jumlahnya di sini\./g, '清点货架上的商品并在此填入数量。'],
+    [/Hasil ini hanya draft/g, '此结果仅为草稿'],
+    [/untuk dicocokkan Admin\/Pemilik — jumlahnya tidak langsung mengubah stok\./g, '供管理员/店主核对 — 不会直接更改库存。'],
+    [/^JAM$/g, '手表'],
+    [/^BATERAI$/g, '电池'],
+    [/Kirim Hasil Hitung/g, '提交盘点结果']
 
   ];
 
