@@ -7350,6 +7350,60 @@ async function simpanAksesMenu() {
   window.addEventListener('load', patchHtml2Canvas);
 })();
 
+// === AUTO-TRANSLATE MODAL PELUNASAN & PREVIEW NOTA ===
+(function () {
+  const MAP_EN = [
+    [/PELUNASAN SERVIS/g, 'SERVICE BALANCE PAYMENT'],
+    [/\(SISA:/g, '(BALANCE:'],
+    [/Metode Pembayaran/g, 'Payment Method'],
+    [/^Tunai$/g, 'Cash'],
+    [/Debit Bank Lain/g, 'Other Bank Debit'],
+    [/Nominal Bayar/g, 'Payment Amount'],
+    [/^Lanjutkan$/g, 'Continue'],
+    [/Preview Nota \/ Struk/g, 'Receipt / Ticket Preview'],
+    [/✕ Kembali/g, '✕ Back'],
+    [/\bKlaim\s*\(/g, 'Claim (']
+  ];
+
+  const MAP_ZH = [
+    [/PELUNASAN SERVIS/g, '维修余款结算'],
+    [/\(SISA:/g, '（余款：'],
+    [/Metode Pembayaran/g, '支付方式'],
+    [/^Tunai$/g, '现金'],
+    [/Debit Bank Lain/g, '其他银行借记卡'],
+    [/Nominal Bayar/g, '支付金额'],
+    [/^Lanjutkan$/g, '继续'],
+    [/Preview Nota \/ Struk/g, '小票 / 工单预览'],
+    [/✕ Kembali/g, '✕ 返回'],
+    [/\bKlaim\s*\(/g, '保修索赔 (']
+  ];
+
+  function translateNodes(root) {
+    const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+    if (lang === 'id') return;
+    const rules = lang === 'zh' ? MAP_ZH : MAP_EN;
+
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+    let node;
+    while ((node = walker.nextNode())) {
+      const orig = node.nodeValue;
+      if (!orig || !orig.trim()) continue;
+      let next = orig;
+      for (const [rgx, rep] of rules) next = next.replace(rgx, rep);
+      if (next !== orig) node.nodeValue = next;
+    }
+  }
+
+  const obs = new MutationObserver(muts => {
+    for (const m of muts) {
+      m.addedNodes.forEach(n => {
+        if (n.nodeType === 1) translateNodes(n);
+      });
+    }
+  });
+  obs.observe(document.body, { childList: true, subtree: true });
+  translateNodes(document.body);
+})();
 
 
 
