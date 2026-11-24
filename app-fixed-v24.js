@@ -6724,5 +6724,127 @@ async function simpanAksesMenu() {
   }
 }
 
+// === AUTO-TRANSLATE SEMUA POP-UP (alert, confirm, prompt) ===
+(function () {
+  const _alert = window.alert.bind(window);
+  const _confirm = window.confirm.bind(window);
+  const _prompt = window.prompt.bind(window);
+
+  function trPopup(msg) {
+    if (typeof msg !== 'string') return msg;
+    const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+    if (lang === 'id') return msg;
+
+    const map = lang === 'zh' ? [
+      // Sesi & Sistem
+      [/⚠️ Akun ini baru saja login di perangkat lain\.\nAnda akan dikeluarkan demi keamanan\./g, '⚠️ 此账号刚在其他设备登录。\n为保障安全，您将被强制退出。'],
+      [/Browser tidak mendukung scan kamera\. Gunakan Chrome Android\./g, '当前浏览器不支持摄像头扫码，请使用 Android Chrome。'],
+      [/Tidak bisa akses kamera:\s*/g, '无法访问摄像头：'],
+      [/Pop-up diblokir browser\. Izinkan pop-up untuk mencetak barcode\./g, '弹窗被浏览器拦截，请允许弹窗以打印条码。'],
+      [/Pilih minimal 1 produk dengan mencentang kotaknya!/g, '请至少勾选 1 件商品！'],
+      [/Nomor HP tidak valid\./g, '手机号码无效。'],
+      [/Nomor HP tidak ada/g, '没有手机号码'],
+
+      // Karyawan
+      [/Nama Tampilan \/ Panggilan \(tampil di Header, Struk & Absensi\):/g, '显示名称/昵称（显示于顶部、小票和考勤）：'],
+      [/Aktifkan kembali akun\s+(.+?)\?/g, '重新启用账号 $1 吗？'],
+      [/Nonaktifkan akun\s+(.+?)\?/g, '停用账号 $1 吗？'],
+
+      // Konfirmasi Hapus & Kosongkan
+      [/Hapus produk ini\?/g, '确定删除此商品吗？'],
+      [/Kosongkan semua list servis\?/g, '确定清空所有维修列表吗？'],
+      [/Kosongkan list baterai\?/g, '确定清空电池列表吗？'],
+      [/Hapus data riwayat baterai ini\?/g, '确定删除此电池更换记录吗？'],
+      [/Hapus tipe baterai ini\?/g, '确定删除此电池型号吗？'],
+      [/Hapus rekening bank ini\?/g, '确定删除此银行账户吗？'],
+      [/Hapus pelanggan ini\?/g, '确定删除此客户吗？'],
+      [/Hapus sparepart ini\?/g, '确定删除此配件吗？'],
+      [/Hapus supplier ini\?/g, '确定删除此供应商吗？'],
+      [/Hapus logo dari semua nota\?/g, '确定从所有小票中删除店铺图标吗？'],
+      [/Hapus servis ini\?\n\nStok part\/baterai akan dikembalikan, catatan kas\/MDR servis ini ikut dibatalkan, dan kuota klaim \(jika ada\) dikembalikan\./g, '确定删除此维修单吗？\n\n配件/电池库存将退回，相关现金/手续费记录将撤销，保修次数（如有）也将退回。'],
+      [/⚠️ Hapus transaksi penjualan ini\?\n\nStok produk akan dikembalikan, dan catatan kas terkait ikut terhapus\./g, '⚠️ 确定删除此销售记录吗？\n\n商品库存将退回，相关现金记录也将被删除。'],
+      [/⚠️ Yakin ingin menghapus riwayat kas ini\?\n\nTindakan ini menghapus data secara permanen dan mempengaruhi total saldo\./g, '⚠️ 确定永久删除此现金记录吗？\n\n此操作不可恢复，且会影响总余额。'],
+      [/Hapus beban "(.+?)" dari daftar\?\n\nRiwayat pembayaran yang sudah tercatat di kas TIDAK ikut terhapus\./g, '确定从列表中删除固定支出“$1”吗？\n\n已记录在现金账中的历史付款不会被删除。'],
+      [/Hapus riwayat audit "(.+?)"\?\n\nCatatan: Ini hanya menghapus baris riwayat audit, tidak mengubah stok barang saat ini\./g, '确定删除盘点记录“$1”吗？\n\n注意：仅删除盘点记录，不会修改当前库存数量。'],
+
+      // Servis & Garansi
+      [/Tagihan sudah LUNAS!\n\nApakah pelanggan langsung mengambil jam sekarang\? \(Lanjut ke Tanda Tangan Pengambilan\)/g, '账单已结清！\n\n客户现在直接取表吗？（继续前往取件签名）'],
+      [/KLAIM GARANSI\n\nPelanggan:\s*(.+?)\nSisa kuota:\s*(\d+)x\n\nLanjut\?/g, '保修申请\n\n客户：$1\n剩余次数：$2次\n\n是否继续？'],
+      [/⚠️ PERINGATAN GARANSI HABIS\n\nGaransi nota\s+(.+?)\s+sudah lewat\s+(\d+)\s+hari\.\nJangan janjikan gratis sebelum disetujui Admin\/Pemilik \(wajib otorisasi saat simpan\)\.\n\nLanjutkan\?/g, '⚠️ 保修已过期提醒\n\n单号 $1 的保修已过期 $2 天。\n未经管理员/店主批准请勿承诺免费（保存时需授权）。\n\n是否继续？'],
+      [/Nota ini berisi beberapa barang, pilih yang diklaim:/g, '此单据包含多件商品，请选择需要保修的商品：'],
+
+      // Input Prompt (Stok, Bank, Beban)
+      [/^Min Stok:$/g, '最低库存：'],
+      [/^Harga Beli:$/g, '进货价：'],
+      [/^Harga Jual:$/g, '销售价：'],
+      [/^Nama Sparepart:$/g, '配件名称：'],
+      [/^Nama beban:$/g, '固定支出名称：'],
+      [/^Nominal per bulan \(Rp\):$/g, '每月金额：'],
+      [/^Tanggal jatuh tempo \(1-31\):$/g, '每月到期日 (1-31)：'],
+      [/Masukkan Saldo Awal baru untuk\s+(.+?)\s*\(Rp\):/g, '请输入 $1 的新期初余额：'],
+      [/REKONSILIASI BANK\s+(.+?)\n\nSaldo Sistem:\s*(.+?)\n\nMasukkan Saldo Aktual \(sesuai m-banking\/ATM\):/g, '银行对账 $1\n\n系统余额：$2\n\n请输入实际余额（按网银/ATM）：'],
+      [/Selisih:\s*(.+?)\n\nMasukkan alasan penyesuaian \(contoh: Bunga Bank, Biaya Admin, Koreksi Transfer\):/g, '差异：$1\n\n请输入调整原因（例如：银行利息、手续费、转账更正）：']
+    ] : [
+      // Session & System (EN)
+      [/⚠️ Akun ini baru saja login di perangkat lain\.\nAnda akan dikeluarkan demi keamanan\./g, '⚠️ This account was just logged in on another device.\nYou will be signed out for security.'],
+      [/Browser tidak mendukung scan kamera\. Gunakan Chrome Android\./g, 'Browser does not support camera scanning. Please use Chrome Android.'],
+      [/Tidak bisa akses kamera:\s*/g, 'Cannot access camera: '],
+      [/Pop-up diblokir browser\. Izinkan pop-up untuk mencetak barcode\./g, 'Pop-up blocked by browser. Please allow pop-ups to print barcodes.'],
+      [/Pilih minimal 1 produk dengan mencentang kotaknya!/g, 'Please select at least 1 product by checking its box!'],
+      [/Nomor HP tidak valid\./g, 'Invalid phone number.'],
+      [/Nomor HP tidak ada/g, 'No phone number found'],
+
+      // Employees
+      [/Nama Tampilan \/ Panggilan \(tampil di Header, Struk & Absensi\):/g, 'Display Name / Nickname (shown in Header, Receipts & Attendance):'],
+      [/Aktifkan kembali akun\s+(.+?)\?/g, 'Reactivate account $1?'],
+      [/Nonaktifkan akun\s+(.+?)\?/g, 'Deactivate account $1?'],
+
+      // Delete & Clear Confirmations
+      [/Hapus produk ini\?/g, 'Delete this product?'],
+      [/Kosongkan semua list servis\?/g, 'Clear all items in the service list?'],
+      [/Kosongkan list baterai\?/g, 'Clear the battery list?'],
+      [/Hapus data riwayat baterai ini\?/g, 'Delete this battery history record?'],
+      [/Hapus tipe baterai ini\?/g, 'Delete this battery type?'],
+      [/Hapus rekening bank ini\?/g, 'Delete this bank account?'],
+      [/Hapus pelanggan ini\?/g, 'Delete this customer?'],
+      [/Hapus sparepart ini\?/g, 'Delete this spare part?'],
+      [/Hapus supplier ini\?/g, 'Delete this supplier?'],
+      [/Hapus logo dari semua nota\?/g, 'Remove logo from all receipts?'],
+      [/Hapus servis ini\?\n\nStok part\/baterai akan dikembalikan, catatan kas\/MDR servis ini ikut dibatalkan, dan kuota klaim \(jika ada\) dikembalikan\./g, 'Delete this service?\n\nPart/battery stock will be restored, related cash/MDR records reversed, and warranty claim quota (if any) restored.'],
+      [/⚠️ Hapus transaksi penjualan ini\?\n\nStok produk akan dikembalikan, dan catatan kas terkait ikut terhapus\./g, '⚠️ Delete this sales transaction?\n\nProduct stock will be restored and related cash records will be deleted.'],
+      [/⚠️ Yakin ingin menghapus riwayat kas ini\?\n\nTindakan ini menghapus data secara permanen dan mempengaruhi total saldo\./g, '⚠️ Permanently delete this cash record?\n\nThis action cannot be undone and will affect the total balance.'],
+      [/Hapus beban "(.+?)" dari daftar\?\n\nRiwayat pembayaran yang sudah tercatat di kas TIDAK ikut terhapus\./g, 'Remove fixed expense "$1" from the list?\n\nPast payment history recorded in cash will NOT be deleted.'],
+      [/Hapus riwayat audit "(.+?)"\?\n\nCatatan: Ini hanya menghapus baris riwayat audit, tidak mengubah stok barang saat ini\./g, 'Delete audit history "$1"?\n\nNote: This only removes the audit log row and does not change current stock.'],
+
+      // Service & Warranty
+      [/Tagihan sudah LUNAS!\n\nApakah pelanggan langsung mengambil jam sekarang\? \(Lanjut ke Tanda Tangan Pengambilan\)/g, 'Invoice is PAID!\n\nIs the customer picking up the watch now? (Proceed to Pickup Signature)'],
+      [/KLAIM GARANSI\n\nPelanggan:\s*(.+?)\nSisa kuota:\s*(\d+)x\n\nLanjut\?/g, 'WARRANTY CLAIM\n\nCustomer: $1\nRemaining quota: $2x\n\nContinue?'],
+      [/⚠️ PERINGATAN GARANSI HABIS\n\nGaransi nota\s+(.+?)\s+sudah lewat\s+(\d+)\s+hari\.\nJangan janjikan gratis sebelum disetujui Admin\/Pemilik \(wajib otorisasi saat simpan\)\.\n\nLanjutkan\?/g, '⚠️ EXPIRED WARRANTY WARNING\n\nWarranty for receipt $1 expired $2 day(s) ago.\nDo not promise free service before Admin/Owner approval (authorization required on save).\n\nContinue?'],
+      [/Nota ini berisi beberapa barang, pilih yang diklaim:/g, 'This receipt contains multiple items, choose the one to claim:'],
+
+      // Input Prompts
+      [/^Min Stok:$/g, 'Min Stock:'],
+      [/^Harga Beli:$/g, 'Cost Price:'],
+      [/^Harga Jual:$/g, 'Selling Price:'],
+      [/^Nama Sparepart:$/g, 'Spare Part Name:'],
+      [/^Nama beban:$/g, 'Expense Name:'],
+      [/^Nominal per bulan \(Rp\):$/g, 'Monthly Amount:'],
+      [/^Tanggal jatuh tempo \(1-31\):$/g, 'Due Date (1-31):'],
+      [/Masukkan Saldo Awal baru untuk\s+(.+?)\s*\(Rp\):/g, 'Enter new Opening Balance for $1:'],
+      [/REKONSILIASI BANK\s+(.+?)\n\nSaldo Sistem:\s*(.+?)\n\nMasukkan Saldo Aktual \(sesuai m-banking\/ATM\):/g, 'BANK RECONCILIATION $1\n\nSystem Balance: $2\n\nEnter Actual Balance (per m-banking/ATM):'],
+      [/Selisih:\s*(.+?)\n\nMasukkan alasan penyesuaian \(contoh: Bunga Bank, Biaya Admin, Koreksi Transfer\):/g, 'Difference: $1\n\nEnter adjustment reason (e.g., Bank Interest, Admin Fee, Transfer Correction):']
+    ];
+
+    let out = msg;
+    for (const [rgx, rep] of map) out = out.replace(rgx, rep);
+    return out;
+  }
+
+  window.alert = (m) => _alert(trPopup(m));
+  window.confirm = (m) => _confirm(trPopup(m));
+  window.prompt = (m, d) => _prompt(trPopup(m), d);
+})();
+
+
 
 
