@@ -56,7 +56,38 @@ const MENU_BY_ROLE = {
 const $ = id => document.getElementById(id);
 const num = id => +($(id)?.value) || 0;
 const txt = id => ($(id)?.value || '').trim();
-const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+const CURRENCY_MAP = {
+  IDR: { sym: 'Rp ', locale: 'id-ID', dec: 0 },
+  USD: { sym: '$',   locale: 'en-US', dec: 2 },
+  CNY: { sym: '¥',   locale: 'zh-CN', dec: 2 },
+  SGD: { sym: 'S$',  locale: 'en-SG', dec: 2 },
+  MYR: { sym: 'RM ', locale: 'ms-MY', dec: 2 }
+};
+
+function getMataUang() {
+  const c = localStorage.getItem('horopos_curr') || 'IDR';
+  return CURRENCY_MAP[c] ? c : 'IDR';
+}
+
+function setMataUang(code) {
+  if (!CURRENCY_MAP[code]) return;
+  localStorage.setItem('horopos_curr', code);
+  location.reload();
+}
+
+function rp(n) {
+  const cfg = CURRENCY_MAP[getMataUang()];
+  const val = Number(n) || 0;
+  return cfg.sym + val.toLocaleString(cfg.locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: cfg.dec
+  });
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+  const el = document.getElementById('setMataUang');
+  if (el) el.value = getMataUang();
+});
 const nowISO = () => new Date().toISOString();
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 const genId = prefix => prefix + Date.now() + Math.random().toString(36).substring(2, 6);
