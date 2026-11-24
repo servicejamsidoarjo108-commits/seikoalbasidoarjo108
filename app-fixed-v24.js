@@ -7632,11 +7632,23 @@ async function simpanAksesMenu() {
     [/^Hak akses menu (.+?) berhasil disimpan!$/i, 'Menu permissions for $1 saved!', '$1 的菜单权限已保存！']
   ];
 
-  window.trFlash = function (msg) {
+    window.trFlash = function (msg) {
     if (typeof msg !== 'string') return msg;
-    const probe = _prevTrFlash('Jam berhasil ditambahkan ke list');
-    if (probe === 'Jam berhasil ditambahkan ke list') return msg;
-    const idx = /[\u4e00-\u9fff]/.test(probe) ? 1 : 0;
+    let lang = '';
+    for (const k of Object.keys(localStorage)) {
+      if (/lang|bahasa/i.test(k)) {
+        const v = (localStorage.getItem(k) || '').toLowerCase();
+        if (v === 'en' || v === 'zh' || v === 'id') { lang = v; break; }
+      }
+    }
+    if (!lang) {
+      const txt = document.body ? document.body.innerText : '';
+      if (txt.includes('Main Menu') || txt.includes('Large Text')) lang = 'en';
+      else if (/[\u4e00-\u9fff]{2,}/.test(txt)) lang = 'zh';
+      else lang = 'id';
+    }
+    if (lang === 'id') return msg;
+    const idx = lang === 'zh' ? 1 : 0;
 
     if (EXACT[msg]) return EXACT[msg][idx];
 
@@ -7646,6 +7658,15 @@ async function simpanAksesMenu() {
 
     return _prevTrFlash(msg);
   };
+
+  if (typeof window.flash === 'function' && !window.flash.__trWrapped) {
+    const _origFlash = window.flash;
+    const wrappedFlash = function (msg, ...rest) {
+      return _origFlash.call(this, window.trFlash(msg), ...rest);
+    };
+    wrappedFlash.__trWrapped = true;
+    window.flash = wrappedFlash;
+  }
 })();
 
 
