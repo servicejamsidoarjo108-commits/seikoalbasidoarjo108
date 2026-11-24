@@ -5701,7 +5701,7 @@ function terapkanBahasa() {
   }
 
   // 1. Terjemahkan elemen teks daun saja (JANGAN pernah menimpa container yang berisi div/button/h3/p)
-  const selectors = 'h2, h3, h4, label,label span, th, td, option, button, p, .lbl, .ic-lbl, .ic-val, .badge, .empty, .hdr-sub, summary, #btStatusText, .cart-total span:first-child, #quickBateraiBtns span, #quickBateraiEceranBtns span, #cardKasKecilKasir div > div:first-child, #cardIsiKasKecilAdmin div > div, #kartuLogoToko div, #previewLogoToko span, section > div:first-child > div:first-child, #cardAuditBarang > div:last-child';
+  const selectors = 'h2, h3, h4, label, label span, th, td, option, button, p, .lbl, .ic-lbl, .ic-val, .badge, .empty, .hdr-sub, summary, #btStatusText, .cart-total span:first-child, #quickBateraiBtns span, #quickBateraiEceranBtns span, #cardKasKecilKasir div > div:first-child, #cardIsiKasKecilAdmin div > div, #kartuLogoToko div, #previewLogoToko span, section > div:first-child > div:first-child, #cardAuditBarang > div:last-child, #modalShiftClosing span';
   document.querySelectorAll(selectors).forEach(el => {
     if (el.id && el.id.startsWith('btnLang_')) return;
     if (el === btnLogin) return;
