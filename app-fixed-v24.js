@@ -4800,6 +4800,23 @@ const BT_SERVICE_UUIDS = [
 ];
 
 function updateBtStatus(teks, ok = false) {
+  const _lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
+  if (_lang !== 'id' && typeof teks === 'string') {
+    const _btMap = _lang === 'zh' ? [
+      [/Status: Gagal menghubungkan\s*\(/g, '状态：连接失败（'],
+      [/Status: Printer terputus/g, '状态：打印机已断开'],
+      [/Mencari printer Bluetooth\.\.\./g, '正在搜索蓝牙打印机...'],
+      [/✅ Terhubung:\s*/g, '✅ 已连接：'],
+      [/✅ Mode Bluetooth APK \(RawBT\) AKTIF/g, '✅ 蓝牙 APK (RawBT) 模式已开启']
+    ] : [
+      [/Status: Gagal menghubungkan\s*\(/g, 'Status: Connection failed ('],
+      [/Status: Printer terputus/g, 'Status: Printer disconnected'],
+      [/Mencari printer Bluetooth\.\.\./g, 'Searching for Bluetooth printer...'],
+      [/✅ Terhubung:\s*/g, '✅ Connected: '],
+      [/✅ Mode Bluetooth APK \(RawBT\) AKTIF/g, '✅ Bluetooth APK (RawBT) Mode ON']
+    ];
+    for (const [r, rep] of _btMap) teks = teks.replace(r, rep);
+  }
   const el = $('btStatusText'); if (!el) return;
   el.textContent = teks;
   el.style.color = ok ? '#15803d' : '#b91c1c';
