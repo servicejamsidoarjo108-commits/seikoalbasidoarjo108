@@ -6927,6 +6927,9 @@ async function simpanAksesMenu() {
       [/Dihapus/g, '已删除'],
       [/Tipe wajib/gi, '电池型号为必填项'],
       [/Pilih tipe baterai terlebih dahulu!?/gi, '请先选择电池型号！'],
+      [/📤 Mengirim pesan WA via API\.\.\./g, '📤 正在通过 API 发送 WhatsApp 消息...'],
+      [/✅ Pesan WA terkirim otomatis via API!/g, '✅ WhatsApp 消息已通过 API 自动发送！'],
+
 
 
       // Absensi & Tampilan
@@ -7014,6 +7017,9 @@ async function simpanAksesMenu() {
       [/Dihapus/g, 'Deleted'],
       [/Tipe wajib/gi, 'Battery type is required'],
       [/Pilih tipe baterai terlebih dahulu!?/gi, 'Please select a battery type first'],
+      [/📤 Mengirim pesan WA via API\.\.\./g, '📤 Sending WA message via API...'],
+      [/✅ Pesan WA terkirim otomatis via API!/g, '✅ WA message sent automatically via API!'],
+
 
 
       // Attendance & Display
@@ -7136,7 +7142,6 @@ async function simpanAksesMenu() {
     // [Indonesia, English, Mandarin]
     ['Mati total', 'Dead / Not running', '手表停走'],
     ['Servis lengkap', 'Full overhaul', '全面保养'],
-    ['Overhaul', 'Full overhaul', '全面保养'],
     ['Ganti baterai', 'Battery replacement', '更换电池'],
     ['Ganti kaca', 'Crystal replacement', '更换表镜'],
     ['Ganti tali', 'Strap replacement', '更换表带'],
