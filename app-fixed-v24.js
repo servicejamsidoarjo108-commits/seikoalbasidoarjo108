@@ -6359,7 +6359,7 @@ async function ubahNamaKaryawan(userId) {
   if (!isPemilik()) return flash('Khusus Pemilik', 'err');
   const u = (db.profilKaryawan || []).find(x => x.user_id === userId);
   if (!u) return;
-  const namaBaru = prompt('Nama Lengkap Karyawan:', u.nama || u.username || '');
+  const namaBaru = prompt((({ id: 'Nama Lengkap Karyawan:', en: 'Employee Full Name:', zh: '员工全名：' })[_getWaLang()] || 'Nama Lengkap Karyawan:'), u.nama || u.username || '');
   if (namaBaru === null) return;
   const userBaru = prompt('Nama Tampilan / Panggilan (tampil di Header, Struk & Absensi):', u.username || '');
   if (userBaru === null) return;
@@ -6370,9 +6370,11 @@ async function ubahNamaKaryawan(userId) {
     await catatLog('EDIT_KARYAWAN', `Ubah nama karyawan ${u.username} -> ${un} (${n})`);
     const myUid = localStorage.getItem('ta_uid') || sessionStorage.getItem('ta_uid');
     if (userId === myUid) sessionStorage.setItem('ta_user', un);
-    flash(`✅ Nama karyawan diperbarui menjadi ${un} (${n})`);
+        flash(({ id: `✅ Nama karyawan diperbarui menjadi ${un} (${n})`, en: `✅ Employee name updated to ${un} (${n})`, zh: `✅ 员工姓名已更新为 ${un} (${n})` })[_getWaLang()] || `✅ Nama karyawan diperbarui menjadi ${un} (${n})`);
     tarikSemuaData();
-  } catch (e) { flash('Gagal mengubah nama: ' + e.message, 'err'); }
+  } catch (e) {
+    flash((({ id: 'Gagal mengubah nama: ', en: 'Failed to update name: ', zh: '修改姓名失败：' })[_getWaLang()] || 'Gagal mengubah nama: ') + e.message, 'err');
+  }
 }
 
 async function toggleAktifKaryawan(userId) {
