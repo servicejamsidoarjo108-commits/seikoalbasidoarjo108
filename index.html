@@ -582,8 +582,8 @@ main { max-width: 1120px; }
           <button type="button" class="tap-btn" onclick="setDiskonCepat('nominal',0)">0</button>
           <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',5)">5%</button>
           <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('persen',10)">10%</button>
-          <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',10000)">10rb</button>
-          <button type="button" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',20000)">20rb</button>
+          <button type="button" id="btnDiskonNom1" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',10000)">10rb</button>
+          <button type="button" id="btnDiskonNom2" class="tap-btn warn-tap" onclick="setDiskonCepat('nominal',20000)">20rb</button>
         </div>
         <div class="row">
           <div><label>Tipe Diskon</label><select id="tipeDiskon" onchange="updateTotalKasir()"><option value="nominal">Nominal (Rp)</option><option value="persen">Persen (%)</option></select></div>
@@ -615,10 +615,10 @@ main { max-width: 1120px; }
           <input type="number" id="bayar" placeholder="0" style="margin-bottom:6px;font-weight:800;font-size:18px;">
           <div class="tap-group">
             <button type="button" class="tap-btn ok-tap" onclick="setBayarCepat('pas')">💵 Uang Pas</button>
-            <button type="button" class="tap-btn" onclick="setBayarCepat(50000)">50rb</button>
-            <button type="button" class="tap-btn" onclick="setBayarCepat(100000)">100rb</button>
-            <button type="button" class="tap-btn" onclick="setBayarCepat(200000)">200rb</button>
-            <button type="button" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
+            <button type="button" id="btnBayarNom1" class="tap-btn" onclick="setBayarCepat(50000)">50rb</button>
+            <button type="button" id="btnBayarNom2" class="tap-btn" onclick="setBayarCepat(100000)">100rb</button>
+            <button type="button" id="btnBayarNom3" class="tap-btn" onclick="setBayarCepat(200000)">200rb</button>
+            <button type="button" id="btnBayarNom4" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
           </div>
         </div>
 
@@ -637,11 +637,11 @@ main { max-width: 1120px; }
     </div>
     <p style="font-size:13px;color:#475569;margin-top:0">Catat uang masuk (potong rantai, dll) atau keluar (beli galon, dll).</p>
     <div class="tap-group">
-      <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',15000,'Jasa potong rantai')">+ Potong Rantai 15rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',20000,'Jasa potong rantai')">+ Potong Rantai 20rb</button>
-      <button type="button" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',10000,'Ganti springbar / pen')">+ Springbar 10rb</button>
-      <button type="button" class="tap-btn warn-tap" onclick="setKasKecilCepat('keluar',20000,'Beli air galon')">- Beli Galon 20rb</button>
-      <button type="button" class="tap-btn warn-tap" onclick="setKasKecilCepat('keluar',25000,'Beli makan/minum')">- Makan/Minum 25rb</button>
+      <button type="button" id="btnKK1" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',15000,'Jasa potong rantai')">+ Potong Rantai 15rb</button>
+      <button type="button" id="btnKK2" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',20000,'Jasa potong rantai')">+ Potong Rantai 20rb</button>
+      <button type="button" id="btnKK3" class="tap-btn ok-tap" onclick="setKasKecilCepat('masuk',10000,'Ganti springbar / pen')">+ Springbar 10rb</button>
+      <button type="button" id="btnKK4" class="tap-btn warn-tap" onclick="setKasKecilCepat('keluar',20000,'Beli air galon')">- Beli Galon 20rb</button>
+      <button type="button" id="btnKK5" class="tap-btn warn-tap" onclick="setKasKecilCepat('keluar',25000,'Beli makan/minum')">- Makan/Minum 25rb</button>
     </div>
     <div class="row">
       <div><label>Jenis</label><select id="kkJenis"><option value="masuk">📥 Masuk (Pendapatan)</option><option value="keluar">📤 Keluar (Pengeluaran)</option></select></div>
