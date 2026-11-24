@@ -7046,7 +7046,18 @@ async function simpanAksesMenu() {
       [/^300rb$/g, '300k'],
       [/^500rb$/g, '500k'],
       [/^1 Juta$/g, '1M'],
-      [/^2 Juta$/g, '2M']
+      [/^2 Juta$/g, '2M'],
+      [/SERAH TERIMA & TTD PENGAMBILAN/g, 'PICKUP HANDOVER & SIGNATURE'],
+      [/No Servis:/g, 'Service No:'],
+      [/Pelanggan:/g, 'Customer:'],
+      [/Barang:/g, 'Item:'],
+      [/\bLUNAS\b/g, 'PAID'],
+      [/Nama Penerima Barang/g, 'Recipient Name'],
+      [/Nama yang mengambil barang/g, 'Name of person picking up'],
+      [/Tanda Tangan Penerima \(Goreskan di kotak bawah\)/g, 'Recipient Signature (Sign in the box below)'],
+      [/Setelah disubmit, struk langsung dicetak & WA konfirmasi dikirim\./g, 'Once submitted, receipt will print & WA confirmation will be sent.'],
+      [/Ulangi/g, 'Clear'],
+      [/Konfirmasi, Cetak & WA/g, 'Confirm, Print & WA'],
     ],
     zh: [
       [/ISI SALDO \/ TOP-UP KAS KECIL/g, '零用现金充值'],
@@ -7059,7 +7070,18 @@ async function simpanAksesMenu() {
       [/^300rb$/g, '30万'],
       [/^500rb$/g, '50万'],
       [/^1 Juta$/g, '100万'],
-      [/^2 Juta$/g, '200万']
+      [/^2 Juta$/g, '200万'],
+      [/SERAH TERIMA & TTD PENGAMBILAN/g, '取件交接与签名'],
+      [/No Servis:/g, '工单号：'],
+      [/Pelanggan:/g, '客户：'],
+      [/Barang:/g, '物品：'],
+      [/\bLUNAS\b/g, '已结清'],
+      [/Nama Penerima Barang/g, '取件人姓名'],
+      [/Nama yang mengambil barang/g, '请输入取件人姓名'],
+      [/Tanda Tangan Penerima \(Goreskan di kotak bawah\)/g, '取件人签名（请在下方框内签名）'],
+      [/Setelah disubmit, struk langsung dicetak & WA konfirmasi dikirim\./g, '提交后将自动打印小票并发送 WhatsApp 确认通知。'],
+      [/Ulangi/g, '重签'],
+      [/Konfirmasi, Cetak & WA/g, '确认、打印并发送 WA'],
     ]
   };
 
