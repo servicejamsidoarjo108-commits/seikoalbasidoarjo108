@@ -1259,6 +1259,14 @@ main { max-width: 1120px; }
       <div class="row"><div><label>Nama Toko</label><input id="tkNama"></div><div><label>No WA Toko / Pemilik</label><input id="tkTelp"></div></div>
       <label>Alamat</label><input id="tkAlamat" style="margin-bottom:10px">
       <label>Footer Struk</label><input id="tkFooter" style="margin-bottom:10px">
+      <label>Mata Uang / Currency</label>
+      <select id="setMataUang" onchange="setMataUang(this.value)" style="margin-bottom:10px">
+        <option value="IDR">IDR (Rp - Rupiah)</option>
+        <option value="USD">USD ($ - US Dollar)</option>
+        <option value="CNY">CNY (¥ - Yuan)</option>
+        <option value="SGD">SGD (S$ - Singapore Dollar)</option>
+        <option value="MYR">MYR (RM - Ringgit)</option>
+      </select>
       <label>S&amp;K Lengkap (WA)</label><textarea id="tkSyarat" rows="5" style="margin-bottom:10px"></textarea>
       <label>S&amp;K Singkat (Struk)</label><textarea id="tkSyaratSingkat" rows="4" style="margin-bottom:10px"></textarea>
       <button class="btn ok" onclick="simpanToko()">💾 Simpan Identitas</button>
