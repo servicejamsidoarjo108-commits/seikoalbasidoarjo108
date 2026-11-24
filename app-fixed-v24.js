@@ -5998,6 +5998,11 @@ const STRUK_DICT = [
   ['Tgl:', 'Date:', '日期:'],
   ['Biaya:', 'Cost:', '费用:'],
   ['DP', 'Deposit', '定金'],
+  ['(tanpa spare part)', '(no spare parts)', '（无配件）'],
+  ['>Jasa<', '>Service Fee<', '>维修费<'],
+  ['>Spare part<', '>Spare Parts<', '>配件<'],
+  ['>Baterai<', '>Battery<', '>电池<'],
+  ['>SISA<', '>BALANCE<', '>余款<'],
 ];
 
 function trStruk(html) {
