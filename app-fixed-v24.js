@@ -185,12 +185,12 @@ if (cur !== 'IDR' && presetServis) {
     while (node = walker.nextNode()) {
       if (node.parentElement && ['SCRIPT', 'STYLE', 'OPTION'].includes(node.parentElement.tagName)) continue;
       let t = node.nodeValue;
-      if (t.includes('(Rp)') || t.includes('Rp 0') || t.includes('RP500,000')) {
-        node.nodeValue = t
-          .replace(/\(Rp\)/g, `(${symClean})`)
-          .replace(/\bRp 0\b/g, `${cfg.sym}0`)
-          .replace(/RP500,000/g, `${symClean}500`);
-      }
+          if (t.includes('(Rp') || t.includes('Rp 0') || t.includes('RP500,000')) {
+      node.nodeValue = t
+        .replace(/\(Rp(?=\s*[\/)])/g, `(${symClean}`)
+        .replace(/\bRp 0\b/g, `${cfg.sym}0`)
+        .replace(/RP500,000/g, `${symClean}500`);
+    }
     }
   }
 }
