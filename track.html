@@ -67,7 +67,25 @@
 (function () {
   const $ = id => document.getElementById(id);
   const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
-  const rp = n => 'Rp ' + (Number(n) || 0).toLocaleString('id-ID');
+  const CURRENCY_MAP = {
+  IDR: { sym: 'Rp ', locale: 'id-ID', dec: 0 },
+  USD: { sym: '$',   locale: 'en-US', dec: 2 },
+  CNY: { sym: '¥',   locale: 'zh-CN', dec: 2 },
+  SGD: { sym: 'S$',  locale: 'en-SG', dec: 2 },
+  MYR: { sym: 'RM ', locale: 'ms-MY', dec: 2 }
+};
+
+function rp(n) {
+  const urlCurr = new URLSearchParams(location.search).get('curr');
+  const code = (urlCurr && CURRENCY_MAP[urlCurr.toUpperCase()])
+    ? urlCurr.toUpperCase()
+    : (localStorage.getItem('horopos_curr') || 'IDR');
+  const cfg = CURRENCY_MAP[code] || CURRENCY_MAP.IDR;
+  return cfg.sym + (Number(n) || 0).toLocaleString(cfg.locale, {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: cfg.dec
+  });
+}
 
   const DICT = {
     id: {
