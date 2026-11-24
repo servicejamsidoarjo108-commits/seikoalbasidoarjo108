@@ -160,6 +160,23 @@ function terapkanMataUangUI() {
       btn.onclick = () => setKasKecilCepat(tx.tp, n.v, tx.d);
     }
   });
+  // 3b. Tombol Cepat Ongkos Servis (25rb - 250rb)
+const presetServis = {
+  IDR: [25000, 50000, 75000, 100000, 150000, 200000, 250000],
+  USD: [10, 20, 30, 50, 75, 100, 150],
+  CNY: [30, 50, 80, 100, 150, 200, 300],
+  SGD: [10, 20, 30, 50, 75, 100, 150],
+  MYR: [20, 40, 60, 80, 100, 150, 200]
+}[cur];
+if (cur !== 'IDR' && presetServis) {
+  const srvBtns = [...document.querySelectorAll('button')].filter(b => /^(25|50|75|100|150|200|250)rb$/.test(b.textContent.trim()));
+  srvBtns.forEach((b, i) => {
+    if (presetServis[i] !== undefined) {
+      b.textContent = symClean + presetServis[i];
+      b.setAttribute('onclick', b.getAttribute('onclick').replace(/\d+/, presetServis[i]));
+    }
+  });
+}
 
   // 4. Sapu otomatis sisa teks "(Rp)" dan "Rp 0" di seluruh halaman jika bukan IDR
   if (cur !== 'IDR') {
