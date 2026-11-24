@@ -7710,6 +7710,38 @@ async function simpanAksesMenu() {
   }
 })();
 
+// === AUTO-MUAT MODAL BARANG UNTUK NERACA (INVENTORY / STOCK) ===
+(function () {
+  if (typeof window.hitungLaporanKeuangan !== 'function') return;
+  const _origHitungKeu = window.hitungLaporanKeuangan;
+  let _loadingModal = false;
+
+  window.hitungLaporanKeuangan = function () {
+    _origHitungKeu.apply(this, arguments);
+
+    const semuaStok = [
+      ...(db.produk || []),
+      ...(db.sparePart || []),
+      ...(db.stokBaterai || [])
+    ];
+    const belumAdaModal =
+      semuaStok.length > 0 &&
+      !semuaStok.some(x => Number(x.harga_beli) > 0) &&
+      !db.produk.__modalSynced;
+
+    if (belumAdaModal && !_loadingModal && typeof muatModalBarang === 'function') {
+      _loadingModal = true;
+      muatModalBarang().then(() => {
+        if (db.produk) db.produk.__modalSynced = true;
+        _loadingModal = false;
+        _origHitungKeu.apply(this, arguments);
+      }).catch(() => {
+        _loadingModal = false;
+      });
+    }
+  };
+})();
+
 
 
 
