@@ -6925,6 +6925,9 @@ async function simpanAksesMenu() {
       [/Produk baru ditambahkan/g, '新商品已添加'],
       [/Disimpan/g, '已保存'],
       [/Dihapus/g, '已删除'],
+      [/Tipe wajib/gi, '电池型号为必填项'],
+      [/Pilih tipe baterai terlebih dahulu!?/gi, '请先选择电池型号！'],
+
 
       // Absensi & Tampilan
       [/Anda sudah Absen Masuk hari ini!/g, '您今天已经上班打卡了！'],
@@ -7009,6 +7012,9 @@ async function simpanAksesMenu() {
       [/Produk baru ditambahkan/g, 'New product added'],
       [/Disimpan/g, 'Saved'],
       [/Dihapus/g, 'Deleted'],
+      [/Tipe wajib/gi, 'Battery type is required'],
+      [/Pilih tipe baterai terlebih dahulu!?/gi, 'Please select a battery type first'],
+
 
       // Attendance & Display
       [/Anda sudah Absen Masuk hari ini!/g, 'You have already clocked in today!'],
