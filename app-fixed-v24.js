@@ -6088,6 +6088,15 @@ function terapkanBahasa() {
     else if (lang === 'zh') el.textContent = orig.replace(/^Stok:/i, '库存:');
     else el.textContent = orig;
   });
+    // 1c. Terjemahkan label "X item"
+  if (lang === 'zh') {
+    document.querySelectorAll('.kpi-val, .stat-val, .sum-val, div, span').forEach(el => {
+      if (el.children.length === 0 && /^\d+\s+item$/i.test(el.textContent.trim())) {
+        el.textContent = el.textContent.trim().replace(/item$/i, '项');
+      }
+    });
+  }
+
 
   // 2. Terjemahkan placeholder input
   document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
