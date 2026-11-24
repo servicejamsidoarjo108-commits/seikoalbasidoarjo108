@@ -4301,8 +4301,8 @@ function bukaShiftClosing() {
         <button type="button" class="btn-sm ghost" onclick="$('modalShiftClosing').remove()">✕</button>
       </div>
       <div style="font-size:13px;color:#475569;margin-bottom:10px;">
-        Kasir: <b>${esc(sessionStorage.getItem('ta_user') || '-')}</b> · Tanggal: <b>${new Date().toLocaleDateString('id-ID')}</b><br>
-        Transaksi Hari Ini: <b>${d.jmlJual}</b> Jual · <b>${d.jmlSrv}</b> Servis · <b>${d.jmlBat}</b> Baterai
+        <span>Kasir</span>: <b>${esc(sessionStorage.getItem('ta_user') || '-')}</b> · <span>Tanggal</span>: <b>${new Date().toLocaleDateString('id-ID')}</b><br>
+        <span>Transaksi Hari Ini</span>: <b>${d.jmlJual}</b> <span>Jual</span> · <b>${d.jmlSrv}</b> <span>Servis</span> · <b>${d.jmlBat}</b> <span>Baterai</span>
       </div>
       <div class="checkout-summary" style="margin-bottom:12px;">
         <div class="cs-row"><span>Tunai Masuk Hari Ini</span><b style="color:#15803d;">+${rp(d.tunaiMasuk)}</b></div>
