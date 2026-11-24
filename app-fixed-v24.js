@@ -5923,7 +5923,9 @@ const I18N_DICT = {
   'Cash': { en: 'Cash', zh: '现金' },
   'Debit BCA': { en: 'BCA Debit', zh: 'BCA 借记卡' },
   'CC BCA': { en: 'BCA Credit Card', zh: 'BCA 信用卡' },
-
+  'CV Jaya Arloji': { en: 'ABC Watch Supply', zh: '佳雅钟表配件行' },
+  '0812...': { en: '+1 234...', zh: '138...' },
+  'Jl. Pasar No.5, Jakarta': { en: '123 Market St, City', zh: '市场路5号' },
 };
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
@@ -6096,7 +6098,42 @@ function terapkanBahasa() {
       }
     });
   }
+    // 1d. Terjemahkan Log Aktivitas & Role "(pemilik)"
+  if (lang !== 'id') {
+    const logMap = lang === 'zh' ? [
+      [/\(pemilik\)/gi, '(店主)'],
+      [/\(kasir\)/gi, '(收银员)'],
+      [/\(admin\)/gi, '(管理员)'],
+      [/Berhasil masuk sistem/g, '成功登录系统'],
+      [/User keluar dari sistem/g, '用户退出系统'],
+      [/Ubah status\s+([^\s]+)\s+menjadi\s+selesai/gi, '将工单 $1 状态更改为已完成'],
+      [/Ubah status\s+([^\s]+)\s+menjadi\s+proses/gi, '将工单 $1 状态更改为维修中'],
+      [/Ubah status\s+([^\s]+)\s+menjadi\s+diambil/gi, '将工单 $1 状态更改为已取件'],
+      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, '已为客户保存 $1 项维修：']
+    ] : [
+      [/\(pemilik\)/gi, '(owner)'],
+      [/\(kasir\)/gi, '(cashier)'],
+      [/\(admin\)/gi, '(admin)'],
+      [/Berhasil masuk sistem/g, 'Logged into system'],
+      [/User keluar dari sistem/g, 'User logged out'],
+      [/Ubah status\s+([^\s]+)\s+menjadi\s+selesai/gi, 'Changed status of $1 to completed'],
+      [/Ubah status\s+([^\s]+)\s+menjadi\s+proses/gi, 'Changed status of $1 to in progress'],
+      [/Ubah status\s+([^\s]+)\s+menjadi\s+diambil/gi, 'Changed status of $1 to picked up'],
+      [/Menyimpan\s+(\d+)\s+servis untuk\s+/gi, 'Saved $1 service(s) for ']
+    ];
 
+    const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+    let node;
+    while (node = walker.nextNode()) {
+      if (node.parentElement && ['SCRIPT', 'STYLE'].includes(node.parentElement.tagName)) continue;
+      let t = node.nodeValue;
+      let changed = false;
+      logMap.forEach(([rgx, rep]) => {
+        if (rgx.test(t)) { t = t.replace(rgx, rep); changed = true; }
+      });
+      if (changed) node.nodeValue = t;
+    }
+  }
 
   // 2. Terjemahkan placeholder input
   document.querySelectorAll('input[placeholder], textarea[placeholder]').forEach(el => {
