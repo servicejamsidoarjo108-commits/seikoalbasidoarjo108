@@ -7385,7 +7385,10 @@ async function simpanAksesMenu() {
     [/untuk dicocokkan Admin\/Pemilik — jumlahnya tidak langsung mengubah stok\./g, 'for Admin/Owner verification — quantities do not immediately change stock.'],
     [/^JAM$/g, 'WATCH'],
     [/^BATERAI$/g, 'BATTERY'],
-    [/Kirim Hasil Hitung/g, 'Submit Count Result']
+    [/Kirim Hasil Hitung/g, 'Submit Count Result'],
+    [/\bRIWAYAT:/g, 'HISTORY:'],
+    [/Belum ada riwayat\./g, 'No history yet.']
+
 
   ];
 
@@ -7408,7 +7411,9 @@ async function simpanAksesMenu() {
     [/untuk dicocokkan Admin\/Pemilik — jumlahnya tidak langsung mengubah stok\./g, '供管理员/店主核对 — 不会直接更改库存。'],
     [/^JAM$/g, '手表'],
     [/^BATERAI$/g, '电池'],
-    [/Kirim Hasil Hitung/g, '提交盘点结果']
+    [/Kirim Hasil Hitung/g, '提交盘点结果'],
+    [/\bRIWAYAT:/g, '历史记录：'],
+    [/Belum ada riwayat\./g, '暂无历史记录。'],
 
   ];
 
