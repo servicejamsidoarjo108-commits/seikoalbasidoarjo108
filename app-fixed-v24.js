@@ -3049,9 +3049,9 @@ function render() {
   const qProd = txt('cariProduk').toLowerCase();
   const listProd = db.produk.filter(p => !qProd || (p.nama || '').toLowerCase().includes(qProd) || (p.merek || '').toLowerCase().includes(qProd) || (p.barcode || '').toLowerCase().includes(qProd));
   setHTML('listProduk', listProd.length ? `
-    <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
+      <div style="grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:12px;">
       <label style="display:flex;align-items:center;gap:8px;margin:0;cursor:pointer;font-size:15px;">
-        <input type="checkbox" id="checkAllProduk" onclick="toggleAllProduk(this)" style="width:20px;height:20px;"> Pilih Semua
+      <input type="checkbox" id="checkAllProduk" onclick="toggleAllProduk(this)" style="width:20px;height:20px;"> Pilih Semua
       </label>
       <button class="btn-sm ok" onclick="cetakBarcodeMassal()">🖨️ Cetak Barcode Terpilih</button>
     </div>` +
@@ -3078,7 +3078,7 @@ function render() {
           ${isPemilik() ? `<button class="btn-sm danger" onclick="hapusProduk('${esc(p.id)}')">🗑️ Hapus</button>` : ''}
         </div>
       </div>`;
-    }).join('') : '<div class="empty">Belum ada produk</div>');
+    }).join('') : '<div class="empty" style="grid-column:1/-1;">Belum ada produk</div>');
 
   // 4. Sparepart
   const cariSp = txt('cariSp').toLowerCase();
