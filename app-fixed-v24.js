@@ -7503,6 +7503,10 @@ async function simpanAksesMenu() {
     [/Cari cepat\.\.\./gi, 'Quick search...'],
     [/\bSemua \(/g, 'All ('],
     [/\bstok (\d+)/g, 'stock $1'],
+    [/Klaim dibatalkan: Kode klaim wajib diisi/g, 'Claim cancelled: Claim code is required'],
+    [/Kode klaim tidak cocok/g, 'Invalid claim code'],
+    [/Kuota klaim sudah habis/g, 'Claim quota exhausted'],
+    [/Kode klaim valid! Sisa kuota:/g, 'Valid claim code! Remaining quota:'],
 
   ];
 
@@ -7557,6 +7561,10 @@ async function simpanAksesMenu() {
     [/Cari cepat\.\.\./gi, '快速搜索...'],
     [/\bSemua \(/g, '全部 ('],
     [/\bstok (\d+)/g, '库存 $1'],
+    [/Klaim dibatalkan: Kode klaim wajib diisi/g, '索赔已取消：必须填写索赔码'],
+    [/Kode klaim tidak cocok/g, '索赔码不匹配'],
+    [/Kuota klaim sudah habis/g, '索赔次数已用完'],
+    [/Kode klaim valid! Sisa kuota:/g, '索赔码有效！剩余次数：'],
 
   ];
 
