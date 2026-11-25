@@ -1759,7 +1759,7 @@ const inputKode = prompt(teksPrompt);
   en: `Hello ${nama},\nThank you for replacing your watch battery with us.\n\n*E-WARRANTY & CLAIM CODE*\n${daftarKode.join('\n')}\n\nPlease save this message and show the code above when claiming your warranty.`,
   zh: `您好 ${nama}，\n感谢您在本店更换手表电池。\n\n*电子保修单与索赔码*\n${daftarKode.join('\n')}\n\n请保存此消息，申请保修时请出示以上索赔码。`
 }[localStorage.getItem('ta_lang') || 'id'];
-        openWA(telp, pesanWA);
+        openWA(telp, pesanWA, true);
       }
     }
 
