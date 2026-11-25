@@ -8140,11 +8140,7 @@ async function simpanAksesMenu() {
 
   function initAll() {
     LIST_IDS.forEach(attachChipBar);
-    if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initAll);
-  } else {
-    setTimeout(initAll, 400);
-        // Sembunyikan label & tombol hijau lama "Pilih Cepat Tipe Baterai"
+    // Sembunyikan label & tombol hijau lama "Pilih Cepat Tipe Baterai"
     document.querySelectorAll('label, div, p, span').forEach(el => {
       if (el.children.length === 0 && /^Pilih Cepat Tipe Baterai/i.test((el.textContent || '').trim())) {
         el.style.display = 'none';
