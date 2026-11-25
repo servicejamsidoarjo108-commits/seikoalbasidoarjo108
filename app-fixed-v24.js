@@ -1666,6 +1666,13 @@ function batalKeranjangBaterai() {
 }
 function hapusBateraiCart(i) { cartBaterai.splice(i, 1); renderBateraiCart(); }
 
+function buatKodeKlaim() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let kode = '';
+  for (let i = 0; i < 6; i++) kode += chars[Math.floor(Math.random() * chars.length)];
+  return kode;
+}
+
 async function simpanBaterai() {
   if (isSavingBaterai) return;
   if (!checkRequired(['bNama'])) return flash('Nama Pelanggan wajib diisi', 'err');
