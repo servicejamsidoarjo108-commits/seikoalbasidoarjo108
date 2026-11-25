@@ -2466,7 +2466,7 @@ async function generateDigitalWarranty(id, tipe) {
   } catch (e) { flash('Gagal membuat gambar', 'err'); }
 }
 
-async function openWA(hp, text) {
+async function openWA(hp, text, noFallback = false) {
   let phone = waPhone(hp);
   if (phone.startsWith('8')) phone = '62' + phone;
   if (!phone || phone === '62' || phone.length < 9) return alert('Nomor HP tidak valid.');
@@ -2491,7 +2491,8 @@ async function openWA(hp, text) {
       console.warn('WA API gagal, fallback ke wa.me:', e);
     }
   }
-  window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text || '')}`, '_blank');
+  if (noFallback) return flash('❌ WA E-Warranty gagal terkirim via Fonnte (fallback diblokir demi keamanan)', 'err');
+window.open(`https://wa.me/${phone}?text=${encodeURIComponent(text || '')}`, '_blank');
 }
 
 function shareStrukDigital(trxId) {
