@@ -8154,6 +8154,7 @@ async function simpanAksesMenu() {
     </div>
   `;
   document.body.appendChild(overlay);
+  if (typeof terapkanBahasa === 'function') terapkanBahasa(overlay);
 
   const closePicker = () => overlay.classList.remove('open');
   overlay.addEventListener('click', e => { if (e.target === overlay) closePicker(); });
