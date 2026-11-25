@@ -7959,6 +7959,42 @@ async function simpanAksesMenu() {
     .hp-pcard-sub { font-size: 11px; color: #059669; font-weight: 700; }
     body.hp-grid-2col .hp-pcard-name { font-size: 14px; }
     body.hp-grid-2col .hp-pcard-sub { font-size: 13px; }
+    /* Tampilan Rapi Khusus Layar HP (2 Kolom Normal / 1 Kolom Huruf Besar) */
+    @media (max-width: 600px) {
+      #listProduk, #listSparePart, #listStokBaterai, #listSemuaStok {
+        grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+        gap: 8px !important;
+      }
+      body.hp-grid-2col #listProduk,
+      body.hp-grid-2col #listSparePart,
+      body.hp-grid-2col #listStokBaterai,
+      body.hp-grid-2col #listSemuaStok {
+        grid-template-columns: 1fr !important;
+      }
+      /* Judul & badge stok ditumpuk atas-bawah agar nama tidak pecah per huruf */
+      #listProduk > div > div:first-child,
+      #listSparePart > div > div:first-child,
+      #listStokBaterai > div > div:first-child,
+      #listSemuaStok > div > div:first-child {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 4px !important;
+      }
+      /* Kotak harga ditumpuk ke bawah agar Cost Price tidak terpotong */
+      #listStokBaterai > div div[style*="grid"],
+      #listStokBaterai > div div[style*="flex"] {
+        grid-template-columns: 1fr !important;
+        flex-wrap: wrap !important;
+        gap: 6px !important;
+      }
+      #listProduk > div:not(.empty),
+      #listSparePart > div:not(.empty),
+      #listStokBaterai > div:not(.empty),
+      #listSemuaStok > div:not(.empty) {
+        word-break: normal !important;
+        overflow-wrap: break-word !important;
+      }
+    }
   `;
   document.head.appendChild(style);
 
