@@ -1771,7 +1771,7 @@ async function hapusStokBaterai(id) {
 function cekKlaimBaterai(nama) {
   const infoKlaim = $('infoKlaimBaterai');
   const reset = () => { statusKlaimAktif = { multiplier: 1, tipe: 'Normal' }; if (infoKlaim) infoKlaim.style.display = 'none'; };
-
+  window._lastRefBateraiId = null;
   const produkInput = normText(txt('bProduk'));
   const namaNorm = normText(nama);
   if (!namaNorm || !produkInput) return reset();
@@ -1791,6 +1791,7 @@ function cekKlaimBaterai(nama) {
   if (tglBaru.getDate() < tglLama.getDate()) selisih--;
 
   const terakhir = riwayat[0];
+  window._lastRefBateraiId = terakhir.id; 
   const sudahPernahKlaim = (terakhir.jenis_klaim && terakhir.jenis_klaim !== 'Normal') || Number(terakhir.biaya || 0) === 0;
 
   let pesan, warna, warnaTeks;
