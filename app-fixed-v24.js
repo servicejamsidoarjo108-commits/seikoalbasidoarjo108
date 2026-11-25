@@ -6064,14 +6064,18 @@ function terjemahkanTeks(raw, lang) {
   return raw;
 }
 
-function setBahasa(lang) {
+async function setBahasa(lang) {
   if (!['id', 'en', 'zh'].includes(lang)) return;
   localStorage.setItem('ta_lang', lang);
-  if (typeof render === 'function' && $('selProduk')) render(); else terapkanBahasa();
   if (isPemilik() && currentTenant.toko_id) {
-    supabaseClient.from('settings').upsert({ toko_id: currentTenant.toko_id, id: 'toko', bahasa_default: lang }, { onConflict: 'toko_id,id' }).then(() => {});
+    try {
+      await supabaseClient.from('settings').upsert(
+        { toko_id: currentTenant.toko_id, id: 'toko', bahasa_default: lang },
+        { onConflict: 'toko_id,id' }
+      );
+    } catch (e) {}
   }
-  flash(lang === 'en' ? 'Language set to English (Full UI & Receipts)' : (lang === 'zh' ? '界面与小票已切换为中文' : 'Bahasa diubah ke Indonesia'));
+  location.reload();
 }
 
 function terapkanBahasa() {
