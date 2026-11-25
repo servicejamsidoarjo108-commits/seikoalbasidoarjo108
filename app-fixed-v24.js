@@ -7202,6 +7202,9 @@ async function simpanAksesMenu() {
       [/Setelah disubmit, struk langsung dicetak & WA konfirmasi dikirim\./g, 'Once submitted, receipt will print & WA confirmation will be sent.'],
       [/Ulangi/g, 'Clear'],
       [/Konfirmasi, Cetak & WA/g, 'Confirm, Print & WA'],
+      [/Cari cepat(\.\.\.|…)?/gi, 'Quick search...'],
+      [/\bSemua \(/g, 'All ('],
+      [/\bstok (\d+)/g, 'stock $1'],
     ],
     zh: [
       [/ISI SALDO \/ TOP-UP KAS KECIL/gi, '零用现金充值'],
@@ -7226,6 +7229,10 @@ async function simpanAksesMenu() {
       [/Setelah disubmit, struk langsung dicetak & WA konfirmasi dikirim\./g, '提交后将自动打印小票并发送 WhatsApp 确认通知。'],
       [/Ulangi/g, '重签'],
       [/Konfirmasi, Cetak & WA/g, '确认、打印并发送 WA'],
+      [/Cari cepat(\.\.\.|…)?/gi, '快速搜索...'],
+      [/\bSemua \(/g, '全部 ('],
+      [/\bstok (\d+)/g, '库存 $1'],
+
     ]
   };
 
@@ -8154,7 +8161,6 @@ async function simpanAksesMenu() {
     </div>
   `;
   document.body.appendChild(overlay);
-  if (typeof terapkanBahasa === 'function') terapkanBahasa(overlay);
 
   const closePicker = () => overlay.classList.remove('open');
   overlay.addEventListener('click', e => { if (e.target === overlay) closePicker(); });
