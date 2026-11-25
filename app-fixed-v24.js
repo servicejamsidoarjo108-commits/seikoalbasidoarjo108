@@ -1968,7 +1968,7 @@ async function simpanKasKecilKasir() {
       const sumber = String(k.sumber || '').toLowerCase();
       const jenis = String(k.jenis || '').toLowerCase();
       if (sumber !== 'kas_kecil' || jenis !== 'keluar') return false;
-      const rawTgl = k.tanggal || k.tgl || k.created_at || '';
+      const rawTgl = k.waktu || k.tanggal || k.tgl || k.created_at || '';
       const tglLokalItem = String(rawTgl).includes('T')
         ? new Date(rawTgl).toLocaleDateString('en-CA')
         : String(rawTgl).slice(0, 10);
