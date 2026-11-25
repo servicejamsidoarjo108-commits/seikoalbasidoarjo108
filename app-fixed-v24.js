@@ -7402,7 +7402,11 @@ async function simpanAksesMenu() {
     [/\bJuli (\d{4})/g, 'July $1'],
     [/\bAgustus (\d{4})/g, 'August $1'],
     [/\bOktober (\d{4})/g, 'October $1'],
-    [/\bDesember (\d{4})/g, 'December $1']
+    [/\bDesember (\d{4})/g, 'December $1'],
+    [/Pilih Cepat \(Grid\)/g, 'Quick Select (Grid)'],
+    [/Pilih Item/g, 'Select Item'],
+    [/⚠️ Tipis/g, '⚠️ Low'],
+    [/Tidak ada item cocok/g, 'No matching items']
 
   ];
 
@@ -7445,7 +7449,11 @@ async function simpanAksesMenu() {
     [/\bSeptember (\d{4})/g, '$1年9月'],
     [/\bOktober (\d{4})/g, '$1年10月'],
     [/\bNovember (\d{4})/g, '$1年11月'],
-    [/\bDesember (\d{4})/g, '$1年12月']
+    [/\bDesember (\d{4})/g, '$1年12月'],
+    [/Pilih Cepat \(Grid\)/g, '快速选择 (网格)'],
+    [/Pilih Item/g, '选择项目'],
+    [/⚠️ Tipis/g, '⚠️ 库存低'],
+    [/Tidak ada item cocok/g, '没有匹配的项目']
 
   ];
 
@@ -8140,9 +8148,14 @@ async function simpanAksesMenu() {
 
   function initAll() {
     LIST_IDS.forEach(attachChipBar);
-    // Sembunyikan label & tombol hijau lama "Pilih Cepat Tipe Baterai"
+        // Sembunyikan label & tombol hijau lama "Pilih Cepat Tipe Baterai" (ID/EN/ZH)
     document.querySelectorAll('label, div, p, span').forEach(el => {
-      if (el.children.length === 0 && /^Pilih Cepat Tipe Baterai/i.test((el.textContent || '').trim())) {
+      const txt = (el.textContent || '').trim();
+      const orig = (el.getAttribute('data-i18n-orig') || '').trim();
+      if (
+        el.children.length === 0 &&
+        /^(Pilih Cepat Tipe Baterai|Quick Select Battery Type|快速选择电池)/i.test(txt || orig)
+      ) {
         el.style.display = 'none';
         const next = el.nextElementSibling;
         if (next && next.tagName === 'DIV' && !next.querySelector('select, input')) {
