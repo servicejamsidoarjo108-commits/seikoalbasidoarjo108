@@ -1960,15 +1960,33 @@ async function simpanKasKecilKasir() {
   const jenis = $('kkJenis').value, nominal = num('kkNominal'), ket = txt('kkKet');
   if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
   if (!ket) return flash('Keterangan wajib diisi', 'err');
+
+  // 1. Batas total pengeluaran kas kecil harian (Rp 500.000/hari) khusus Kasir
+  const hariIni = tglLokal();
+  const totalKeluarHariIni = (db.kas || [])
+    .filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar' && String(k.tanggal || k.created_at || '').startsWith(hariIni))
+    .reduce((s, k) => s + Number(k.nominal || 0), 0);
+
+  if (jenis === 'keluar' && isKasir() && (totalKeluarHariIni + nominal) > 500000) {
+    return flash(`Batas pengeluaran kas kecil harian (Rp500.000) terlampaui. Terpakai hari ini: ${rp(totalKeluarHariIni)}`, 'err');
+  }
+
   try {
     await catatKas({ jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' });
     await catatLog('KAS_KECIL', `Input ${jenis} - ${ket} (${rp(nominal)})`);
+
+    // 2. Notifikasi instan ke Telegram Pemilik
+    if (typeof kirimTelegram === 'function') {
+      const userAktif = currentUser?.nama || currentUser?.username || 'Kasir';
+      const icon = jenis === 'keluar' ? '💸' : '💰';
+      kirimTelegram(`${icon} *KAS KECIL (${jenis.toUpperCase()})*\n👤 Oleh: ${userAktif}\n💵 Nominal: ${rp(nominal)}\n📝 Ket: ${ket}\n📊 Total keluar hari ini: ${rp(jenis === 'keluar' ? totalKeluarHariIni + nominal : totalKeluarHariIni)}`);
+    }
+
     flash('Kas kecil dicatat');
     ['kkNominal', 'kkKet'].forEach(x => { $(x).value = ''; });
     tarikSemuaData();
   } catch (e) { flash('Gagal: ' + e.message, 'err'); }
 }
-
 
 async function hapusJual(id) {
   if (!isPemilik()) return flash('Hanya Pemilik yang bisa menghapus transaksi penjualan', 'err');
@@ -7508,6 +7526,7 @@ async function simpanAksesMenu() {
     [/Kode klaim tidak cocok/g, 'Invalid claim code'],
     [/Kuota klaim sudah habis/g, 'Claim quota exhausted'],
     [/Kode klaim valid! Sisa kuota:/g, 'Valid claim code! Remaining quota:'],
+    [/Batas pengeluaran kas kecil harian \(Rp500\.000\) terlampaui\. Terpakai hari ini:/g, 'Daily petty cash expense limit (Rp500,000) exceeded. Used today:'],
 
   ];
 
@@ -7566,6 +7585,7 @@ async function simpanAksesMenu() {
     [/Kode klaim tidak cocok/g, '索赔码不匹配'],
     [/Kuota klaim sudah habis/g, '索赔次数已用完'],
     [/Kode klaim valid! Sisa kuota:/g, '索赔码有效！剩余次数：'],
+    [/Batas pengeluaran kas kecil harian \(Rp500\.000\) terlampaui\. Terpakai hari ini:/g, '已超出每日备用金支出限额（Rp500,000）。今日已用：'],
 
   ];
 
