@@ -8192,7 +8192,7 @@ async function simpanAksesMenu() {
       const orig = (el.getAttribute('data-i18n-orig') || '').trim();
       if (
         el.children.length === 0 &&
-        /^(Pilih Cepat Tipe Baterai|Quick Select Battery Type|快速选择电池)/i.test(txt || orig)
+        /^(Pilih Cepat Tipe Baterai|Quick Select Battery Type|快[捷速]选择电池)/i.test(txt || orig)
       ) {
         el.style.display = 'none';
         const next = el.nextElementSibling;
