@@ -1961,10 +1961,14 @@ async function simpanKasKecilKasir() {
   if (nominal <= 0 || nominal > 500000) return flash('Nominal harus antara Rp1 - Rp500.000', 'err');
   if (!ket) return flash('Keterangan wajib diisi', 'err');
 
-  // 1. Batas total pengeluaran kas kecil harian (Rp 500.000/hari) khusus Kasir
+  // 1. Hitung total keluar hari ini (konversi ke tanggal lokal agar akurat lewat tengah malam)
   const hariIni = tglLokal();
   const totalKeluarHariIni = (db.kas || [])
-    .filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar' && String(k.tanggal || k.created_at || '').startsWith(hariIni))
+    .filter(k => {
+      if (k.sumber !== 'kas_kecil' || k.jenis !== 'keluar') return false;
+      const tglStr = k.tanggal || k.tgl || (k.created_at ? new Date(k.created_at).toLocaleDateString('en-CA') : '');
+      return String(tglStr).startsWith(hariIni);
+    })
     .reduce((s, k) => s + Number(k.nominal || 0), 0);
 
   if (jenis === 'keluar' && isKasir() && (totalKeluarHariIni + nominal) > 500000) {
@@ -1975,9 +1979,9 @@ async function simpanKasKecilKasir() {
     await catatKas({ jenis, metode: 'tunai', nominal, keterangan: ket, sumber: 'kas_kecil' });
     await catatLog('KAS_KECIL', `Input ${jenis} - ${ket} (${rp(nominal)})`);
 
-    // 2. Notifikasi instan ke Telegram Pemilik
+    // 2. Notifikasi instan ke Telegram Pemilik (aman tanpa ReferenceError)
     if (typeof kirimTelegram === 'function') {
-      const userAktif = currentUser?.nama || currentUser?.username || 'Kasir';
+      const userAktif = (typeof currentTenant !== 'undefined' && (currentTenant?.nama_user || currentTenant?.nama)) || 'Kasir';
       const icon = jenis === 'keluar' ? '💸' : '💰';
       kirimTelegram(`${icon} *KAS KECIL (${jenis.toUpperCase()})*\n👤 Oleh: ${userAktif}\n💵 Nominal: ${rp(nominal)}\n📝 Ket: ${ket}\n📊 Total keluar hari ini: ${rp(jenis === 'keluar' ? totalKeluarHariIni + nominal : totalKeluarHariIni)}`);
     }
