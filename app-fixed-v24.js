@@ -8140,6 +8140,20 @@ async function simpanAksesMenu() {
 
   function initAll() {
     LIST_IDS.forEach(attachChipBar);
+    if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    setTimeout(initAll, 400);
+        // Sembunyikan label & tombol hijau lama "Pilih Cepat Tipe Baterai"
+    document.querySelectorAll('label, div, p, span').forEach(el => {
+      if (el.children.length === 0 && /^Pilih Cepat Tipe Baterai/i.test((el.textContent || '').trim())) {
+        el.style.display = 'none';
+        const next = el.nextElementSibling;
+        if (next && next.tagName === 'DIV' && !next.querySelector('select, input')) {
+          next.style.display = 'none';
+        }
+      }
+    });
     PICKER_SELECTS.forEach(id => {
       const sel = document.getElementById(id);
       if (!sel || document.getElementById('hpBtn_' + id)) return;
