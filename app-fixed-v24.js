@@ -1699,6 +1699,29 @@ async function simpanBaterai() {
       p_items: items, p_customer: nama, p_telp: telp || null, p_tgl_ganti: tglGanti,
       p_garansi_bulan: garansi, p_metode: metode, p_bank_id: bankId
     };
+    const adaKlaim = items.some(x => x.jenis_klaim && x.jenis_klaim !== 'Normal');
+    if (adaKlaim && window._lastRefBateraiId) {
+    const langAktif = localStorage.getItem('ta_lang') || 'id';
+const teksPrompt = {
+  id: '🔐 Minta pelanggan menyebutkan/mengetik KODE KLAIM dari WA E-Warranty:',
+  en: '🔐 Ask the customer to provide/enter the CLAIM CODE from E-Warranty WA:',
+  zh: '🔐 请顾客提供/输入电子保修单（WA）上的索赔码：'
+}[langAktif] || '🔐 Minta pelanggan menyebutkan/mengetik KODE KLAIM dari WA E-Warranty:';
+const inputKode = prompt(teksPrompt);
+      if (!inputKode) {
+        isSavingBaterai = false;
+        return flash('Klaim dibatalkan: Kode klaim wajib diisi', 'err');
+      }
+    const { data: cek, error: errCek } = await supabaseClient.rpc('verifikasi_kode_klaim', {
+        p_baterai_id: String(window._lastRefBateraiId),
+        p_kode: inputKode.trim()
+      });
+      if (errCek || !cek?.ok) {
+        isSavingBaterai = false;
+        return flash('❌ ' + (cek?.msg || errCek?.message || 'Kode klaim tidak cocok'), 'err');
+      }
+      flash(`✅ Kode klaim valid! Sisa kuota: ${cek.sisa}`);
+    }
     let { data, error } = await supabaseClient.rpc('proses_ganti_baterai', rpcArgs);
     if (error && /diproses oleh Admin atau Pemilik/i.test(error.message) && isKasir()) {
       // Harga di bawah normal (klaim/garansi): RPC menolak kasir. Admin/pemilik
