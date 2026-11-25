@@ -7801,6 +7801,359 @@ async function simpanAksesMenu() {
   };
 })();
 
+// === HOROPOS COMPACT GRID UI (3/2 KOLOM) + QUICK CHIPS + POPUP PICKER KASIR ===
+(function () {
+  if (window.__hpGridUiLoaded) return;
+  window.__hpGridUiLoaded = true;
+
+  // 1. INJECT CSS GRID & POPUP
+  const style = document.createElement('style');
+  style.textContent = `
+    /* Grid 3 kolom (normal) & 2 kolom (Huruf Besar) */
+    #listProduk, #listSparePart, #listStokBaterai, #listSemuaStok {
+      display: grid !important;
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 8px !important;
+      align-items: stretch !important;
+    }
+    body.hp-grid-2col #listProduk,
+    body.hp-grid-2col #listSparePart,
+    body.hp-grid-2col #listStokBaterai,
+    body.hp-grid-2col #listSemuaStok {
+      grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+      gap: 10px !important;
+    }
+    /* Pesan kosong tetap full width */
+    #listProduk > .empty, #listSparePart > .empty,
+    #listStokBaterai > .empty, #listSemuaStok > .empty {
+      grid-column: 1 / -1 !important;
+    }
+    /* Buat kartu di dalam grid lebih ringkas */
+    #listProduk > div:not(.empty),
+    #listSparePart > div:not(.empty),
+    #listStokBaterai > div:not(.empty),
+    #listSemuaStok > div:not(.empty) {
+      margin: 0 !important;
+      padding: 8px !important;
+      font-size: 11.5px !important;
+      display: flex !important;
+      flex-direction: column !important;
+      justify-content: space-between !important;
+      overflow: hidden !important;
+      word-break: break-word !important;
+    }
+    body.hp-grid-2col #listProduk > div:not(.empty),
+    body.hp-grid-2col #listSparePart > div:not(.empty),
+    body.hp-grid-2col #listStokBaterai > div:not(.empty),
+    body.hp-grid-2col #listSemuaStok > div:not(.empty) {
+      padding: 10px !important;
+      font-size: 13.5px !important;
+    }
+    /* Quick Filter Chips */
+    .hp-chip-bar {
+      display: flex;
+      gap: 6px;
+      overflow-x: auto;
+      padding: 6px 2px 10px;
+      margin-bottom: 4px;
+      scrollbar-width: none;
+    }
+    .hp-chip-bar::-webkit-scrollbar { display: none; }
+    .hp-chip {
+      flex: 0 0 auto;
+      padding: 5px 11px;
+      border-radius: 999px;
+      border: 1px solid #cbd5e1;
+      background: #fff;
+      color: #334155;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .hp-chip.active {
+      background: #0f1f3d;
+      color: #fff;
+      border-color: #0f1f3d;
+    }
+    .hp-chip.warn.active {
+      background: #dc2626;
+      border-color: #dc2626;
+    }
+    /* Tombol Pilih Cepat di Kasir/Servis */
+    .hp-pick-btn {
+      margin-top: 6px;
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 8px;
+      border: 1.5px dashed #2563eb;
+      background: #eff6ff;
+      color: #1d4ed8;
+      font-weight: 800;
+      font-size: 12.5px;
+      cursor: pointer;
+      text-align: center;
+    }
+    /* Popup Picker Modal */
+    #hpPickerOverlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.6);
+      z-index: 99999;
+      display: none;
+      align-items: flex-end;
+      justify-content: center;
+    }
+    #hpPickerOverlay.open { display: flex; }
+    #hpPickerBox {
+      background: #f8fafc;
+      width: 100%;
+      max-width: 680px;
+      max-height: 85vh;
+      border-radius: 16px 16px 0 0;
+      padding: 14px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 -8px 30px rgba(0,0,0,0.25);
+    }
+    #hpPickerGrid {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      overflow-y: auto;
+      padding-bottom: 12px;
+    }
+    body.hp-grid-2col #hpPickerGrid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 10px;
+    }
+    .hp-pcard {
+      background: #fff;
+      border: 1.5px solid #e2e8f0;
+      border-left: 4px solid #0f1f3d;
+      border-radius: 10px;
+      padding: 9px 8px;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 4px;
+    }
+    .hp-pcard:active { transform: scale(0.97); border-color: #2563eb; }
+    .hp-pcard-name { font-weight: 800; font-size: 12px; color: #0f172a; line-height: 1.25; }
+    .hp-pcard-sub { font-size: 11px; color: #059669; font-weight: 700; }
+    body.hp-grid-2col .hp-pcard-name { font-size: 14px; }
+    body.hp-grid-2col .hp-pcard-sub { font-size: 13px; }
+  `;
+  document.head.appendChild(style);
+
+  // 2. SAMBUNGKAN DENGAN TOMBOL "HURUF BESAR" (toggleFontBesar)
+  function syncGridCols() {
+    const isLarge =
+      document.body.classList.contains('font-besar') ||
+      document.documentElement.classList.contains('font-besar') ||
+      localStorage.getItem('ta_font_besar') === '1' ||
+      localStorage.getItem('hp_grid_2col') === '1';
+    document.body.classList.toggle('hp-grid-2col', isLarge);
+  }
+  syncGridCols();
+
+  if (typeof window.toggleFontBesar === 'function') {
+    const _origToggle = window.toggleFontBesar;
+    window.toggleFontBesar = function () {
+      const res = _origToggle.apply(this, arguments);
+      const next = !document.body.classList.contains('hp-grid-2col');
+      document.body.classList.toggle('hp-grid-2col', next);
+      localStorage.setItem('hp_grid_2col', next ? '1' : '0');
+      return res;
+    };
+  }
+
+  // 3. QUICK FILTER CHIPS UNTUK DAFTAR STOK
+  const LIST_IDS = ['listProduk', 'listSparePart', 'listStokBaterai', 'listSemuaStok'];
+
+  function attachChipBar(listId) {
+    const container = document.getElementById(listId);
+    if (!container) return;
+
+    let bar = document.getElementById('chips_' + listId);
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'chips_' + listId;
+      bar.className = 'hp-chip-bar';
+      container.parentNode.insertBefore(bar, container);
+    }
+
+    let activeFilter = 'ALL';
+
+    function applyFilter() {
+      const cards = [...container.children].filter(el => !el.classList.contains('empty'));
+      cards.forEach(card => {
+        const txt = (card.textContent || '').trim();
+        if (activeFilter === 'ALL') {
+          card.style.display = '';
+        } else if (activeFilter === 'LOW') {
+          card.style.display = /⚠️|tipis|habis|low/i.test(txt) ? '' : 'none';
+        } else {
+          const re = new RegExp('\\b' + activeFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
+          card.style.display = re.test(txt) ? '' : 'none';
+        }
+      });
+    }
+
+    function rebuildChips() {
+      const cards = [...container.children].filter(el => !el.classList.contains('empty'));
+      if (cards.length < 2) { bar.innerHTML = ''; return; }
+
+      const counts = {};
+      let lowCount = 0;
+      cards.forEach(card => {
+        const txt = (card.textContent || '').replace(/[^\w\s-]/g, ' ').trim();
+        const words = txt.split(/\s+/).filter(w => w.length >= 2 && !/^(BATT|PART|JAM|RP|STOCK|STOK|MIN|SELLING|PRICE|COST|PROFIT)$/i.test(w));
+        const key = (words[0] || '').toUpperCase();
+        if (key) counts[key] = (counts[key] || 0) + 1;
+        if (/⚠️|tipis|habis|low/i.test(card.textContent || '')) lowCount++;
+      });
+
+      const topKeys = Object.entries(counts)
+        .filter(([, c]) => c >= 1)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 12)
+        .map(([k]) => k);
+
+      let html = `<button type="button" class="hp-chip ${activeFilter === 'ALL' ? 'active' : ''}" data-f="ALL">Semua (${cards.length})</button>`;
+      topKeys.forEach(k => {
+        html += `<button type="button" class="hp-chip ${activeFilter === k ? 'active' : ''}" data-f="${k}">${k}</button>`;
+      });
+      if (lowCount > 0) {
+        html += `<button type="button" class="hp-chip warn ${activeFilter === 'LOW' ? 'active' : ''}" data-f="LOW">⚠️ Tipis (${lowCount})</button>`;
+      }
+      bar.innerHTML = html;
+      bar.querySelectorAll('.hp-chip').forEach(btn => {
+        btn.onclick = () => {
+          activeFilter = btn.dataset.f;
+          bar.querySelectorAll('.hp-chip').forEach(b => b.classList.toggle('active', b === btn));
+          applyFilter();
+        };
+      });
+      applyFilter();
+    }
+
+    let raf = null;
+    new MutationObserver(() => {
+      if (raf) return;
+      raf = requestAnimationFrame(() => { raf = null; rebuildChips(); });
+    }).observe(container, { childList: true });
+    rebuildChips();
+  }
+
+  // 4. POPUP GRID PICKER UNTUK DROPDOWN KASIR / SERVIS / RESTOCK
+  const PICKER_SELECTS = ['selProduk', 'selSparePart', 'selBateraiServis', 'bTipeSel', 'beTipeSel', 'rsItem'];
+
+  const overlay = document.createElement('div');
+  overlay.id = 'hpPickerOverlay';
+  overlay.innerHTML = `
+    <div id="hpPickerBox">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+        <b id="hpPickerTitle" style="font-size:15px;color:#0f1f3d;">Pilih Item</b>
+        <button type="button" id="hpPickerClose" style="background:#ef4444;color:#fff;border:none;border-radius:8px;padding:5px 12px;font-weight:700;cursor:pointer;">Tutup</button>
+      </div>
+      <input id="hpPickerSearch" type="text" placeholder="Cari cepat..." style="width:100%;padding:8px 10px;border:1px solid #cbd5e1;border-radius:8px;margin-bottom:6px;font-size:13px;">
+      <div id="hpPickerChips" class="hp-chip-bar"></div>
+      <div id="hpPickerGrid"></div>
+    </div>
+  `;
+  document.body.appendChild(overlay);
+
+  const closePicker = () => overlay.classList.remove('open');
+  overlay.addEventListener('click', e => { if (e.target === overlay) closePicker(); });
+  document.getElementById('hpPickerClose').onclick = closePicker;
+
+  function openGridPicker(selectEl, title) {
+    const opts = [...selectEl.options].filter(o => o.value && !o.disabled);
+    const searchEl = document.getElementById('hpPickerSearch');
+    const chipsEl = document.getElementById('hpPickerChips');
+    const gridEl = document.getElementById('hpPickerGrid');
+    document.getElementById('hpPickerTitle').textContent = title || 'Pilih Item';
+    searchEl.value = '';
+
+    let activeBrand = 'ALL';
+    const brandMap = {};
+    opts.forEach(o => {
+      const w = (o.text.replace(/[^\w\s-]/g, ' ').trim().split(/\s+/)[0] || '').toUpperCase();
+      if (w.length >= 2) brandMap[w] = (brandMap[w] || 0) + 1;
+    });
+    const brands = Object.entries(brandMap).sort((a, b) => b[1] - a[1]).slice(0, 12).map(([k]) => k);
+
+    function renderGrid() {
+      const q = searchEl.value.trim().toLowerCase();
+      const filtered = opts.filter(o => {
+        const t = o.text.toLowerCase();
+        if (q && !t.includes(q)) return false;
+        if (activeBrand !== 'ALL' && !t.includes(activeBrand.toLowerCase())) return false;
+        return true;
+      });
+      gridEl.innerHTML = filtered.length
+        ? filtered.map(o => {
+            const parts = o.text.split(/[-—|]/);
+            const name = (parts[0] || o.text).trim();
+            const sub = parts.slice(1).join(' • ').trim();
+            return `<button type="button" class="hp-pcard" data-val="${o.value.replace(/"/g, '&quot;')}">
+              <div class="hp-pcard-name">${name}</div>
+              ${sub ? `<div class="hp-pcard-sub">${sub}</div>` : ''}
+            </button>`;
+          }).join('')
+        : '<div style="grid-column:1/-1;text-align:center;padding:24px;color:#64748b;">Tidak ada item cocok</div>';
+
+      gridEl.querySelectorAll('.hp-pcard').forEach(btn => {
+        btn.onclick = () => {
+          selectEl.value = btn.dataset.val;
+          selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+          closePicker();
+        };
+      });
+    }
+
+    chipsEl.innerHTML =
+      `<button type="button" class="hp-chip active" data-b="ALL">Semua (${opts.length})</button>` +
+      brands.map(b => `<button type="button" class="hp-chip" data-b="${b}">${b}</button>`).join('');
+
+    chipsEl.querySelectorAll('.hp-chip').forEach(c => {
+      c.onclick = () => {
+        activeBrand = c.dataset.b;
+        chipsEl.querySelectorAll('.hp-chip').forEach(x => x.classList.toggle('active', x === c));
+        renderGrid();
+      };
+    });
+
+    searchEl.oninput = renderGrid;
+    renderGrid();
+    overlay.classList.add('open');
+  }
+
+  function initAll() {
+    LIST_IDS.forEach(attachChipBar);
+    PICKER_SELECTS.forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel || document.getElementById('hpBtn_' + id)) return;
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.id = 'hpBtn_' + id;
+      btn.className = 'hp-pick-btn';
+      btn.textContent = '🔲 Pilih Cepat (Grid)';
+      btn.onclick = () => openGridPicker(sel, 'Pilih Item');
+      sel.parentNode.insertBefore(btn, sel.nextSibling);
+    });
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+  } else {
+    setTimeout(initAll, 400);
+  }
+})();
+
+
 
 
 
