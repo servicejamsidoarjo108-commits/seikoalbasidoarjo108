@@ -7449,32 +7449,68 @@ async function simpanAksesMenu() {
 
   ];
 
-  function translateNodes(root) {
+    function applyRules(node, rules) {
+    const orig = node.nodeValue;
+    if (!orig || !/[a-zA-Z]/.test(orig)) return; // Lewati angka, spasi, & teks Mandarin
+    let next = orig;
+    for (let i = 0; i < rules.length; i++) {
+      next = next.replace(rules[i][0], rules[i][1]);
+    }
+    if (next !== orig) node.nodeValue = next;
+  }
+
+  function translateNodes(root, rules) {
+    if (!root) return;
+    if (root.nodeType === 3) {
+      applyRules(root, rules);
+      return;
+    }
+    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, {
+      acceptNode(n) {
+        const tag = n.parentNode && n.parentNode.nodeName;
+        if (tag === 'SCRIPT' || tag === 'STYLE' || tag === 'NOSCRIPT') {
+          return NodeFilter.FILTER_REJECT;
+        }
+        return NodeFilter.FILTER_ACCEPT;
+      }
+    });
+    let node;
+    while ((node = walker.nextNode())) applyRules(node, rules);
+  }
+
+  let queue = new Set();
+  let scheduled = false;
+
+  function flushQueue() {
+    scheduled = false;
     const lang = localStorage.getItem('ta_lang') || localStorage.getItem('horopos_lang') || 'id';
-    if (lang === 'id') return;
+    if (lang === 'id') { queue.clear(); return; }
     const rules = lang === 'zh' ? MAP_ZH : MAP_EN;
 
-    const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
-    let node;
-    while ((node = walker.nextNode())) {
-      const orig = node.nodeValue;
-      if (!orig || !orig.trim()) continue;
-      let next = orig;
-      for (const [rgx, rep] of rules) next = next.replace(rgx, rep);
-      if (next !== orig) node.nodeValue = next;
+    const nodes = Array.from(queue);
+    queue.clear();
+    for (let i = 0; i < nodes.length; i++) {
+      if (nodes[i].isConnected) translateNodes(nodes[i], rules);
     }
   }
 
   const obs = new MutationObserver(muts => {
-    for (const m of muts) {
-      m.addedNodes.forEach(n => {
-                if (n.nodeType === 1) translateNodes(n);
-        else if (n.nodeType === 3 && n.parentNode) translateNodes(n.parentNode);
-      });
+    for (let i = 0; i < muts.length; i++) {
+      const added = muts[i].addedNodes;
+      for (let j = 0; j < added.length; j++) {
+        const n = added[j];
+        if (n.nodeType === 1 || n.nodeType === 3) queue.add(n);
+      }
+    }
+    if (queue.size && !scheduled) {
+      scheduled = true;
+      requestAnimationFrame(flushQueue);
     }
   });
+
   obs.observe(document.body, { childList: true, subtree: true });
-  translateNodes(document.body);
+  queue.add(document.body);
+  flushQueue();
 })();
 
   // === KAMUS LENGKAP POP-UP FLASH (EN & ZH) ===
