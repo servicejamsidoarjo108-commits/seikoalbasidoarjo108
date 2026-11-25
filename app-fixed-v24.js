@@ -7842,13 +7842,15 @@ async function simpanAksesMenu() {
       overflow: hidden !important;
       word-break: break-word !important;
     }
-    body.hp-grid-2col #listProduk > div:not(.empty),
+        body.hp-grid-2col #listProduk > div:not(.empty),
     body.hp-grid-2col #listSparePart > div:not(.empty),
     body.hp-grid-2col #listStokBaterai > div:not(.empty),
     body.hp-grid-2col #listSemuaStok > div:not(.empty) {
       padding: 10px !important;
       font-size: 13.5px !important;
     }
+    .hp-hidden { display: none !important; }
+
     /* Quick Filter Chips */
     .hp-chip-bar {
       display: flex;
@@ -7986,18 +7988,18 @@ async function simpanAksesMenu() {
 
     let activeFilter = 'ALL';
 
-    function applyFilter() {
+        function applyFilter() {
       const cards = [...container.children].filter(el => !el.classList.contains('empty'));
       cards.forEach(card => {
         const txt = (card.textContent || '').trim();
-        if (activeFilter === 'ALL') {
-          card.style.display = '';
-        } else if (activeFilter === 'LOW') {
-          card.style.display = /⚠️|tipis|habis|low/i.test(txt) ? '' : 'none';
-        } else {
+        let show = true;
+        if (activeFilter === 'LOW') {
+          show = /⚠️|tipis|habis|low/i.test(txt);
+        } else if (activeFilter !== 'ALL') {
           const re = new RegExp('\\b' + activeFilter.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
-          card.style.display = re.test(txt) ? '' : 'none';
+          show = re.test(txt);
         }
+        card.classList.toggle('hp-hidden', !show);
       });
     }
 
