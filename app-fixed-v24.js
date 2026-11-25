@@ -4017,9 +4017,8 @@ async function inisialisasi() {
     if (!e.target.files.length) { tempFotoBase64 = ''; return; }
     try {
       flash('Mengunggah foto ke Cloudinary...');
-      const resizedBase64 = await resizeImage(e.target.files[0]);
       const fd = new FormData();
-      fd.append('file', resizedBase64);
+      fd.append('file', e.target.files[0]);
       fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
 
       const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
@@ -4029,7 +4028,7 @@ async function inisialisasi() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error?.message || 'Upload gagal');
 
-      tempFotoBase64 = data.secure_url;
+      tempFotoBase64 = data.secure_url.replace('/upload/', '/upload/w_600,c_limit,q_auto,f_auto/');
       flash('Foto siap disimpan');
     } catch (err) {
       tempFotoBase64 = '';
@@ -7430,7 +7429,11 @@ async function simpanAksesMenu() {
     [/Pilih Cepat \(Grid\)/g, 'Quick Select (Grid)'],
     [/Pilih Item/g, 'Select Item'],
     [/⚠️ Tipis/g, '⚠️ Low'],
-    [/Tidak ada item cocok/g, 'No matching items']
+    [/Tidak ada item cocok/g, 'No matching items'],
+    [/Mengunggah foto ke Cloudinary\.\.\./g, 'Uploading photo to Cloudinary...'],
+    [/Foto siap disimpan/g, 'Photo ready to save'],
+    [/Gagal upload foto:/g, 'Failed to upload photo:'],
+    [/Upload gagal/g, 'Upload failed'],
 
   ];
 
@@ -7477,7 +7480,11 @@ async function simpanAksesMenu() {
     [/Pilih Cepat \(Grid\)/g, '快速选择 (网格)'],
     [/Pilih Item/g, '选择项目'],
     [/⚠️ Tipis/g, '⚠️ 库存低'],
-    [/Tidak ada item cocok/g, '没有匹配的项目']
+    [/Tidak ada item cocok/g, '没有匹配的项目'],
+    [/Mengunggah foto ke Cloudinary\.\.\./g, '正在上传照片到 Cloudinary...'],
+    [/Foto siap disimpan/g, '照片已准备好保存'],
+    [/Gagal upload foto:/g, '照片上传失败：'],
+    [/Upload gagal/g, '上传失败'],
 
   ];
 
