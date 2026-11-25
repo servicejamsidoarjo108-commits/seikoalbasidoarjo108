@@ -7434,6 +7434,9 @@ async function simpanAksesMenu() {
     [/Foto siap disimpan/g, 'Photo ready to save'],
     [/Gagal upload foto:/g, 'Failed to upload photo:'],
     [/Upload gagal/g, 'Upload failed'],
+    [/Cari cepat\.\.\./g, 'Quick search...'],
+    [/\bSemua \(/g, 'All ('],
+    [/\bstok (\d+)/g, 'stock $1'],
 
   ];
 
@@ -7485,6 +7488,9 @@ async function simpanAksesMenu() {
     [/Foto siap disimpan/g, '照片已准备好保存'],
     [/Gagal upload foto:/g, '照片上传失败：'],
     [/Upload gagal/g, '上传失败'],
+    [/Cari cepat\.\.\./g, '快速搜索...'],
+    [/\bSemua \(/g, '全部 ('],
+    [/\bstok (\d+)/g, '库存 $1'],
 
   ];
 
