@@ -1738,6 +1738,30 @@ const inputKode = prompt(teksPrompt);
     catatKomisiOtomatis('baterai', data.items?.[0]?.id || 'BAT', items.reduce((a, x) => a + (x.qty || 1), 0), `Ganti baterai ${nama}`);
     const listCetak = data.items.map((h, i) => ({ ...items[i], id: h.id, tgl_expired: h.tgl_expired, biaya: h.biaya }));
     try { cetakStrukGabunganBaterai(listCetak, nama, telp, data.total); } catch (e) { console.error(e); flash('Data tersimpan, tetapi struk gagal dicetak: ' + e.message, 'err'); }
+        // Buat kode klaim rahasia & kirim e-warranty otomatis via Fonnte (khusus transaksi normal bergaransi)
+    if (garansi > 0 && telp) {
+      const daftarKode = [];
+      for (const item of listCetak) {
+        if (!item.jenis_klaim || item.jenis_klaim === 'Normal') {
+          const kode = buatKodeKlaim();
+          await supabaseClient.from('garansi_kode').insert({
+            toko_id: currentTenant.toko_id,
+            baterai_id: String(item.id),
+            kode: kode,
+            kuota: 1 // ubah ke 2 jika ingin kuota klaim 2x
+          });
+          daftarKode.push(`• ${item.produk}: *${kode}* (Exp: ${item.tgl_expired || '-'})`);
+        }
+      }
+      if (daftarKode.length) {
+        const pesanWA = {
+  id: `Halo ${nama},\nTerima kasih telah mengganti baterai jam tangan Anda.\n\n*E-WARRANTY & KODE KLAIM*\n${daftarKode.join('\n')}\n\nSimpan pesan ini. Tunjukkan kode di atas saat melakukan klaim garansi.`,
+  en: `Hello ${nama},\nThank you for replacing your watch battery with us.\n\n*E-WARRANTY & CLAIM CODE*\n${daftarKode.join('\n')}\n\nPlease save this message and show the code above when claiming your warranty.`,
+  zh: `您好 ${nama}，\n感谢您在本店更换手表电池。\n\n*电子保修单与索赔码*\n${daftarKode.join('\n')}\n\n请保存此消息，申请保修时请出示以上索赔码。`
+}[localStorage.getItem('ta_lang') || 'id'];
+        openWA(telp, pesanWA);
+      }
+    }
 
     cartBaterai = [];
     renderBateraiCart();
