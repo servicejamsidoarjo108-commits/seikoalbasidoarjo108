@@ -4010,9 +4010,33 @@ function hapusLogoToko() { if (confirm('Hapus logo dari semua nota?')) simpanLog
 async function inisialisasi() {
   $('pinInput')?.addEventListener('keypress', e => { if (e.key === 'Enter') login(); });
   if ($('loadingAI')) $('loadingAI').style.display = 'none';
+    const CLOUDINARY_CLOUD_NAME = 'sz9gm896';
+  const CLOUDINARY_UPLOAD_PRESET = 'horopos_produk';
+
   $('pFoto')?.addEventListener('change', async e => {
-    tempFotoBase64 = e.target.files.length ? await resizeImage(e.target.files[0]) : '';
+    if (!e.target.files.length) { tempFotoBase64 = ''; return; }
+    try {
+      flash('Mengunggah foto ke Cloudinary...');
+      const resizedBase64 = await resizeImage(e.target.files[0]);
+      const fd = new FormData();
+      fd.append('file', resizedBase64);
+      fd.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+
+      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}/image/upload`, {
+        method: 'POST',
+        body: fd
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error?.message || 'Upload gagal');
+
+      tempFotoBase64 = data.secure_url;
+      flash('Foto siap disimpan');
+    } catch (err) {
+      tempFotoBase64 = '';
+      flash('Gagal upload foto: ' + err.message, 'err');
+    }
   });
+
   // Hitung ulang klaim baterai saat data pelanggan/produk/tanggal berubah
   ['bNama', 'bProduk', 'bHp', 'bTgl'].forEach(id => $(id)?.addEventListener('change', () => cekKlaimBaterai(txt('bNama'))));
   // Total kasir & poin diperbarui saat input berubah
