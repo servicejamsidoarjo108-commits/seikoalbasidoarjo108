@@ -7980,11 +7980,13 @@ async function simpanAksesMenu() {
         align-items: flex-start !important;
         gap: 4px !important;
       }
-      /* Kotak harga ditumpuk ke bawah agar Cost Price tidak terpotong */
-      #listStokBaterai > div div[style*="grid"],
-      #listStokBaterai > div div[style*="flex"] {
-        grid-template-columns: 1fr !important;
-        flex-wrap: wrap !important;
+      /* Kotak harga ditumpuk atas-bawah agar Cost Price tidak terpotong */
+      #listStokBaterai > div > div:nth-child(2),
+      #listProduk > div > div:nth-child(2),
+      #listSparePart > div > div:nth-child(2),
+      #listSemuaStok > div > div:nth-child(2) {
+        display: flex !important;
+        flex-direction: column !important;
         gap: 6px !important;
       }
       #listProduk > div:not(.empty),
