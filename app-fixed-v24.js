@@ -1962,12 +1962,17 @@ async function simpanKasKecilKasir() {
   if (!ket) return flash('Keterangan wajib diisi', 'err');
 
   // 1. Hitung total keluar hari ini (konversi ke tanggal lokal agar akurat lewat tengah malam)
-  const hariIni = tglLokal();
+    const hariIni = tglLokal();
   const totalKeluarHariIni = (db.kas || [])
     .filter(k => {
-      if (k.sumber !== 'kas_kecil' || k.jenis !== 'keluar') return false;
-      const tglStr = k.tanggal || k.tgl || (k.created_at ? new Date(k.created_at).toLocaleDateString('en-CA') : '');
-      return String(tglStr).startsWith(hariIni);
+      const sumber = String(k.sumber || '').toLowerCase();
+      const jenis = String(k.jenis || '').toLowerCase();
+      if (sumber !== 'kas_kecil' || jenis !== 'keluar') return false;
+      const rawTgl = k.tanggal || k.tgl || k.created_at || '';
+      const tglLokalItem = String(rawTgl).includes('T')
+        ? new Date(rawTgl).toLocaleDateString('en-CA')
+        : String(rawTgl).slice(0, 10);
+      return tglLokalItem === hariIni;
     })
     .reduce((s, k) => s + Number(k.nominal || 0), 0);
 
