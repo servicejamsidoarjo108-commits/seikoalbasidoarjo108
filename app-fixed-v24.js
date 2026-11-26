@@ -674,8 +674,6 @@ async function tarikSemuaData(muatFoto = false) {
     db.profilKaryawan = pakai(profKar, db.profilKaryawan || []);
     if (isAdmin()) { await muatModalBarang(); await muatAuditDraftHariIni(); }
     render();
-    if (isAdmin()) { await muatModalBarang(); await muatAuditDraftHariIni(); }
-    render();
     if ($('pSerial') && !$('pId')?.value && !$('pSerial').value) {
     $('pSerial').value = generateNextBarcodeSas();
  }
