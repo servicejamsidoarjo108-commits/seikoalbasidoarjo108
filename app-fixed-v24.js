@@ -674,9 +674,9 @@ async function tarikSemuaData(muatFoto = false) {
     db.profilKaryawan = pakai(profKar, db.profilKaryawan || []);
     if (isAdmin()) { await muatModalBarang(); await muatAuditDraftHariIni(); }
     render();
-    if ($('pSerial') && !$('pId')?.value && !$('pSerial').value) {
+    if ($('pSerial') && !$('pId')?.value && (!$('pSerial').value || /^sas\d+$/i.test($('pSerial').value.trim()))) {
     $('pSerial').value = generateNextBarcodeSas();
- }
+    }
   } catch (e) { console.error('Gagal tarik data:', e); }
 }
 
