@@ -6111,6 +6111,7 @@ const I18N_DICT = {
   'Dicatat oleh:': { en: 'Logged by:', zh: '记录人：' },
   'Tidak': { en: 'No', zh: '否' },
   'Ya': { en: 'Yes', zh: '是' },
+  'Stok': { en: 'Stock', zh: '库存' },
 
 };
 
@@ -8560,13 +8561,21 @@ async function muatDropdownBateraiGratis(selectElementId) {
     .gt('stok', 0)
     .order('tipe', { ascending: true });
 
-  el.innerHTML = '<option value="">-- Pilih tipe baterai --</option>';
+    const labelPilih = (typeof terjemahkanTeks === 'function')
+    ? terjemahkanTeks('-- Pilih tipe baterai --')
+    : '-- Pilih tipe baterai --';
+    const labelStok = (typeof terjemahkanTeks === 'function')
+    ? terjemahkanTeks('Stok')
+    : 'Stok';
+
+  el.innerHTML = `<option value="">${labelPilih}</option>`;
   if (error || !data) return;
 
-  data.forEach(b => {
+
+    data.forEach(b => {
     const opt = document.createElement('option');
     opt.value = b.id;
-    opt.textContent = `${b.tipe} (Stok: ${b.stok})`;
+    opt.textContent = `${b.tipe} (${labelStok}: ${b.stok})`;
     el.appendChild(opt);
   });
 }
