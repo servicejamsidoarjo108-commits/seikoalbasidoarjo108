@@ -621,7 +621,20 @@ main { max-width: 1120px; }
             <button type="button" id="btnBayarNom4" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
           </div>
         </div>
-
+        <div id="boxBonusBaterai" style="margin: 10px 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
+  <div style="display:flex; justify-content:space-between; align-items:center;">
+    <span style="font-weight:600;">Ganti baterai baru (Gratis)?</span>
+    <div>
+      <label style="margin-right:10px;"><input type="radio" name="optBonusBat" value="tidak" checked onchange="togglePilihBonusBaterai(false)"> Tidak</label>
+      <label><input type="radio" name="optBonusBat" value="ya" onchange="togglePilihBonusBaterai(true)"> Ya</label>
+    </div>
+  </div>
+  <div id="wrapSelectBonusBat" style="display:none; margin-top:8px;">
+    <select id="selectBonusBaterai" class="form-control">
+      <option value="">-- Pilih tipe baterai --</option>
+    </select>
+  </div>
+</div>
         <button class="btn-bayar-gold" onclick="prosesBayar()">🔒 BAYAR &amp; CETAK STRUK</button>
       </div>
     </div>
