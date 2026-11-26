@@ -8561,12 +8561,7 @@ async function muatDropdownBateraiGratis(selectElementId) {
     .gt('stok', 0)
     .order('tipe', { ascending: true });
 
-      const langAktif = (typeof currentLang !== 'undefined' && currentLang)
-    || localStorage.getItem('horopos_lang')
-    || localStorage.getItem('bahasa')
-    || localStorage.getItem('lang')
-    || document.documentElement.lang
-    || 'id';
+  const langAktif = localStorage.getItem('ta_lang') || 'id';
 
   const labelPilih = (typeof terjemahkanTeks === 'function')
     ? terjemahkanTeks('-- Pilih tipe baterai --', langAktif)
