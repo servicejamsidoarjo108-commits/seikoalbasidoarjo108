@@ -2410,26 +2410,55 @@ function resizeImage(file) {
   });
 }
 
+function kompresFotoUntukAI(file, maxWidth = 1024) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Gagal membaca file foto'));
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onerror = () => reject(new Error('Format gambar tidak valid'));
+      img.onload = () => {
+        const scale = Math.min(1, maxWidth / img.width);
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.round(img.width * scale);
+        canvas.height = Math.round(img.height * scale);
+        canvas.getContext('2d').drawImage(img, 0, 0, canvas.width, canvas.height);
+        resolve(canvas.toDataURL('image/jpeg', 0.8));
+      };
+      img.src = e.target.result;
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 async function scanFotoAI() {
   const fileInput = $('pFoto');
   if (!fileInput.files || !fileInput.files.length) return flash('Pilih foto produk terlebih dahulu', 'err');
-  if (typeof Tesseract === 'undefined') return flash('Library OCR belum dimuat', 'err');
+
   const loading = $('loadingAI');
   if (loading) loading.style.display = 'flex';
-  flash('Memproses gambar dengan AI...', 'ok');
+  flash('Membaca label dengan AI Vision...', 'ok');
+
   try {
-    const worker = await Tesseract.createWorker('ind+eng');
-    const ret = await worker.recognize(fileInput.files[0]);
-    const text = ret.data.text.trim();
-    await worker.terminate();
-    if (!text) return flash('AI tidak menemukan teks.', 'err');
-    const lines = text.split('\n').filter(l => l.trim().length > 2);
-    if (lines.length) $('pNama').value = lines[0].substring(0, 50);
-    const merek = ['SEIKO', 'CASIO', 'ALBA', 'ROLEX', 'G-SHOCK', 'TISSOT', 'FOSSIL', 'CURREN', 'ORIENT', 'CITIZEN'].find(m => text.toUpperCase().includes(m));
-    if (merek) $('pMerek').value = merek;
-    flash('AI berhasil membaca teks!');
-  } catch (e) { flash('Gagal memproses gambar', 'err'); }
-  finally { if (loading) loading.style.display = 'none'; }
+    const imageBase64 = await kompresFotoUntukAI(fileInput.files[0]);
+    const { data, error } = await supabaseClient.functions.invoke('scan-produk', {
+      body: { imageBase64 }
+    });
+
+    if (error) throw new Error(error.message || 'Gagal menghubungi server AI');
+    if (data?.error) throw new Error(data.error);
+
+    if (data?.nama && $('pNama')) $('pNama').value = data.nama;
+    if (data?.merek && $('pMerek')) $('pMerek').value = data.merek;
+    if (Number(data?.harga_jual) > 0 && $('pHJual')) $('pHJual').value = Number(data.harga_jual);
+
+    flash('AI berhasil membaca label produk!');
+  } catch (e) {
+    console.error('Scan AI error:', e);
+    flash('Gagal scan AI: ' + e.message, 'err');
+  } finally {
+    if (loading) loading.style.display = 'none';
+  }
 }
 
 const labelBarcodeScript = nilai => JSON.stringify(nilai).replace(/</g, '\\u003c');
