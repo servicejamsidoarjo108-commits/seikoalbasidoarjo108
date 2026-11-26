@@ -1029,7 +1029,9 @@ main { max-width: 1120px; }
     <div class="row"><div><label>Stok Awal</label><input type="number" id="sbStok" value="0" min="0"></div><div></div></div>
     <button class="btn" onclick="tambahStokBaterai()">+ Tambah Tipe</button>
   </div>
-
+<button type="button" onclick="bukaModalBateraiGratis()" style="margin-bottom:10px;">
+  Catat Baterai Gratis
+</button>
   <div class="card"><h3>Daftar Stok Baterai</h3><div id="listStokBaterai"></div></div>
   <div class="card"><h3>Cek Garansi Baterai</h3><input id="bCari" placeholder="Cari..." oninput="render()" style="margin-bottom:10px"><div id="listBaterai"></div></div>
   <div id="stickyBaterai" style="display:none;"></div>
