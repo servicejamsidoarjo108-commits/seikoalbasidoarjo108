@@ -7541,6 +7541,20 @@ async function simpanAksesMenu() {
     [/Kuota klaim sudah habis/g, 'Claim quota exhausted'],
     [/Kode klaim valid! Sisa kuota:/g, 'Valid claim code! Remaining quota:'],
     [/Batas pengeluaran kas kecil harian \(Rp500\.000\) terlampaui\. Terpakai hari ini:/g, 'Daily petty cash expense limit (Rp500,000) exceeded. Used today:'],
+    [/WA E-Warranty gagal terkirim via Fonnte \(fallback diblokir demi keamanan\)/g, 'E-Warranty WA failed to send via Fonnte (fallback blocked for security)'],
+    [/ALERT KLAIM GARANSI \/ Rp 0/g, 'WARRANTY CLAIM / Rp 0 ALERT'],
+    [/KLAIM PRODUK/g, 'PRODUCT CLAIM'],
+    [/KLAIM SERVIS/g, 'SERVICE CLAIM'],
+    [/SERVIS Rp 0/g, 'Rp 0 SERVICE'],
+    [/Oleh:/g, 'By:'],
+    [/Part\/Bat:/g, 'Parts/Batt:'],
+    [/Tidak ada/g, 'None'],
+    [/Keluhan:/g, 'Issue:'],
+    [/KAS KECIL \(KELUAR\)/g, 'PETTY CASH (OUT)'],
+    [/KAS KECIL \(MASUK\)/g, 'PETTY CASH (IN)'],
+    [/Total keluar hari ini:/g, 'Total out today:'],
+    [/Nominal:/g, 'Amount:'],
+    [/Ket:/g, 'Note:'],
 
   ];
 
@@ -7600,6 +7614,20 @@ async function simpanAksesMenu() {
     [/Kuota klaim sudah habis/g, '索赔次数已用完'],
     [/Kode klaim valid! Sisa kuota:/g, '索赔码有效！剩余次数：'],
     [/Batas pengeluaran kas kecil harian \(Rp500\.000\) terlampaui\. Terpakai hari ini:/g, '已超出每日备用金支出限额（Rp500,000）。今日已用：'],
+    [/WA E-Warranty gagal terkirim via Fonnte \(fallback diblokir demi keamanan\)/g, '电子保修单通过 Fonnte 发送 WhatsApp 失败（出于安全原因已阻止备用方式）'],
+    [/ALERT KLAIM GARANSI \/ Rp 0/g, '保修索赔 / Rp 0 提醒'],
+    [/KLAIM PRODUK/g, '产品保修索赔'],
+    [/KLAIM SERVIS/g, '维修保修索赔'],
+    [/SERVIS Rp 0/g, 'Rp 0 维修'],
+    [/Oleh:/g, '操作员：'],
+    [/Part\/Bat:/g, '配件/电池：'],
+    [/Tidak ada/g, '无'],
+    [/Keluhan:/g, '故障描述：'],
+    [/KAS KECIL \(KELUAR\)/g, '备用金（支出）'],
+    [/KAS KECIL \(MASUK\)/g, '备用金（收入）'],
+    [/Total keluar hari ini:/g, '今日累计支出：'],
+    [/Nominal:/g, '金额：'],
+    [/Ket:/g, '备注：'],
 
   ];
 
