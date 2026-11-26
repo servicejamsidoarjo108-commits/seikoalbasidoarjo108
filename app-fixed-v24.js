@@ -904,9 +904,26 @@ async function simpanProduk() {
   } catch (e) { flash('Gagal menyimpan produk: ' + e.message, 'err'); }
 }
 
+function generateNextBarcodeSas() {
+  const list = (typeof db !== 'undefined' && Array.isArray(db.produk)) ? db.produk : [];
+  let maxNum = 0;
+
+  list.forEach(p => {
+    const kode = String(p.serial || p.barcode || '').trim();
+    const match = kode.match(/^sas(\d+)$/i);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (!isNaN(num) && num > maxNum) maxNum = num;
+    }
+  });
+
+  return 'sas' + String(maxNum + 1).padStart(4, '0');
+}
+
 function resetFormProduk() {
   ['pId', 'pNama', 'pMerek', 'pHBeli', 'pHJual', 'pStok', 'pSerial', 'pFoto'].forEach(x => { if ($(x)) $(x).value = ''; });
   tempFotoBase64 = '';
+  if ($('pSerial')) $('pSerial').value = generateNextBarcodeSas();
 }
 
 function editProduk(id) {
