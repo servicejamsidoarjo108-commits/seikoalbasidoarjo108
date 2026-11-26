@@ -6109,6 +6109,8 @@ const I18N_DICT = {
   'Baterai:': { en: 'Battery:', zh: '电池：' },
   'Keterangan:': { en: 'Notes:', zh: '备注：' },
   'Dicatat oleh:': { en: 'Logged by:', zh: '记录人：' },
+  'Tidak': { en: 'No', zh: '否' },
+  'Ya': { en: 'Yes', zh: '是' },
 
 };
 
