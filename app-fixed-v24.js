@@ -2441,7 +2441,7 @@ async function scanFotoAI() {
 
   try {
     const imageBase64 = await kompresFotoUntukAI(fileInput.files[0]);
-    const { data, error } = await supabaseClient.functions.invoke('scan-produk', {
+    const { data, error } = await supabaseClient.functions.invoke('smooth-worker', {
       body: { imageBase64 }
     });
 
