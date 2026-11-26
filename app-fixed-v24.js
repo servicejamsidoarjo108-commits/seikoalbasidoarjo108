@@ -8395,6 +8395,167 @@ async function simpanAksesMenu() {
   }
 })();
 
+// =========================================================
+// FITUR PEMAKAIAN BATERAI GRATIS / INTERNAL (OPSI B)
+// =========================================================
+
+async function catatBateraiGratis({ bateraiId, kategori, keterangan = '', noNota = null, qty = 1 }) {
+  if (!bateraiId) throw new Error('Tipe baterai wajib dipilih.');
+  if (kategori !== 'bonus_beli_jam' && !keterangan.trim()) {
+    throw new Error('Keterangan / nama penerima wajib diisi.');
+  }
+
+  // 1. Ambil data baterai & cek stok (kolom asli: tipe & harga_beli)
+  const { data: bat, error: errBat } = await supabaseClient
+    .from('stok_baterai')
+    .select('id, tipe, stok, harga_beli, toko_id')
+    .eq('id', bateraiId)
+    .single();
+
+  if (errBat || !bat) throw new Error('Data baterai tidak ditemukan.');
+  if ((bat.stok || 0) < qty) throw new Error(`Stok baterai ${bat.tipe} tidak mencukupi.`);
+
+  // 2. Potong stok_baterai & perbarui updated_at
+  const { error: errStok } = await supabaseClient
+    .from('stok_baterai')
+    .update({
+      stok: bat.stok - qty,
+      updated_at: new Date().toISOString()
+    })
+    .eq('id', bat.id);
+
+  if (errStok) throw new Error('Gagal memotong stok baterai: ' + errStok.message);
+
+  // 3. Simpan ke tabel beban pemakaian_baterai_gratis
+  const hppSatuan = Number(bat.harga_beli || 0);
+  const namaKasir = (window.currentUserProfil?.nama || localStorage.getItem('ta_user_nama') || 'Kasir');
+
+  const { error: errIns } = await supabaseClient
+    .from('pemakaian_baterai_gratis')
+    .insert({
+      toko_id: bat.toko_id,
+      baterai_id: bat.id,
+      nama_baterai: bat.tipe,
+      qty: qty,
+      hpp_satuan: hppSatuan,
+      kategori: kategori,
+      no_nota: noNota,
+      keterangan: keterangan.trim(),
+      dibuat_oleh: namaKasir
+    });
+
+  if (errIns) throw new Error('Gagal menyimpan catatan beban baterai: ' + errIns.message);
+
+  // 4. Kirim notifikasi Telegram (hanya untuk Kenalan/Saudara & Display/Rusak)
+  if (kategori === 'kenalan_saudara' || kategori === 'display_rusak') {
+    const labelKat = kategori === 'kenalan_saudara' ? 'Kenalan / Saudara' : 'Display / Rusak';
+    const pesanTg = [
+      'ALERT BATERAI GRATIS',
+      `Kategori: ${labelKat}`,
+      `Baterai: ${bat.tipe} (${qty} pcs)`,
+      `HPP: Rp ${(hppSatuan * qty).toLocaleString('id-ID')}`,
+      `Keterangan: ${keterangan.trim()}`,
+      `Dicatat oleh: ${namaKasir}`
+    ].join('\n');
+
+    if (typeof kirimTelegram === 'function') {
+      await kirimTelegram(pesanTg);
+    }
+  }
+
+  return { nama_baterai: bat.tipe, hpp_satuan: hppSatuan };
+}
+
+async function getRingkasanBebanBaterai(tglMulaiISO, tglSelesaiISO) {
+  const { data, error } = await supabaseClient
+    .from('pemakaian_baterai_gratis')
+    .select('kategori, qty, total_hpp')
+    .gte('created_at', tglMulaiISO)
+    .lte('created_at', tglSelesaiISO);
+
+  if (error || !data) return { totalHpp: 0, totalQty: 0, rincian: {} };
+
+  const rincian = {
+    bonus_beli_jam: { qty: 0, hpp: 0 },
+    kenalan_saudara: { qty: 0, hpp: 0 },
+    display_rusak: { qty: 0, hpp: 0 }
+  };
+
+  let totalHpp = 0;
+  let totalQty = 0;
+
+  for (const row of data) {
+    const q = Number(row.qty || 0);
+    const h = Number(row.total_hpp || 0);
+    if (rincian[row.kategori]) {
+      rincian[row.kategori].qty += q;
+      rincian[row.kategori].hpp += h;
+    }
+    totalQty += q;
+    totalHpp += h;
+  }
+
+  return { totalHpp, totalQty, rincian };
+}
+
+// --- Helper UI untuk Checkout & Modal Cepat ---
+
+async function muatDropdownBateraiGratis(selectElementId) {
+  const el = document.getElementById(selectElementId);
+  if (!el) return;
+
+  const { data, error } = await supabaseClient
+    .from('stok_baterai')
+    .select('id, tipe, stok')
+    .gt('stok', 0)
+    .order('tipe', { ascending: true });
+
+  el.innerHTML = '<option value="">-- Pilih tipe baterai --</option>';
+  if (error || !data) return;
+
+  data.forEach(b => {
+    const opt = document.createElement('option');
+    opt.value = b.id;
+    opt.textContent = `${b.tipe} (Stok: ${b.stok})`;
+    el.appendChild(opt);
+  });
+}
+
+function togglePilihBonusBaterai(aktif) {
+  const wrap = document.getElementById('wrapSelectBonusBat');
+  if (!wrap) return;
+  wrap.style.display = aktif ? 'block' : 'none';
+  if (aktif) muatDropdownBateraiGratis('selectBonusBaterai');
+}
+
+function bukaModalBateraiGratis() {
+  const modal = document.getElementById('modalBateraiGratis');
+  if (!modal) return;
+  document.getElementById('bgKeterangan').value = '';
+  muatDropdownBateraiGratis('bgBateraiId');
+  modal.style.display = 'flex';
+}
+
+function tutupModalBateraiGratis() {
+  const modal = document.getElementById('modalBateraiGratis');
+  if (modal) modal.style.display = 'none';
+}
+
+async function simpanBateraiGratisManual() {
+  const kategori = document.getElementById('bgKategori')?.value;
+  const bateraiId = document.getElementById('bgBateraiId')?.value;
+  const keterangan = document.getElementById('bgKeterangan')?.value || '';
+
+  try {
+    const res = await catatBateraiGratis({ bateraiId, kategori, keterangan, qty: 1 });
+    alert(`Berhasil dicatat: ${res.nama_baterai} (Rp 0)`);
+    tutupModalBateraiGratis();
+  } catch (err) {
+    alert(err.message);
+  }
+}
+
+
 
 
 
