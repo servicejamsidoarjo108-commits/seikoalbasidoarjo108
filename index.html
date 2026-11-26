@@ -621,16 +621,22 @@ main { max-width: 1120px; }
             <button type="button" id="btnBayarNom4" class="tap-btn" onclick="setBayarCepat(500000)">500rb</button>
           </div>
         </div>
-        <div id="boxBonusBaterai" style="margin: 10px 0; padding: 10px; border: 1px solid #e2e8f0; border-radius: 8px;">
-  <div style="display:flex; justify-content:space-between; align-items:center;">
-    <span style="font-weight:600;">Ganti baterai baru (Gratis)?</span>
-    <div>
-      <label style="margin-right:10px;"><input type="radio" name="optBonusBat" value="tidak" checked onchange="togglePilihBonusBaterai(false)"> Tidak</label>
-      <label><input type="radio" name="optBonusBat" value="ya" onchange="togglePilihBonusBaterai(true)"> Ya</label>
+        <div id="boxBonusBaterai" style="margin: 10px 0; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; background: #f8fafc;">
+  <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;">
+    <span style="font-weight:600; font-size:14px;">Ganti baterai baru (Gratis)?</span>
+    <div style="display:flex; align-items:center; gap:14px;">
+      <label style="display:inline-flex; align-items:center; gap:6px; margin:0; cursor:pointer; font-weight:500;">
+        <input type="radio" name="optBonusBat" value="tidak" checked onchange="togglePilihBonusBaterai(false)" style="width:auto; margin:0;">
+        <span>Tidak</span>
+      </label>
+      <label style="display:inline-flex; align-items:center; gap:6px; margin:0; cursor:pointer; font-weight:500;">
+        <input type="radio" name="optBonusBat" value="ya" onchange="togglePilihBonusBaterai(true)" style="width:auto; margin:0;">
+        <span>Ya</span>
+      </label>
     </div>
   </div>
   <div id="wrapSelectBonusBat" style="display:none; margin-top:8px;">
-    <select id="selectBonusBaterai" class="form-control">
+    <select id="selectBonusBaterai" class="form-control" style="width:100%; margin:0;">
       <option value="">-- Pilih tipe baterai --</option>
     </select>
   </div>
