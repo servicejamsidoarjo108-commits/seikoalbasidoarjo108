@@ -640,7 +640,6 @@ async function tarikSemuaData(muatFoto = false) {
       ambil('absensi_karyawan', '*', 'tanggal', false, 300),
       ambil('komisi_karyawan', '*', 'waktu', false, 300),
       isPemilik() ? ambil('profil_user', '*', 'username', true, 100) : Promise.resolve({ data: [], error: null }),
-      isPemilik() ? ambil('profil_user', '*', 'username', true, 100) : Promise.resolve({ data: [], error: null }),
       ambil('pemakaian_baterai_gratis', '*', 'created_at', false, 500)
     ]);
     hasil.forEach(r => { if (r.error) console.error('Gagal tarik data:', r.error.message); });
@@ -675,6 +674,11 @@ async function tarikSemuaData(muatFoto = false) {
     db.profilKaryawan = pakai(profKar, db.profilKaryawan || []);
     if (isAdmin()) { await muatModalBarang(); await muatAuditDraftHariIni(); }
     render();
+    if (isAdmin()) { await muatModalBarang(); await muatAuditDraftHariIni(); }
+    render();
+    if ($('pSerial') && !$('pId')?.value && !$('pSerial').value) {
+    $('pSerial').value = generateNextBarcodeSas();
+ }
   } catch (e) { console.error('Gagal tarik data:', e); }
 }
 
