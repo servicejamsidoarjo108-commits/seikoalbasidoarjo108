@@ -6160,6 +6160,11 @@ const I18N_DICT = {
   'Tidak': { en: 'No', zh: '否' },
   'Ya': { en: 'Yes', zh: '是' },
   'Stok': { en: 'Stock', zh: '库存' },
+  'Scan Teks AI': { en: 'AI Text Scan', zh: 'AI 文字扫描' },
+  'Pilih foto produk terlebih dahulu': { en: 'Please select a product photo first', zh: '请先选择产品照片' },
+  'Membaca label dengan AI Vision...': { en: 'Reading label with AI Vision...', zh: '正在使用 AI 视觉读取标签...' },
+  'AI berhasil membaca label produk!': { en: 'AI successfully read the product label!', zh: 'AI 成功读取产品标签！' },
+  'Gagal scan AI': { en: 'AI scan failed', zh: 'AI 扫描失败' },
 
 };
 
@@ -6224,6 +6229,7 @@ const STRUK_DICT = [
   ['>Harga Jual<', '>Selling Price<', '>售价<'],
   ['>JAM<', '>WATCH<', '>手表<'],
   ['>BATERAI<', '>BATTERY<', '>电池<'],
+  
 
 ];
 
