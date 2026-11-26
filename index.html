@@ -1581,5 +1581,26 @@ main { max-width: 1120px; }
 </script>
 <!-- Logika aplikasi (dengan cache-buster agar tablet tidak nyangkut file lama) -->
 <script src="app-fixed-v24.js?v=117" onerror="var el=document.getElementById('loginErr');if(el)el.textContent='Error: File app-fixed-v24.js gagal dimuat.';"></script>
+  <div id="modalBateraiGratis" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:9999; align-items:center; justify-content:center;">
+  <div class="modal-content" style="background:#fff; color:#111; padding:20px; border-radius:10px; width:90%; max-width:400px;">
+    <h3 style="margin-top:0;">Catat Baterai Gratis</h3>
+    <label>Kategori</label>
+    <select id="bgKategori" class="form-control" style="width:100%; margin-bottom:10px;">
+      <option value="kenalan_saudara">Kenalan / Saudara</option>
+      <option value="display_rusak">Display / Rusak</option>
+    </select>
+
+    <label>Tipe Baterai</label>
+    <select id="bgBateraiId" class="form-control" style="width:100%; margin-bottom:10px;"></select>
+
+    <label>Keterangan / Nama Penerima (Wajib)</label>
+    <input type="text" id="bgKeterangan" class="form-control" style="width:100%; margin-bottom:14px;" placeholder="Contoh: Jam Om Budi / Baterai bocor">
+
+    <div style="display:flex; gap:8px; justify-content:flex-end;">
+      <button type="button" onclick="tutupModalBateraiGratis()">Batal</button>
+      <button type="button" onclick="simpanBateraiGratisManual()">Simpan</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
