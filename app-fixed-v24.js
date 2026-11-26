@@ -639,10 +639,12 @@ async function tarikSemuaData(muatFoto = false) {
       ambil('beban_tetap', '*', 'nama'),
       ambil('absensi_karyawan', '*', 'tanggal', false, 300),
       ambil('komisi_karyawan', '*', 'waktu', false, 300),
-      isPemilik() ? ambil('profil_user', '*', 'username', true, 100) : Promise.resolve({ data: [], error: null })
+      isPemilik() ? ambil('profil_user', '*', 'username', true, 100) : Promise.resolve({ data: [], error: null }),
+      isPemilik() ? ambil('profil_user', '*', 'username', true, 100) : Promise.resolve({ data: [], error: null }),
+      ambil('pemakaian_baterai_gratis', '*', 'created_at', false, 500)
     ]);
     hasil.forEach(r => { if (r.error) console.error('Gagal tarik data:', r.error.message); });
-    const [set, p, sp, sb, j, s, b, k, pel, bnk, sup, pem, aud, alog, bbt, abs, kom, profKar] = hasil;
+    const [set, p, sp, sb, j, s, b, k, pel, bnk, sup, pem, aud, alog, bbt, abs, kom, profKar, batGratis] = hasil;
     const pakai = (r, lama) => (r.error ? lama : (r.data || []));
 
     if (set.data) db.settings = set.data;
@@ -669,6 +671,7 @@ async function tarikSemuaData(muatFoto = false) {
     db.bebanTetap = pakai(bbt, db.bebanTetap);
     db.absensi = pakai(abs, db.absensi || []);
     db.komisi = pakai(kom, db.komisi || []);
+    db.bateraiGratis = pakai(batGratis, db.bateraiGratis || []);
     db.profilKaryawan = pakai(profKar, db.profilKaryawan || []);
     if (isAdmin()) { await muatModalBarang(); await muatAuditDraftHariIni(); }
     render();
@@ -1101,12 +1104,30 @@ async function prosesBayar() {
     };
     db.jual.unshift(trxHeader);
     catatKomisiOtomatis('jual', data.id, data.total, `Penjualan ${data.id}`);
+    const isBonusBat = document.querySelector('input[name="optBonusBat"]:checked')?.value === 'ya';
+    const selectedBateraiId = $('selectBonusBaterai')?.value;
+    if (isBonusBat && selectedBateraiId) {
+      try {
+        const resBat = await catatBateraiGratis({
+          bateraiId: selectedBateraiId,
+          kategori: 'bonus_beli_jam',
+          keterangan: 'Bonus pembelian jam',
+          noNota: data.id
+        });
+        trxHeader.bonus_baterai = resBat.nama_baterai;
+      } catch (errBat) {
+    flash('Transaksi tersimpan, tapi baterai gratis gagal dicatat: ' + errBat.message, 'err');
+      }
+    }
     flash('Transaksi berhasil');
     try { cetakStruk(data.id); } catch (e) { console.error(e); flash('Transaksi tersimpan, tetapi struk gagal dicetak: ' + e.message, 'err'); }
 
     cart = [];
     ['custNama', 'custHp'].forEach(x => { if ($(x)) $(x).value = ''; });
     ['bayar', 'nilaiDiskon', 'tukarPoin', 'infoPoin'].forEach(x => { if ($(x)) $(x).value = 0; });
+    const radioTidak = document.querySelector('input[name="optBonusBat"][value="tidak"]');
+    if (radioTidak) radioTidak.checked = true;
+    togglePilihBonusBaterai(false);
     renderCart();
     tarikSemuaData();
   } catch (e) {
@@ -1116,6 +1137,7 @@ async function prosesBayar() {
     if (btn) { btn.disabled = false; btn.innerHTML = 'Proses & Cetak Struk'; }
   }
 }
+
 
 function cetakStruk(trxId) {
   const t = db.jual.find(x => x.id === trxId);
