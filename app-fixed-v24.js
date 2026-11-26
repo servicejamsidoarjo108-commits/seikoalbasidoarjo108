@@ -5365,11 +5365,16 @@ async function kirimTelegram(text) {
   const token = (localStorage.getItem('ta_tg_token') || '').trim();
   const chatId = (localStorage.getItem('ta_tg_chat_id') || '').trim();
   if (!aktif || !token || !chatId || !text) return false;
+
+  // Terjemahkan teks otomatis sesuai bahasa aktif (jika fungsi penerjemah tersedia)
+  const cleanText = text.replace(/\*/g, '');
+  const finalText = typeof terjemahkanTeks === 'function' ? terjemahkanTeks(cleanText) : cleanText;
+
   try {
     const res = await fetch(`https://api.telegram.org/bot${encodeURIComponent(token)}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ chat_id: chatId, text: text.replace(/\*/g, '') })
+      body: JSON.stringify({ chat_id: chatId, text: finalText })
     });
     return res.ok;
   } catch (e) {
