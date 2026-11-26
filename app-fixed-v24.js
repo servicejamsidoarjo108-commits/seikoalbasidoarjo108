@@ -2991,6 +2991,7 @@ function hitungLaporan(blnParam = null, thnParam = null) {
   const servisBln = db.servis.filter(s => bulanIni(s.tgl_selesai));
   const batBln = db.baterai.filter(b => bulanIni(b.tgl_ganti));
   const kasBln = db.kas.filter(k => bulanIni(k.waktu));
+  const batGratisBln = (db.bateraiGratis || []).filter(x => bulanIni(x.created_at));
   const jumlah = (arr, f) => arr.reduce((s, x) => s + (f(x) || 0), 0);
 
   const penJual = jumlah(jualBln, t => t.total);
@@ -3010,14 +3011,15 @@ function hitungLaporan(blnParam = null, thnParam = null) {
   const bebanKasKecil = jumlah(kasBln.filter(k => k.sumber === 'kas_kecil' && k.jenis === 'keluar'), k => k.nominal);
   const bebanLain = jumlah(kasBln.filter(k => k.sumber === 'rekonsiliasi' && k.jenis === 'keluar'), k => k.nominal);
   const bebanBulanan = jumlah(kasBln.filter(k => k.sumber === 'beban_bulanan' && k.jenis === 'keluar'), k => k.nominal);
+  const bebanBateraiGratis = jumlah(batGratisBln, x => Number(x.total_hpp || 0));
 
   const omzet = penJual + penServis + penBat;
   const totalPendapatan = omzet + penLain;
   const totalHpp = hppJual + hppServis + hppBat;
-  const totalBeban = bebanMdr + bebanKasKecil + bebanLain + bebanBulanan;
+  const totalBeban = bebanMdr + bebanKasKecil + bebanLain + bebanBulanan + bebanBateraiGratis;
   return {
     kasBln, penJual, penServis, penBat, penLain, omzet, totalPendapatan,
-    hppJual, hppServis, hppBat, totalHpp, bebanMdr, bebanKasKecil, bebanLain, bebanBulanan, totalBeban,
+    hppJual, hppServis, hppBat, totalHpp, bebanMdr, bebanKasKecil, bebanLain, bebanBulanan, bebanBateraiGratis, totalBeban,
     labaKotorOmzet: omzet - totalHpp, labaKotor: totalPendapatan - totalHpp, labaBersih: totalPendapatan - totalHpp - totalBeban
   };
 }
