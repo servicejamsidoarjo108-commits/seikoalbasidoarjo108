@@ -6087,6 +6087,29 @@ const I18N_DICT = {
   '0812...': { en: '+1 234...', zh: '138...' },
   'Jl. Pasar No.5, Jakarta': { en: '123 Market St, City', zh: '市场路5号' },
 };
+// === TAMBAHAN KAMUS: FITUR BATERAI GRATIS / INTERNAL ===
+'Ganti baterai baru (Gratis)?': { en: 'Free new battery replacement?', zh: '更换新电池（免费）？' },
+'-- Pilih tipe baterai --': { en: '-- Select battery type --', zh: '-- 选择电池型号 --' },
+'Pilih tipe baterai': { en: 'Select battery type', zh: '选择电池型号' },
+'Bonus ganti baterai baru': { en: 'Free new battery replacement bonus', zh: '免费更换新电池' },
+'Catat Baterai Gratis': { en: 'Log Free Battery', zh: '记录免费电池' },
+'Kategori': { en: 'Category', zh: '类别' },
+'Tipe Baterai': { en: 'Battery Type', zh: '电池型号' },
+'Bonus Beli Jam': { en: 'Watch Purchase Bonus', zh: '购表赠品' },
+'Kenalan / Saudara': { en: 'Friends / Family', zh: '亲友赠送' },
+'Display / Rusak': { en: 'Display / Damaged', zh: '展示 / 损坏' },
+'Keterangan / Nama Penerima (Wajib)': { en: 'Notes / Recipient Name (Required)', zh: '备注 / 领取人姓名（必填）' },
+'Contoh: Jam Om Budi / Baterai bocor': { en: 'e.g., Uncle Budi watch / Leaking battery', zh: '例如：亲友手表 / 电池漏液' },
+'Beban Baterai Gratis / Internal': { en: 'Free / Internal Battery Expense', zh: '免费 / 内部电池费用' },
+'Tipe baterai wajib dipilih.': { en: 'Please select a battery type.', zh: '必须选择电池型号。' },
+'Keterangan / nama penerima wajib diisi.': { en: 'Notes or recipient name is required.', zh: '必须填写备注或领取人姓名。' },
+'Data baterai tidak ditemukan.': { en: 'Battery data not found.', zh: '未找到电池数据。' },
+'Stok baterai tidak mencukupi.': { en: 'Insufficient battery stock.', zh: '电池库存不足。' },
+'ALERT BATERAI GRATIS': { en: 'FREE BATTERY ALERT', zh: '免费电池提醒' },
+'Kategori:': { en: 'Category:', zh: '类别：' },
+'Baterai:': { en: 'Battery:', zh: '电池：' },
+'Keterangan:': { en: 'Notes:', zh: '备注：' },
+'Dicatat oleh:': { en: 'Logged by:', zh: '记录人：' },
 
 // Kamus khusus Struk / Nota Cetak (Browser & Bluetooth Thermal)
 const STRUK_DICT = [
