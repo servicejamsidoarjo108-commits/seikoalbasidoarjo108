@@ -1297,10 +1297,11 @@ function tambahKeKeranjangServis() {
   const totalBaterai = cartBateraiServis.reduce((s, c) => s + c.harga * c.qty, 0);
   const biayaPelanggan = jasa + totalParts + totalBaterai;
 
-  cartServisGabungan.push({
+    cartServisGabungan.push({
     customer, telp, produk, keluhan, catatan, kondisiFisik, garansi, isKlaim, parentId,
     isKlaimProduk, parentJualId,
     jasa, totalParts, totalBaterai, biayaPelanggan,
+    fotoKondisi: tempFotoKondisiServis.filter(Boolean),
     parts: [...cartServis], baterai: [...cartBateraiServis]
   });
 
