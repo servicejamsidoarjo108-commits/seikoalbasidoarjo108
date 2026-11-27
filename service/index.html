@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="referrer" content="no-referrer">
+  <title>Form Pengajuan Service Arloji</title>
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    body {
+      background-color: #f4f6f9;
+      color: #333;
+      padding: 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+    }
+
+    .container {
+      background: #ffffff;
+      padding: 28px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      width: 100%;
+      max-width: 500px;
+    }
+
+    h2 {
+      text-align: center;
+      margin-bottom: 6px;
+      color: #1a252f;
+      font-size: 22px;
+    }
+
+    .subtitle {
+      text-align: center;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 22px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
+    }
+
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      font-size: 14px;
+      color: #2c3e50;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+      background-color: #fff;
+    }
+
+    input:focus, select:focus, textarea:focus {
+      outline: none;
+      border-color: #27ae60;
+      box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.15);
+    }
+
+    .info-tip {
+      display: none;
+      background-color: #eef7f1;
+      border-left: 3px solid #27ae60;
+      color: #1e5631;
+      font-size: 12.5px;
+      padding: 10px 12px;
+      border-radius: 4px;
+      margin-top: 8px;
+      line-height: 1.45;
+    }
+
+    button {
+      width: 100%;
+      padding: 13px;
+      background-color: #27ae60;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      transition: background 0.25s;
+      margin-top: 4px;
+    }
+
+    button:hover {
+      background-color: #219150;
+    }
+
+    button:disabled {
+      background-color: #95a5a6;
+      cursor: not-allowed;
+    }
+
+    .note-foto {
+      margin-top: 12px;
+      font-size: 12px;
+      color: #666;
+      text-align: center;
+      line-height: 1.45;
+    }
+
+    /* Honeypot anti-bot (tersembunyi dari pengguna manusia) */
+    .hp-field {
+      position: absolute;
+      left: -9999px;
+      opacity: 0;
+      height: 0;
+      width: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>Form Service Arloji</h2>
+  <p class="subtitle">Melayani datang langsung, jemput bola, dan kirim ekspedisi luar kota.</p>
+
+  <form id="serviceForm" onsubmit="kirimKeWhatsApp(event)" novalidate>
+    <!-- Honeypot anti-spam -->
+    <input type="text" id="website" name="website" class="hp-field" tabindex="-1" autocomplete="off">
+
+    <!-- Informasi Pelanggan -->
+    <div class="form-group">
+      <label for="nama">Nama Lengkap</label>
+      <input type="text" id="nama" maxlength="60" placeholder="Masukkan nama Anda" required>
+    </div>
+
+    <div class="form-group">
+      <label for="no_hp">Nomor WhatsApp</label>
+      <input type="tel" id="no_hp" maxlength="16" placeholder="Contoh: 08123456789" required>
+    </div>
+
+    <div class="form-group">
+      <label for="domisili">Domisili (Kota / Kecamatan)</label>
+      <input type="text" id="domisili" maxlength="80" placeholder="Contoh: Sidoarjo Kota / Surabaya Timur" required>
+    </div>
+
+    <!-- Metode Serah Terima -->
+    <div class="form-group">
+      <label for="metode">Metode Serah Terima</label>
+      <select id="metode" onchange="tampilkanInfoMetode()" required>
+        <option value="">-- Pilih Metode --</option>
+        <option value="Datang Langsung ke Toko">Datang Langsung ke Toko</option>
+        <option value="Jemput Bola / Kurir Instan">Jemput Bola / Kurir Instan (Dalam Kota)</option>
+        <option value="Kirim Paket Ekspedisi">Kirim Paket Ekspedisi (Luar Kota)</option>
+      </select>
+      <div id="infoMetode" class="info-tip"></div>
+    </div>
+
+    <!-- Detail Arloji -->
+    <div class="form-group">
+      <label for="merek">Merek & Tipe Jam Tangan</label>
+      <input type="text" id="merek" maxlength="80" placeholder="Contoh: Seiko 5, G-Shock DW5600" required>
+    </div>
+
+    <div class="form-group">
+      <label for="jenis_service">Jenis Layanan</label>
+      <select id="jenis_service" required>
+        <option value="">-- Pilih Layanan --</option>
+        <option value="Ganti Baterai">Ganti Baterai</option>
+        <option value="Overhaul / Service Mesin">Overhaul / Service Mesin</option>
+        <option value="Ganti Kaca / Strap">Ganti Kaca / Strap</option>
+        <option value="Pembersihan (Polishing)">Pembersihan / Polishing</option>
+        <option value="Lainnya">Lainnya (Jelaskan di detail)</option>
+      </select>
+    </div>
+
+    <div class="form-group">
+      <label for="keluhan">Deskripsi Kerusakan / Keluhan</label>
+      <textarea id="keluhan" rows="4" maxlength="500" placeholder="Jelaskan masalah jam tangan Anda..." required></textarea>
+    </div>
+
+    <button type="submit" id="btnKirim">Kirim via WhatsApp</button>
+    <p class="note-foto">
+      Setelah dialihkan ke WhatsApp, mohon lampirkan <strong>foto tampak depan & belakang</strong> jam tangan Anda untuk memudahkan estimasi awal.
+    </p>
+  </form>
+</div>
+
+<script>
+  let sedangKirim = false;
+
+  function tampilkanInfoMetode() {
+    const metode = document.getElementById('metode').value;
+    const infoBox = document.getElementById('infoMetode');
+
+    if (metode === 'Kirim Paket Ekspedisi') {
+      infoBox.textContent = 'Tips pengiriman luar kota: gunakan bubble wrap tebal & kotak keras. Paket akan direkam video unboxing saat tiba di toko.';
+      infoBox.style.display = 'block';
+    } else if (metode === 'Jemput Bola / Kurir Instan') {
+      infoBox.textContent = 'Admin akan menginformasikan jadwal penjemputan atau estimasi kurir instan sesuai area domisili Anda.';
+      infoBox.style.display = 'block';
+    } else {
+      infoBox.style.display = 'none';
+      infoBox.textContent = '';
+    }
+  }
+
+  function kirimKeWhatsApp(event) {
+    event.preventDefault();
+    if (sedangKirim) return;
+
+    // Cek honeypot (jika terisi, hentikan diam-diam)
+    if (document.getElementById('website').value.trim() !== '') return;
+
+    // Pecah nomor WA admin agar tidak mudah dipanen bot scraper pasif
+    const nomorWhatsAppAdmin = ['62', '813', '3193', '9397'].join('');
+
+    const nama = document.getElementById('nama').value.trim();
+    const no_hp = document.getElementById('no_hp').value.trim();
+    const domisili = document.getElementById('domisili').value.trim();
+    const metode = document.getElementById('metode').value.trim();
+    const merek = document.getElementById('merek').value.trim();
+    const jenis_service = document.getElementById('jenis_service').value.trim();
+    const keluhan = document.getElementById('keluhan').value.trim();
+
+    if (!nama || !no_hp || !domisili || !metode || !merek || !jenis_service || !keluhan) {
+      alert('Harap lengkapi semua kolom terlebih dahulu.');
+      return;
+    }
+
+    const digitHp = no_hp.replace(/\D/g, '');
+    if (digitHp.length < 9 || digitHp.length > 15) {
+      alert('Nomor WhatsApp tidak valid. Masukkan 9–15 digit angka.');
+      return;
+    }
+
+    const pesanMentah =
+      `Halo Admin, saya ingin mengajukan *Service Arloji* dengan detail berikut:\n\n` +
+      `👤 *Nama:* ${nama}\n` +
+      `📞 *No. HP:* ${no_hp}\n` +
+      `📍 *Domisili:* ${domisili}\n` +
+      `📦 *Metode:* ${metode}\n` +
+      `⌚ *Merek/Tipe:* ${merek}\n` +
+      `🛠️ *Jenis Layanan:* ${jenis_service}\n` +
+      `📝 *Keluhan:* ${keluhan}\n\n` +
+      `Mohon info estimasi biaya dan mekanismenya. Terima kasih!`;
+
+    const url = `https://wa.me/${nomorWhatsAppAdmin}?text=${encodeURIComponent(pesanMentah)}`;
+
+    const btn = document.getElementById('btnKirim');
+    sedangKirim = true;
+    btn.disabled = true;
+    btn.textContent = 'Membuka WhatsApp...';
+
+    setTimeout(() => {
+      sedangKirim = false;
+      btn.disabled = false;
+      btn.textContent = 'Kirim via WhatsApp';
+    }, 3000);
+
+    window.open(url, '_blank', 'noopener,noreferrer');
+  }
+</script>
+
+</body>
+</html>
