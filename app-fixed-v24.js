@@ -1309,6 +1309,7 @@ function tambahKeKeranjangServis() {
 
   // Reset form per-jam (nama & HP dibiarkan), termasuk mode klaim agar tidak menular ke jam berikutnya
   ['sProduk', 'sKeluhan', 'sCatatan'].forEach(x => { if ($(x)) $(x).value = ''; });
+  if (typeof resetFotoKondisiServis === 'function') resetFotoKondisiServis();
   $('sJasa').value = 0;
   $('sGaransi').value = 'garansi';
   resetModeKlaim();
