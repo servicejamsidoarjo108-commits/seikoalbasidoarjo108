@@ -8728,30 +8728,16 @@ async function simpanBateraiGratisManual() {
     }
   };
 
-  function getBahasaAktif() {
-    const raw = (
-      window.currentLang ||
-      window.lang ||
-      window.bahasa ||
-      localStorage.getItem('horopos_lang') ||
-      localStorage.getItem('lang') ||
-      localStorage.getItem('bahasa') ||
-      localStorage.getItem('language') ||
-      document.documentElement.lang ||
-      'id'
-    ).toString().toLowerCase();
-
-    if (raw.startsWith('zh') || raw.includes('cn')) return 'zh';
+    function getBahasaAktif() {
+    const raw = (localStorage.getItem('ta_lang') || 'id').toLowerCase();
+    if (raw.startsWith('zh')) return 'zh';
     if (raw.startsWith('en')) return 'en';
     return 'id';
   }
 
   function tBooking(key) {
-      function getBahasaAktif() {
-    const raw = (localStorage.getItem('ta_lang') || 'id').toLowerCase();
-    if (raw.startsWith('zh')) return 'zh';
-    if (raw.startsWith('en')) return 'en';
-    return 'id';
+    const lang = getBahasaAktif();
+    return (KAMUS_BOOKING[lang] && KAMUS_BOOKING[lang][key]) || KAMUS_BOOKING.id[key];
   }
 
   function getSupabaseClient() {
