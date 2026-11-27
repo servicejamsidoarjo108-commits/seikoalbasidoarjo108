@@ -9034,10 +9034,29 @@ function resetFotoKondisiServis() {
   renderSlotFotoKondisi();
 }
 
+function getKameraLang() {
+  const txt = document.body.innerText || '';
+  if (/Quick Select Service Fee|USE SPARE PARTS/i.test(txt)) return 'en';
+  if (/快速选择|备件|服务费/.test(txt)) return 'zh';
+  const ls = (localStorage.getItem('lang') || localStorage.getItem('horopos_lang') || document.documentElement.lang || '').toLowerCase();
+  if (ls.startsWith('en')) return 'en';
+  if (ls.startsWith('zh')) return 'zh';
+  return 'id';
+}
+
+const TEKS_FOTO_KONDISI = {
+  id: { judul: 'Foto Kondisi Unit (Opsional, Maks. 3 Foto)', slot: ['Foto 1 (Depan)', 'Foto 2 (Belakang)', 'Foto 3 (Detail)'] },
+  en: { judul: 'Unit Condition Photos (Optional, Max. 3 Photos)', slot: ['Photo 1 (Front)', 'Photo 2 (Back)', 'Photo 3 (Detail)'] },
+  zh: { judul: '手表外观照片（可选，最多3张）', slot: ['照片 1（正面）', '照片 2（背面）', '照片 3（细节）'] }
+};
+
 function renderSlotFotoKondisi() {
   const wrap = document.getElementById('wrapFotoKondisiServis');
   if (!wrap) return;
-  const labels = ['Foto 1 (Depan)', 'Foto 2 (Belakang)', 'Foto 3 (Detail)'];
+  const t = TEKS_FOTO_KONDISI[getKameraLang()] || TEKS_FOTO_KONDISI.id;
+  const lbl = document.getElementById('labelFotoKondisiServis');
+  if (lbl) lbl.textContent = t.judul;
+
   wrap.innerHTML = [0, 1, 2].map(i => {
     const url = tempFotoKondisiServis[i];
     if (url) {
@@ -9050,7 +9069,7 @@ function renderSlotFotoKondisi() {
     return `
       <label id="slotFotoKondisi_${i}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:78px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;text-align:center;padding:6px;color:#475569;font-size:12px;">
         <span style="font-size:18px;line-height:1;margin-bottom:3px;">📷</span>
-        <span>${labels[i]}</span>
+        <span>${t.slot[i]}</span>
         <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="uploadFotoKondisiSlot(${i}, this.files[0]); this.value='';">
       </label>`;
   }).join('');
@@ -9068,7 +9087,7 @@ function initUIFotoKondisiServis() {
   box.id = 'boxFotoKondisiServis';
   box.style.marginTop = '8px';
   box.innerHTML = `
-    <label style="display:block;font-weight:600;margin-bottom:6px;">Foto Kondisi Unit (Opsional, Maks. 3 Foto)</label>
+    <label id="labelFotoKondisiServis" style="display:block;font-weight:600;margin-bottom:6px;"></label>
     <div id="wrapFotoKondisiServis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
   `;
   parent.appendChild(box);
