@@ -1419,6 +1419,7 @@ async function simpanSemuaServis() {
       data = ulang.data; error = ulang.error;
     }
     if (error) throw error;
+    await simpanFotoKondisiPascaRpc(data, cartServisGabungan);
 
     await catatLog('SERVIS_GABUNGAN', `Menyimpan ${items.length} servis untuk ${items[0].customer}`);
     flash('Semua servis berhasil disimpan!');
