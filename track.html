@@ -314,6 +314,14 @@ function rp(n) {
       if (!data || !data.length) { lastData = null; tampilError(T().errNotFound); return; }
 
       lastData = data;
+            try {
+        const ids = data.map(x => String(x.id));
+        const { data: fotos } = await supabaseClient.rpc('get_foto_servis', { p_ids: ids });
+        if (fotos && fotos.length) {
+          const mapFoto = Object.fromEntries(fotos.map(f => [String(f.id), f.foto_kondisi || []]));
+          data.forEach(item => { item.foto_kondisi = mapFoto[String(item.id)] || []; });
+        }
+      } catch (_) {}
       renderHasil(data);
     } catch (err) {
       tampilError(T().errGen + err.message);
