@@ -9034,8 +9034,10 @@ function resetFotoKondisiServis() {
   renderSlotFotoKondisi();
 }
 
+let lastKameraLang = '';
+
 function getKameraLang() {
-  const txt = document.body.innerText || '';
+  const txt = document.body.textContent || '';
   if (/Quick Select Service Fee|USE SPARE PARTS/i.test(txt)) return 'en';
   if (/快速选择|备件|服务费/.test(txt)) return 'zh';
   const ls = (localStorage.getItem('lang') || localStorage.getItem('horopos_lang') || document.documentElement.lang || '').toLowerCase();
@@ -9044,11 +9046,13 @@ function getKameraLang() {
   return 'id';
 }
 
-const TEKS_FOTO_KONDISI = {
-  id: { judul: 'Foto Kondisi Unit (Opsional, Maks. 3 Foto)', slot: ['Foto 1 (Depan)', 'Foto 2 (Belakang)', 'Foto 3 (Detail)'] },
-  en: { judul: 'Unit Condition Photos (Optional, Max. 3 Photos)', slot: ['Photo 1 (Front)', 'Photo 2 (Back)', 'Photo 3 (Detail)'] },
-  zh: { judul: '手表外观照片（可选，最多3张）', slot: ['照片 1（正面）', '照片 2（背面）', '照片 3（细节）'] }
-};
+setInterval(() => {
+  const lang = getKameraLang();
+  if (lang !== lastKameraLang && document.getElementById('wrapFotoKondisiServis')) {
+    lastKameraLang = lang;
+    renderSlotFotoKondisi();
+  }
+}, 500);
 
 function renderSlotFotoKondisi() {
   const wrap = document.getElementById('wrapFotoKondisiServis');
