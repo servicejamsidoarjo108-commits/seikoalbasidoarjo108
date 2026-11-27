@@ -10,13 +10,13 @@
       box-sizing: border-box;
       margin: 0;
       padding: 0;
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
     }
 
     body {
-      background-color: #f4f6f9;
-      color: #333;
-      padding: 20px;
+      background-color: #f1f5f9;
+      color: #1e293b;
+      padding: 20px 16px;
       display: flex;
       justify-content: center;
       align-items: center;
@@ -25,98 +25,149 @@
 
     .container {
       background: #ffffff;
-      padding: 28px;
-      border-radius: 12px;
-      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.08);
+      border-radius: 14px;
+      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
       width: 100%;
-      max-width: 500px;
+      max-width: 620px;
+      overflow: hidden;
     }
 
-    h2 {
+    .header {
+      background: #0f2942;
+      color: #ffffff;
+      padding: 22px 28px;
       text-align: center;
+    }
+
+    .header h2 {
+      font-size: 21px;
+      font-weight: 700;
       margin-bottom: 6px;
-      color: #1a252f;
-      font-size: 22px;
+      letter-spacing: 0.2px;
     }
 
     .subtitle {
-      text-align: center;
       font-size: 13px;
-      color: #666;
-      margin-bottom: 22px;
+      color: #cbd5e1;
+      line-height: 1.45;
+      text-wrap: balance;
+    }
+
+    .form-body {
+      padding: 24px 28px 26px;
+    }
+
+    .section-title {
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      color: #64748b;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 1px solid #e2e8f0;
+    }
+
+    .section-title.spaced {
+      margin-top: 18px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
     }
 
     .form-group {
-      margin-bottom: 15px;
+      margin-bottom: 14px;
+    }
+
+    .grid-2 .form-group {
+      margin-bottom: 0;
+    }
+
+    .row-space {
+      margin-bottom: 14px;
     }
 
     label {
       display: block;
       margin-bottom: 5px;
       font-weight: 600;
-      font-size: 14px;
-      color: #2c3e50;
+      font-size: 13.5px;
+      color: #334155;
     }
 
     input, select, textarea {
       width: 100%;
       padding: 10px 12px;
-      border: 1px solid #ccc;
-      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
       font-size: 14px;
-      background-color: #fff;
+      color: #0f172a;
+      background-color: #ffffff;
+      transition: border-color 0.2s, box-shadow 0.2s;
     }
 
     input:focus, select:focus, textarea:focus {
       outline: none;
-      border-color: #27ae60;
-      box-shadow: 0 0 0 2px rgba(39, 174, 96, 0.15);
+      border-color: #16a34a;
+      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
     }
 
     .info-tip {
       display: none;
-      background-color: #eef7f1;
-      border-left: 3px solid #27ae60;
-      color: #1e5631;
+      background-color: #f0fdf4;
+      border: 1px solid #bbf7d0;
+      border-left: 4px solid #16a34a;
+      color: #166534;
       font-size: 12.5px;
       padding: 10px 12px;
-      border-radius: 4px;
-      margin-top: 8px;
+      border-radius: 6px;
+      margin-top: 10px;
       line-height: 1.45;
     }
 
     button {
       width: 100%;
       padding: 13px;
-      background-color: #27ae60;
-      color: white;
+      background-color: #16a34a;
+      color: #ffffff;
       border: none;
-      border-radius: 6px;
-      font-size: 16px;
-      font-weight: bold;
+      border-radius: 8px;
+      font-size: 15.5px;
+      font-weight: 700;
       cursor: pointer;
-      transition: background 0.25s;
-      margin-top: 4px;
+      transition: background 0.2s, transform 0.1s;
+      margin-top: 6px;
     }
 
     button:hover {
-      background-color: #219150;
+      background-color: #15803d;
+    }
+
+    button:active {
+      transform: scale(0.99);
     }
 
     button:disabled {
-      background-color: #95a5a6;
+      background-color: #94a3b8;
       cursor: not-allowed;
     }
 
     .note-foto {
       margin-top: 12px;
       font-size: 12px;
-      color: #666;
+      color: #64748b;
       text-align: center;
-      line-height: 1.45;
+      line-height: 1.5;
     }
 
-    /* Honeypot anti-bot (tersembunyi dari pengguna manusia) */
     .hp-field {
       position: absolute;
       left: -9999px;
@@ -125,74 +176,94 @@
       width: 0;
       pointer-events: none;
     }
+
+    @media (max-width: 580px) {
+      .grid-2 {
+        grid-template-columns: 1fr;
+        gap: 12px;
+      }
+      .header {
+        padding: 20px;
+      }
+      .form-body {
+        padding: 20px;
+      }
+    }
   </style>
 </head>
 <body>
 
 <div class="container">
-  <h2>Form Service Arloji</h2>
-  <p class="subtitle">Melayani datang langsung, layanan antar-jemput, dan kirim ekspedisi luar kota.</p>
+  <div class="header">
+    <h2>Form Service Arloji</h2>
+    <p class="subtitle">Datang langsung • Layanan antar-jemput • Ekspedisi luar kota</p>
+  </div>
 
-  <form id="serviceForm" onsubmit="kirimKeWhatsApp(event)" novalidate>
-    <!-- Honeypot anti-spam -->
-    <input type="text" id="website" name="website" class="hp-field" tabindex="-1" autocomplete="off">
+  <div class="form-body">
+    <form id="serviceForm" onsubmit="kirimKeWhatsApp(event)" novalidate>
+      <input type="text" id="website" name="website" class="hp-field" tabindex="-1" autocomplete="off">
 
-    <!-- Informasi Pelanggan -->
-    <div class="form-group">
-      <label for="nama">Nama Lengkap</label>
-      <input type="text" id="nama" maxlength="60" placeholder="Masukkan nama Anda" required>
-    </div>
+      <div class="section-title">Data Pelanggan</div>
 
-    <div class="form-group">
-      <label for="no_hp">Nomor WhatsApp</label>
-      <input type="tel" id="no_hp" maxlength="16" placeholder="Contoh: 08123456789" required>
-    </div>
+      <div class="grid-2 row-space">
+        <div class="form-group">
+          <label for="nama">Nama Lengkap</label>
+          <input type="text" id="nama" maxlength="60" placeholder="Masukkan nama Anda" required>
+        </div>
+        <div class="form-group">
+          <label for="no_hp">Nomor WhatsApp</label>
+          <input type="tel" id="no_hp" maxlength="16" placeholder="Contoh: 08123456789" required>
+        </div>
+      </div>
 
-    <div class="form-group">
-      <label for="domisili">Domisili (Kota / Kecamatan)</label>
-      <input type="text" id="domisili" maxlength="80" placeholder="Contoh: Sidoarjo Kota / Surabaya Timur" required>
-    </div>
-
-    <!-- Metode Serah Terima -->
-    <div class="form-group">
-      <label for="metode">Metode Serah Terima</label>
-      <select id="metode" onchange="tampilkanInfoMetode()" required>
-        <option value="">-- Pilih Metode --</option>
-        <option value="Datang Langsung ke Toko">Datang Langsung ke Toko</option>
-        <option value="Layanan Antar-Jemput / Kurir Instan">Layanan Antar-Jemput / Kurir Instan (Dalam Kota)</option>
-        <option value="Kirim Paket Ekspedisi">Kirim Paket Ekspedisi (Luar Kota)</option>
-      </select>
+      <div class="grid-2">
+        <div class="form-group">
+          <label for="domisili">Domisili (Kota / Kecamatan)</label>
+          <input type="text" id="domisili" maxlength="80" placeholder="Contoh: Sidoarjo / Surabaya" required>
+        </div>
+        <div class="form-group">
+          <label for="metode">Metode Serah Terima</label>
+          <select id="metode" onchange="tampilkanInfoMetode()" required>
+            <option value="">-- Pilih Metode --</option>
+            <option value="Datang Langsung ke Toko">Datang Langsung ke Toko</option>
+            <option value="Layanan Antar-Jemput / Kurir Instan">Layanan Antar-Jemput (Dalam Kota)</option>
+            <option value="Kirim Paket Ekspedisi">Kirim Paket Ekspedisi (Luar Kota)</option>
+          </select>
+        </div>
+      </div>
       <div id="infoMetode" class="info-tip"></div>
-    </div>
 
-    <!-- Detail Arloji -->
-    <div class="form-group">
-      <label for="merek">Merek & Tipe Jam Tangan</label>
-      <input type="text" id="merek" maxlength="80" placeholder="Contoh: Seiko 5, G-Shock DW5600" required>
-    </div>
+      <div class="section-title spaced">Detail Jam Tangan</div>
 
-    <div class="form-group">
-      <label for="jenis_service">Jenis Layanan</label>
-      <select id="jenis_service" required>
-        <option value="">-- Pilih Layanan --</option>
-        <option value="Ganti Baterai">Ganti Baterai</option>
-        <option value="Overhaul / Service Mesin">Overhaul / Service Mesin</option>
-        <option value="Ganti Kaca / Strap">Ganti Kaca / Strap</option>
-        <option value="Pembersihan (Polishing)">Pembersihan / Polishing</option>
-        <option value="Lainnya">Lainnya (Jelaskan di detail)</option>
-      </select>
-    </div>
+      <div class="grid-2 row-space">
+        <div class="form-group">
+          <label for="merek">Merek & Tipe Jam Tangan</label>
+          <input type="text" id="merek" maxlength="80" placeholder="Contoh: Seiko 5, G-Shock DW5600" required>
+        </div>
+        <div class="form-group">
+          <label for="jenis_service">Jenis Layanan</label>
+          <select id="jenis_service" required>
+            <option value="">-- Pilih Layanan --</option>
+            <option value="Ganti Baterai">Ganti Baterai</option>
+            <option value="Overhaul / Service Mesin">Overhaul / Service Mesin</option>
+            <option value="Ganti Kaca / Strap">Ganti Kaca / Strap</option>
+            <option value="Pembersihan (Polishing)">Pembersihan / Polishing</option>
+            <option value="Lainnya">Lainnya (Jelaskan di keluhan)</option>
+          </select>
+        </div>
+      </div>
 
-    <div class="form-group">
-      <label for="keluhan">Deskripsi Kerusakan / Keluhan</label>
-      <textarea id="keluhan" rows="4" maxlength="500" placeholder="Jelaskan masalah jam tangan Anda..." required></textarea>
-    </div>
+      <div class="form-group">
+        <label for="keluhan">Deskripsi Kerusakan / Keluhan</label>
+        <textarea id="keluhan" rows="3" maxlength="500" placeholder="Jelaskan masalah jam tangan Anda..." required></textarea>
+      </div>
 
-    <button type="submit" id="btnKirim">Kirim via WhatsApp</button>
-    <p class="note-foto">
-      Setelah dialihkan ke WhatsApp, mohon lampirkan <strong>foto tampak depan & belakang</strong> jam tangan Anda untuk memudahkan estimasi awal.
-    </p>
-  </form>
+      <button type="submit" id="btnKirim">Kirim via WhatsApp</button>
+      <p class="note-foto">
+        Setelah dialihkan ke WhatsApp, mohon lampirkan <strong>foto tampak depan & belakang</strong> jam tangan Anda untuk estimasi awal.
+      </p>
+    </form>
+  </div>
 </div>
 
 <script>
@@ -218,10 +289,8 @@
     event.preventDefault();
     if (sedangKirim) return;
 
-    // Cek honeypot (jika terisi, hentikan diam-diam)
     if (document.getElementById('website').value.trim() !== '') return;
 
-    // Pecah nomor WA admin agar tidak mudah dipanen bot scraper pasif
     const nomorWhatsAppAdmin = ['62', '813', '3193', '9397'].join('');
 
     const nama = document.getElementById('nama').value.trim();
