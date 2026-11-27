@@ -1,272 +1,7 @@
-<!DOCTYPE html>
-<html lang="id">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="referrer" content="no-referrer">
-  <title>Form Pengajuan Service Arloji</title>
-  <style>
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-    }
-
-    body {
-      background-color: #f1f5f9;
-      color: #1e293b;
-      padding: 20px 16px;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-    }
-
-    .container {
-      background: #ffffff;
-      border-radius: 14px;
-      box-shadow: 0 10px 25px rgba(15, 23, 42, 0.08);
-      width: 100%;
-      max-width: 620px;
-      overflow: hidden;
-    }
-
-    .header {
-      background: #0f2942;
-      color: #ffffff;
-      padding: 22px 28px;
-      text-align: center;
-    }
-
-    .header h2 {
-      font-size: 21px;
-      font-weight: 700;
-      margin-bottom: 6px;
-      letter-spacing: 0.2px;
-    }
-
-    .subtitle {
-      font-size: 13px;
-      color: #cbd5e1;
-      line-height: 1.45;
-      text-wrap: balance;
-    }
-
-    .form-body {
-      padding: 24px 28px 26px;
-    }
-
-    .section-title {
-      font-size: 12px;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      color: #64748b;
-      margin-bottom: 12px;
-      padding-bottom: 6px;
-      border-bottom: 1px solid #e2e8f0;
-    }
-
-    .section-title.spaced {
-      margin-top: 18px;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    .form-group {
-      margin-bottom: 14px;
-    }
-
-    .grid-2 .form-group {
-      margin-bottom: 0;
-    }
-
-    .row-space {
-      margin-bottom: 14px;
-    }
-
-    label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 600;
-      font-size: 13.5px;
-      color: #334155;
-    }
-
-    input, select, textarea {
-      width: 100%;
-      padding: 10px 12px;
-      border: 1px solid #cbd5e1;
-      border-radius: 8px;
-      font-size: 14px;
-      color: #0f172a;
-      background-color: #ffffff;
-      transition: border-color 0.2s, box-shadow 0.2s;
-    }
-
-    input:focus, select:focus, textarea:focus {
-      outline: none;
-      border-color: #16a34a;
-      box-shadow: 0 0 0 3px rgba(22, 163, 74, 0.14);
-    }
-
-    textarea {
-      resize: vertical;
-      min-height: 80px;
-    }
-
-    .info-tip {
-      display: none;
-      background-color: #f0fdf4;
-      border: 1px solid #bbf7d0;
-      border-left: 4px solid #16a34a;
-      color: #166534;
-      font-size: 12.5px;
-      padding: 10px 12px;
-      border-radius: 6px;
-      margin-top: 10px;
-      line-height: 1.45;
-    }
-
-    button {
-      width: 100%;
-      padding: 13px;
-      background-color: #16a34a;
-      color: #ffffff;
-      border: none;
-      border-radius: 8px;
-      font-size: 15.5px;
-      font-weight: 700;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-      margin-top: 6px;
-    }
-
-    button:hover {
-      background-color: #15803d;
-    }
-
-    button:active {
-      transform: scale(0.99);
-    }
-
-    button:disabled {
-      background-color: #94a3b8;
-      cursor: not-allowed;
-    }
-
-    .note-foto {
-      margin-top: 12px;
-      font-size: 12px;
-      color: #64748b;
-      text-align: center;
-      line-height: 1.5;
-    }
-
-    .hp-field {
-      position: absolute;
-      left: -9999px;
-      opacity: 0;
-      height: 0;
-      width: 0;
-      pointer-events: none;
-    }
-
-    @media (max-width: 580px) {
-      .grid-2 {
-        grid-template-columns: 1fr;
-        gap: 12px;
-      }
-      .header {
-        padding: 20px;
-      }
-      .form-body {
-        padding: 20px;
-      }
-    }
-  </style>
-</head>
-<body>
-
-<div class="container">
-  <div class="header">
-    <h2>Form Service Arloji</h2>
-    <p class="subtitle">Datang langsung • Layanan antar-jemput • Ekspedisi luar kota</p>
-  </div>
-
-  <div class="form-body">
-    <form id="serviceForm" onsubmit="kirimKeWhatsApp(event)" novalidate>
-      <input type="text" id="website" name="website" class="hp-field" tabindex="-1" autocomplete="off">
-
-      <div class="section-title">Data Pelanggan</div>
-
-      <div class="grid-2 row-space">
-        <div class="form-group">
-          <label for="nama">Nama Lengkap</label>
-          <input type="text" id="nama" maxlength="60" placeholder="Masukkan nama Anda" required>
-        </div>
-        <div class="form-group">
-          <label for="no_hp">Nomor WhatsApp</label>
-          <input type="tel" id="no_hp" maxlength="16" placeholder="Contoh: 08123456789" required>
-        </div>
-      </div>
-
-      <div class="grid-2">
-        <div class="form-group">
-          <label for="domisili">Domisili (Kota / Kecamatan)</label>
-          <input type="text" id="domisili" maxlength="80" placeholder="Contoh: Sidoarjo / Surabaya" required>
-        </div>
-        <div class="form-group">
-          <label for="metode">Metode Serah Terima</label>
-          <select id="metode" onchange="tampilkanInfoMetode()" required>
-            <option value="">-- Pilih Metode --</option>
-            <option value="Datang Langsung ke Toko">Datang Langsung ke Toko</option>
-            <option value="Layanan Antar-Jemput / Kurir Instan">Layanan Antar-Jemput (Dalam Kota)</option>
-            <option value="Kirim Paket Ekspedisi">Kirim Paket Ekspedisi (Luar Kota)</option>
-          </select>
-        </div>
-      </div>
-      <div id="infoMetode" class="info-tip"></div>
-
-      <div class="section-title spaced">Detail Jam Tangan</div>
-
-      <div class="grid-2 row-space">
-        <div class="form-group">
-          <label for="merek">Merek & Tipe Jam Tangan</label>
-          <input type="text" id="merek" maxlength="80" placeholder="Contoh: Seiko 5, G-Shock DW5600" required>
-        </div>
-        <div class="form-group">
-          <label for="jenis_service">Jenis Layanan</label>
-          <select id="jenis_service" required>
-            <option value="">-- Pilih Layanan --</option>
-            <option value="Ganti Baterai">Ganti Baterai</option>
-            <option value="Overhaul / Service Mesin">Overhaul / Service Mesin</option>
-            <option value="Ganti Kaca / Strap">Ganti Kaca / Strap</option>
-            <option value="Pembersihan (Polishing)">Pembersihan / Polishing</option>
-            <option value="Lainnya">Lainnya (Jelaskan di keluhan)</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label for="keluhan">Deskripsi Kerusakan / Keluhan</label>
-        <textarea id="keluhan" rows="3" maxlength="500" placeholder="Jelaskan masalah jam tangan Anda..." required></textarea>
-      </div>
-
-      <button type="submit" id="btnKirim">Kirim via WhatsApp</button>
-      <p class="note-foto">
-        Setelah dialihkan ke WhatsApp, mohon lampirkan <strong>foto tampak depan & belakang</strong> jam tangan Anda untuk estimasi awal.
-      </p>
-    </form>
-  </div>
-</div>
-
 <script>
+  // Tempel Endpoint URL submit-booking dari Supabase di sini
+  const ENDPOINT_BOOKING = 'https://khgooqasgscsxgegdqzc.supabase.co/functions/v1/submit-booking';
+
   let sedangKirim = false;
 
   function tampilkanInfoMetode() {
@@ -285,60 +20,88 @@
     }
   }
 
-  function kirimKeWhatsApp(event) {
+  async function kirimKeWhatsApp(event) {
     event.preventDefault();
     if (sedangKirim) return;
 
-    if (document.getElementById('website').value.trim() !== '') return;
+    const website = document.getElementById('website').value.trim();
+    if (website !== '') return;
 
     const nomorWhatsAppAdmin = ['62', '813', '3193', '9397'].join('');
 
-    const nama = document.getElementById('nama').value.trim();
-    const no_hp = document.getElementById('no_hp').value.trim();
-    const domisili = document.getElementById('domisili').value.trim();
-    const metode = document.getElementById('metode').value.trim();
-    const merek = document.getElementById('merek').value.trim();
-    const jenis_service = document.getElementById('jenis_service').value.trim();
-    const keluhan = document.getElementById('keluhan').value.trim();
+    const payload = {
+      nama: document.getElementById('nama').value.trim(),
+      no_hp: document.getElementById('no_hp').value.trim(),
+      domisili: document.getElementById('domisili').value.trim(),
+      metode: document.getElementById('metode').value.trim(),
+      merek: document.getElementById('merek').value.trim(),
+      jenis_service: document.getElementById('jenis_service').value.trim(),
+      keluhan: document.getElementById('keluhan').value.trim(),
+      website
+    };
 
-    if (!nama || !no_hp || !domisili || !metode || !merek || !jenis_service || !keluhan) {
+    if (!payload.nama || !payload.no_hp || !payload.domisili || !payload.metode || !payload.merek || !payload.jenis_service || !payload.keluhan) {
       alert('Harap lengkapi semua kolom terlebih dahulu.');
       return;
     }
 
-    const digitHp = no_hp.replace(/\D/g, '');
+    const digitHp = payload.no_hp.replace(/\D/g, '');
     if (digitHp.length < 9 || digitHp.length > 15) {
       alert('Nomor WhatsApp tidak valid. Masukkan 9–15 digit angka.');
       return;
     }
 
+    const btn = document.getElementById('btnKirim');
+    sedangKirim = true;
+    btn.disabled = true;
+    btn.textContent = 'Menyimpan booking...';
+
+    let kodeBooking = '';
+
+    // Kirim ke Supabase dengan batas waktu 5 detik (fallback aman jika sinyal lambat)
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const res = await fetch(ENDPOINT_BOOKING, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timeoutId);
+
+      if (res.ok) {
+        const data = await res.json();
+        if (data.kode_booking) kodeBooking = data.kode_booking;
+      }
+    } catch (err) {
+      console.warn('Fallback ke WhatsApp langsung:', err);
+    }
+
+    const barisKode = kodeBooking ? `🎫 *Kode Booking:* ${kodeBooking}\n` : '';
     const pesanMentah =
       `Halo Admin, saya ingin mengajukan *Service Arloji* dengan detail berikut:\n\n` +
-      `👤 *Nama:* ${nama}\n` +
-      `📞 *No. HP:* ${no_hp}\n` +
-      `📍 *Domisili:* ${domisili}\n` +
-      `📦 *Metode:* ${metode}\n` +
-      `⌚ *Merek/Tipe:* ${merek}\n` +
-      `🛠️ *Jenis Layanan:* ${jenis_service}\n` +
-      `📝 *Keluhan:* ${keluhan}\n\n` +
+      barisKode +
+      `👤 *Nama:* ${payload.nama}\n` +
+      `📞 *No. HP:* ${payload.no_hp}\n` +
+      `📍 *Domisili:* ${payload.domisili}\n` +
+      `📦 *Metode:* ${payload.metode}\n` +
+      `⌚ *Merek/Tipe:* ${payload.merek}\n` +
+      `🛠️ *Jenis Layanan:* ${payload.jenis_service}\n` +
+      `📝 *Keluhan:* ${payload.keluhan}\n\n` +
       `Mohon info estimasi biaya dan mekanismenya. Terima kasih!`;
 
     const url = `https://wa.me/${nomorWhatsAppAdmin}?text=${encodeURIComponent(pesanMentah)}`;
 
-    const btn = document.getElementById('btnKirim');
-    sedangKirim = true;
-    btn.disabled = true;
     btn.textContent = 'Membuka WhatsApp...';
-
     setTimeout(() => {
       sedangKirim = false;
       btn.disabled = false;
       btn.textContent = 'Kirim via WhatsApp';
     }, 3000);
 
-    window.open(url, '_blank', 'noopener,noreferrer');
+    // Gunakan location.href agar tidak diblokir popup blocker HP setelah proses async
+    window.location.href = url;
   }
 </script>
-
-</body>
-</html>
