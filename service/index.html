@@ -131,7 +131,7 @@
 
 <div class="container">
   <h2>Form Service Arloji</h2>
-  <p class="subtitle">Melayani datang langsung, jemput bola, dan kirim ekspedisi luar kota.</p>
+  <p class="subtitle">Melayani datang langsung, layanan antar-jemput, dan kirim ekspedisi luar kota.</p>
 
   <form id="serviceForm" onsubmit="kirimKeWhatsApp(event)" novalidate>
     <!-- Honeypot anti-spam -->
@@ -159,7 +159,7 @@
       <select id="metode" onchange="tampilkanInfoMetode()" required>
         <option value="">-- Pilih Metode --</option>
         <option value="Datang Langsung ke Toko">Datang Langsung ke Toko</option>
-        <option value="Jemput Bola / Kurir Instan">Jemput Bola / Kurir Instan (Dalam Kota)</option>
+        <option value="Layanan Antar-Jemput / Kurir Instan">Layanan Antar-Jemput / Kurir Instan (Dalam Kota)</option>
         <option value="Kirim Paket Ekspedisi">Kirim Paket Ekspedisi (Luar Kota)</option>
       </select>
       <div id="infoMetode" class="info-tip"></div>
@@ -205,7 +205,7 @@
     if (metode === 'Kirim Paket Ekspedisi') {
       infoBox.textContent = 'Tips pengiriman luar kota: gunakan bubble wrap tebal & kotak keras. Paket akan direkam video unboxing saat tiba di toko.';
       infoBox.style.display = 'block';
-    } else if (metode === 'Jemput Bola / Kurir Instan') {
+    } else if (metode === 'Layanan Antar-Jemput / Kurir Instan') {
       infoBox.textContent = 'Admin akan menginformasikan jadwal penjemputan atau estimasi kurir instan sesuai area domisili Anda.';
       infoBox.style.display = 'block';
     } else {
