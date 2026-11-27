@@ -7406,6 +7406,14 @@ async function simpanAksesMenu() {
       [/Cari cepat(\.\.\.|…)?/gi, 'Quick search...'],
       [/\bSemua \(/g, 'All ('],
       [/\bstok (\d+)/g, 'stock $1'],
+      [/Foto Kondisi Unit \(Opsional, Maks\. 3 Foto\)/g, 'Unit Condition Photos (Optional, Max. 3 Photos)'],
+      [/Foto 1 \(Depan\)/g, 'Photo 1 (Front)'],
+      [/Foto 2 \(Belakang\)/g, 'Photo 2 (Back)'],
+      [/Foto 3 \(Detail\)/g, 'Photo 3 (Detail)'],
+      [/Mengunggah\.\.\./g, 'Uploading...'],
+      [/Foto kondisi (\d+) tersimpan/g, 'Condition photo $1 saved'],
+      [/Gagal upload foto:/g, 'Failed to upload photo:'],
+
     ],
     zh: [
       [/ISI SALDO \/ TOP-UP KAS KECIL/gi, '零用现金充值'],
@@ -7433,6 +7441,13 @@ async function simpanAksesMenu() {
       [/Cari cepat(\.\.\.|…)?/gi, '快速搜索...'],
       [/\bSemua \(/g, '全部 ('],
       [/\bstok (\d+)/g, '库存 $1'],
+      [/Foto Kondisi Unit \(Opsional, Maks\. 3 Foto\)/g, '手表外观照片（可选，最多3张）'],
+      [/Foto 1 \(Depan\)/g, '照片 1（正面）'],
+      [/Foto 2 \(Belakang\)/g, '照片 2（背面）'],
+      [/Foto 3 \(Detail\)/g, '照片 3（细节）'],
+      [/Mengunggah\.\.\./g, '上传中...'],
+      [/Foto kondisi (\d+) tersimpan/g, '外观照片 $1 已保存'],
+      [/Gagal upload foto:/g, '照片上传失败：'],
 
     ]
   };
