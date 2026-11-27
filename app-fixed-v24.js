@@ -6529,6 +6529,7 @@ function terapkanBahasa() {
     if (el.dataset.i18nPh) el.setAttribute('placeholder', terjemahkanTeks(el.dataset.i18nPh, lang));
   });
   if (typeof terapkanMataUangUI === 'function') terapkanMataUangUI();
+  if (typeof refreshBahasaBookingOnline === 'function') refreshBahasaBookingOnline();
 }
 terapkanBahasa();
 
@@ -8746,8 +8747,11 @@ async function simpanBateraiGratisManual() {
   }
 
   function tBooking(key) {
-    const lang = getBahasaAktif();
-    return (KAMUS_BOOKING[lang] && KAMUS_BOOKING[lang][key]) || KAMUS_BOOKING.id[key];
+      function getBahasaAktif() {
+    const raw = (localStorage.getItem('ta_lang') || 'id').toLowerCase();
+    if (raw.startsWith('zh')) return 'zh';
+    if (raw.startsWith('en')) return 'en';
+    return 'id';
   }
 
   function getSupabaseClient() {
