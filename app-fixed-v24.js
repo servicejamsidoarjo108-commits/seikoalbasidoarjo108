@@ -9054,6 +9054,13 @@ setInterval(() => {
   }
 }, 500);
 
+const TEKS_FOTO_KONDISI = {
+  id: { judul: 'Foto Kondisi Unit (Opsional, Maks. 3 Foto)', slot: ['Foto 1 (Depan)', 'Foto 2 (Belakang)', 'Foto 3 (Detail)'] },
+  en: { judul: 'Unit Condition Photos (Optional, Max. 3 Photos)', slot: ['Photo 1 (Front)', 'Photo 2 (Back)', 'Photo 3 (Detail)'] },
+  zh: { judul: '手表外观照片（可选，最多3张）', slot: ['照片 1（正面）', '照片 2（背面）', '照片 3（细节）'] }
+};
+
+
 function renderSlotFotoKondisi() {
   const wrap = document.getElementById('wrapFotoKondisiServis');
   if (!wrap) return;
