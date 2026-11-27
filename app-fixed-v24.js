@@ -8959,6 +8959,137 @@ async function simpanBateraiGratisManual() {
   });
 })();
 
+// === MODUL 3 FOTO KONDISI SERVIS (KOMPRESI ~150KB + CLOUDINARY) ===
+let tempFotoKondisiServis = ['', '', ''];
+
+function kompresGambarServis(file, maxDim = 1000, quality = 0.8) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const url = URL.createObjectURL(file);
+    img.onload = () => {
+      URL.revokeObjectURL(url);
+      let { width, height } = img;
+      if (width > maxDim || height > maxDim) {
+        if (width > height) { height = Math.round((height * maxDim) / width); width = maxDim; }
+        else { width = Math.round((width * maxDim) / height); height = maxDim; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      canvas.toBlob(blob => blob ? resolve(blob) : reject(new Error('Gagal kompres foto')), 'image/jpeg', quality);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('File gambar tidak valid')); };
+    img.src = url;
+  });
+}
+
+async function uploadFotoKondisiSlot(idx, file) {
+  if (!file) return;
+  const slotEl = document.getElementById(`slotFotoKondisi_${idx}`);
+  if (slotEl) slotEl.innerHTML = `<span style="font-size:11px;color:#64748b;">Mengunggah...</span>`;
+  try {
+    const blob = await kompresGambarServis(file, 1000, 0.8);
+    const fd = new FormData();
+    fd.append('file', blob, `servis_${Date.now()}_${idx}.jpg`);
+    fd.append('upload_preset', 'horopos_produk');
+    const res = await fetch('https://api.cloudinary.com/v1_1/sz9gm896/image/upload', { method: 'POST', body: fd });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error?.message || 'Upload gagal');
+    tempFotoKondisiServis[idx] = data.secure_url.replace('/upload/', '/upload/q_auto,f_auto/');
+    renderSlotFotoKondisi();
+    if (typeof flash === 'function') flash(`Foto kondisi ${idx + 1} tersimpan`);
+  } catch (err) {
+    renderSlotFotoKondisi();
+    if (typeof flash === 'function') flash('Gagal upload foto: ' + err.message, 'err');
+  }
+}
+
+function hapusFotoKondisiSlot(idx, ev) {
+  if (ev) ev.stopPropagation();
+  tempFotoKondisiServis[idx] = '';
+  renderSlotFotoKondisi();
+}
+
+function resetFotoKondisiServis() {
+  tempFotoKondisiServis = ['', '', ''];
+  renderSlotFotoKondisi();
+}
+
+function renderSlotFotoKondisi() {
+  const wrap = document.getElementById('wrapFotoKondisiServis');
+  if (!wrap) return;
+  const labels = ['Foto 1 (Depan)', 'Foto 2 (Belakang)', 'Foto 3 (Detail)'];
+  wrap.innerHTML = [0, 1, 2].map(i => {
+    const url = tempFotoKondisiServis[i];
+    if (url) {
+      return `
+        <div id="slotFotoKondisi_${i}" style="position:relative;height:78px;border:1px solid #cbd5e1;border-radius:10px;overflow:hidden;background:#f8fafc;">
+          <img src="${url}" style="width:100%;height:100%;object-fit:cover;cursor:pointer;" onclick="window.open('${url}','_blank')">
+          <button type="button" onclick="hapusFotoKondisiSlot(${i}, event)" style="position:absolute;top:4px;right:4px;width:22px;height:22px;border:none;border-radius:50%;background:rgba(220,38,38,.9);color:#fff;font-weight:bold;cursor:pointer;line-height:1;">×</button>
+        </div>`;
+    }
+    return `
+      <label id="slotFotoKondisi_${i}" style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:78px;border:1.5px dashed #cbd5e1;border-radius:10px;background:#f8fafc;cursor:pointer;text-align:center;padding:6px;color:#475569;font-size:12px;">
+        <span style="font-size:18px;line-height:1;margin-bottom:3px;">📷</span>
+        <span>${labels[i]}</span>
+        <input type="file" accept="image/*" capture="environment" style="display:none;" onchange="uploadFotoKondisiSlot(${i}, this.files[0]); this.value='';">
+      </label>`;
+  }).join('');
+}
+
+function initUIFotoKondisiServis() {
+  const inputLain = document.getElementById('sKondisiLain');
+  if (!inputLain || document.getElementById('boxFotoKondisiServis')) return;
+  const parent = inputLain.parentElement;
+  inputLain.style.display = 'none';
+  const oldLabel = parent.querySelector('label');
+  if (oldLabel) oldLabel.style.display = 'none';
+
+  const box = document.createElement('div');
+  box.id = 'boxFotoKondisiServis';
+  box.style.marginTop = '8px';
+  box.innerHTML = `
+    <label style="display:block;font-weight:600;margin-bottom:6px;">Foto Kondisi Unit (Opsional, Maks. 3 Foto)</label>
+    <div id="wrapFotoKondisiServis" style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;"></div>
+  `;
+  parent.appendChild(box);
+  renderSlotFotoKondisi();
+}
+
+async function simpanFotoKondisiPascaRpc(rpcData, cartItems) {
+  const adaFoto = cartItems.some(it => it.fotoKondisi && it.fotoKondisi.length);
+  if (!adaFoto) return;
+
+  let ids = [];
+  if (Array.isArray(rpcData)) {
+    ids = rpcData.map(x => (typeof x === 'object' ? x.id : x)).filter(Boolean);
+  } else if (rpcData && typeof rpcData === 'object') {
+    const arr = rpcData.ids || rpcData.servis_ids || rpcData.items || [];
+    ids = Array.isArray(arr) ? arr.map(x => (typeof x === 'object' ? x.id : x)).filter(Boolean) : (rpcData.id ? [rpcData.id] : []);
+  }
+
+  if (ids.length !== cartItems.length) {
+    const { data: latest } = await supabaseClient
+      .from('servis')
+      .select('id')
+      .eq('customer', cartItems[0].customer)
+      .order('created_at', { ascending: false })
+      .limit(cartItems.length);
+    if (latest && latest.length) ids = latest.reverse().map(r => r.id);
+  }
+
+  for (let i = 0; i < cartItems.length; i++) {
+    const fotos = cartItems[i].fotoKondisi || [];
+    if (ids[i] && fotos.length) {
+      await supabaseClient.from('servis').update({ foto_kondisi: fotos }).eq('id', ids[i]);
+    }
+  }
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(initUIFotoKondisiServis, 400));
+setTimeout(initUIFotoKondisiServis, 1000);
+
 
 
 
