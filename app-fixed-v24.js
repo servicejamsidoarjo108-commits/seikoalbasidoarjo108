@@ -8669,6 +8669,305 @@ async function simpanBateraiGratisManual() {
     alert(err.message);
   }
 }
+// =========================================================
+// TAHAP 4: PANEL BOOKING ONLINE MULTI-BAHASA (ID / EN / ZH)
+// =========================================================
+(function initBookingOnlinePanel() {
+  const KAMUS_BOOKING = {
+    id: {
+      title: 'Booking Online (Menunggu Barang)',
+      refresh: 'Refresh',
+      tutup: 'Tutup',
+      buka: 'Buka',
+      memuat: 'Memuat data booking...',
+      kosong: 'Belum ada antrean booking online baru.',
+      gagal: 'Gagal memuat booking',
+      no_client: 'Koneksi Supabase belum terdeteksi.',
+      keluhan: 'Keluhan',
+      terima: 'Terima Unit',
+      wa: 'Chat WA',
+      batal: 'Batalkan',
+      konfirmasi_terima: 'Terima unit {merek} atas nama {nama} ({kode})?\nData akan otomatis diisikan ke form servis.',
+      konfirmasi_batal: 'Batalkan pengajuan {kode} atas nama {nama}?',
+      locale: 'id-ID'
+    },
+    en: {
+      title: 'Online Booking (Awaiting Item)',
+      refresh: 'Refresh',
+      tutup: 'Hide',
+      buka: 'Show',
+      memuat: 'Loading bookings...',
+      kosong: 'No new online bookings.',
+      gagal: 'Failed to load bookings',
+      no_client: 'Supabase connection not detected.',
+      keluhan: 'Issue',
+      terima: 'Receive Item',
+      wa: 'WhatsApp',
+      batal: 'Cancel',
+      konfirmasi_terima: 'Receive {merek} for {nama} ({kode})?\nDetails will auto-fill the service form.',
+      konfirmasi_batal: 'Cancel booking {kode} for {nama}?',
+      locale: 'en-US'
+    },
+    zh: {
+      title: '在线预约（待收件）',
+      refresh: '刷新',
+      tutup: '收起',
+      buka: '展开',
+      memuat: '正在加载预约数据...',
+      kosong: '暂无新的在线预约。',
+      gagal: '加载预约失败',
+      no_client: '未检测到 Supabase 连接。',
+      keluhan: '故障描述',
+      terima: '接收手表',
+      wa: 'WhatsApp',
+      batal: '取消',
+      konfirmasi_terima: '确认接收 {nama} 的 {merek}（{kode}）？\n信息将自动填入维修单。',
+      konfirmasi_batal: '确认取消 {nama} 的预约（{kode}）？',
+      locale: 'zh-CN'
+    }
+  };
+
+  function getBahasaAktif() {
+    const raw = (
+      window.currentLang ||
+      window.lang ||
+      window.bahasa ||
+      localStorage.getItem('horopos_lang') ||
+      localStorage.getItem('lang') ||
+      localStorage.getItem('bahasa') ||
+      localStorage.getItem('language') ||
+      document.documentElement.lang ||
+      'id'
+    ).toString().toLowerCase();
+
+    if (raw.startsWith('zh') || raw.includes('cn')) return 'zh';
+    if (raw.startsWith('en')) return 'en';
+    return 'id';
+  }
+
+  function tBooking(key) {
+    const lang = getBahasaAktif();
+    return (KAMUS_BOOKING[lang] && KAMUS_BOOKING[lang][key]) || KAMUS_BOOKING.id[key];
+  }
+
+  function getSupabaseClient() {
+    const kandidat = [
+      typeof sb !== 'undefined' ? sb : null,
+      typeof supabaseClient !== 'undefined' ? supabaseClient : null,
+      typeof _supabase !== 'undefined' ? _supabase : null,
+      typeof db !== 'undefined' ? db : null,
+      typeof supabase !== 'undefined' ? supabase : null,
+      window.sb, window.supabaseClient, window._supabase, window.db
+    ];
+    return kandidat.find(c => c && typeof c.from === 'function') || null;
+  }
+
+  function formatWaktuSingkat(iso) {
+    if (!iso) return '-';
+    const d = new Date(iso);
+    return d.toLocaleString(tBooking('locale'), {
+      day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit'
+    });
+  }
+
+  function buatPanelDOM() {
+    if (document.getElementById('panelBookingOnline')) return;
+    const sNama = document.getElementById('sNama');
+    if (!sNama) return;
+
+    const targetContainer = sNama.closest('.card, form, section') || sNama.parentElement;
+    const panel = document.createElement('div');
+    panel.id = 'panelBookingOnline';
+    panel.style.cssText = 'background:#f8fafc;border:1px solid #cbd5e1;border-radius:10px;padding:14px 16px;margin-bottom:16px;';
+
+    panel.innerHTML = `
+      <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+        <div style="display:flex;align-items:center;gap:8px;cursor:pointer;" onclick="toggleDaftarBooking()">
+          <strong id="titleBookingOnline" style="font-size:14.5px;color:#0f2942;">${tBooking('title')}</strong>
+          <span id="badgeBookingCount" style="background:#16a34a;color:#fff;font-size:12px;font-weight:700;padding:2px 8px;border-radius:999px;">0</span>
+        </div>
+        <div style="display:flex;gap:6px;">
+          <button type="button" id="btnRefreshBooking" onclick="muatBookingOnline()" style="padding:5px 10px;font-size:12px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;color:#334155;">${tBooking('refresh')}</button>
+          <button type="button" id="btnToggleBooking" onclick="toggleDaftarBooking()" style="padding:5px 10px;font-size:12px;border:1px solid #cbd5e1;background:#fff;border-radius:6px;cursor:pointer;color:#334155;">${tBooking('tutup')}</button>
+        </div>
+      </div>
+      <div id="daftarBookingOnline" style="margin-top:12px;display:flex;flex-direction:column;gap:10px;">
+        <div style="font-size:13px;color:#64748b;">${tBooking('memuat')}</div>
+      </div>
+    `;
+
+    targetContainer.insertAdjacentElement('beforebegin', panel);
+  }
+
+  function renderDaftarBooking() {
+    const listEl = document.getElementById('daftarBookingOnline');
+    const badgeEl = document.getElementById('badgeBookingCount');
+    if (!listEl) return;
+
+    const data = window._cacheBookingOnline || [];
+    if (badgeEl) {
+      badgeEl.textContent = data.length;
+      badgeEl.style.background = data.length > 0 ? '#16a34a' : '#94a3b8';
+    }
+
+    if (data.length === 0) {
+      listEl.innerHTML = `<div style="font-size:13px;color:#64748b;">${tBooking('kosong')}</div>`;
+      return;
+    }
+
+    listEl.innerHTML = data.map((b, idx) => {
+      const noWa = String(b.no_hp || '').replace(/\D/g, '').replace(/^0/, '62');
+      const warnaMetode = b.metode.includes('Ekspedisi')
+        ? '#0284c7'
+        : (b.metode.includes('Antar-Jemput') ? '#d97706' : '#475569');
+
+      return `
+        <div style="background:#fff;border:1px solid #e2e8f0;border-radius:8px;padding:12px;font-size:13px;">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;flex-wrap:wrap;margin-bottom:6px;">
+            <div>
+              <span style="font-weight:700;color:#0f2942;">${b.kode_booking}</span>
+              <span style="color:#64748b;font-size:12px;margin-left:6px;">${formatWaktuSingkat(b.created_at)}</span>
+            </div>
+            <span style="background:${warnaMetode};color:#fff;font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;">${b.metode}</span>
+          </div>
+          <div style="color:#1e293b;margin-bottom:4px;">
+            <strong>${b.nama}</strong> (${b.no_hp}) • <span style="color:#475569;">${b.domisili}</span>
+          </div>
+          <div style="color:#334155;margin-bottom:8px;">
+            <strong>${b.merek}</strong> — ${b.jenis_service}<br>
+            <span style="color:#64748b;">${tBooking('keluhan')}: ${b.keluhan}</span>
+          </div>
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
+            <button type="button" onclick="terimaUnitBooking(${idx})" style="padding:6px 12px;font-size:12.5px;font-weight:600;background:#16a34a;color:#fff;border:none;border-radius:6px;cursor:pointer;">${tBooking('terima')}</button>
+            <a href="https://wa.me/${noWa}" target="_blank" rel="noopener" style="padding:6px 12px;font-size:12.5px;font-weight:600;background:#0f2942;color:#fff;text-decoration:none;border-radius:6px;">${tBooking('wa')}</a>
+            <button type="button" onclick="batalkanBooking(${idx})" style="padding:6px 12px;font-size:12.5px;font-weight:600;background:#fee2e2;color:#b91c1c;border:1px solid #fecaca;border-radius:6px;cursor:pointer;">${tBooking('batal')}</button>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
+  window.refreshBahasaBookingOnline = function () {
+    const titleEl = document.getElementById('titleBookingOnline');
+    const btnRefresh = document.getElementById('btnRefreshBooking');
+    const btnToggle = document.getElementById('btnToggleBooking');
+    const listEl = document.getElementById('daftarBookingOnline');
+
+    if (titleEl) titleEl.textContent = tBooking('title');
+    if (btnRefresh) btnRefresh.textContent = tBooking('refresh');
+    if (btnToggle && listEl) {
+      btnToggle.textContent = listEl.style.display === 'none' ? tBooking('buka') : tBooking('tutup');
+    }
+    if (window._cacheBookingOnline) renderDaftarBooking();
+  };
+
+  window.toggleDaftarBooking = function () {
+    const list = document.getElementById('daftarBookingOnline');
+    const btn = document.getElementById('btnToggleBooking');
+    if (!list) return;
+    const tersembunyi = list.style.display === 'none';
+    list.style.display = tersembunyi ? 'flex' : 'none';
+    if (btn) btn.textContent = tersembunyi ? tBooking('tutup') : tBooking('buka');
+  };
+
+  window.muatBookingOnline = async function () {
+    const client = getSupabaseClient();
+    const listEl = document.getElementById('daftarBookingOnline');
+    if (!listEl) return;
+
+    if (!client) {
+      listEl.innerHTML = `<div style="font-size:12.5px;color:#dc2626;">${tBooking('no_client')}</div>`;
+      return;
+    }
+
+    listEl.innerHTML = `<div style="font-size:13px;color:#64748b;">${tBooking('memuat')}</div>`;
+
+    const { data, error } = await client
+      .from('booking_online')
+      .select('*')
+      .eq('status', 'Menunggu Barang')
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      listEl.innerHTML = `<div style="font-size:12.5px;color:#dc2626;">${tBooking('gagal')}: ${error.message}</div>`;
+      return;
+    }
+
+    window._cacheBookingOnline = data || [];
+    renderDaftarBooking();
+  };
+
+  window.terimaUnitBooking = async function (idx) {
+    const b = (window._cacheBookingOnline || [])[idx];
+    if (!b) return;
+
+    const pesan = tBooking('konfirmasi_terima')
+      .replace('{merek}', b.merek)
+      .replace('{nama}', b.nama)
+      .replace('{kode}', b.kode_booking);
+    if (!confirm(pesan)) return;
+
+    const isi = (id, val) => {
+      const el = document.getElementById(id);
+      if (el) {
+        el.value = val;
+        el.dispatchEvent(new Event('input', { bubbles: true }));
+        el.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+    };
+
+    isi('sNama', b.nama);
+    isi('sHp', b.no_hp);
+    isi('sProduk', b.merek);
+    isi('sKeluhan', `[${b.jenis_service}] ${b.keluhan}`);
+    isi('sCatatan', `Kode Booking: ${b.kode_booking} | Metode: ${b.metode} | Domisili: ${b.domisili}`);
+
+    const client = getSupabaseClient();
+    if (client) {
+      await client.from('booking_online').update({ status: 'Diterima' }).eq('id', b.id);
+    }
+
+    await window.muatBookingOnline();
+    const sNamaEl = document.getElementById('sNama');
+    if (sNamaEl) sNamaEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  };
+
+  window.batalkanBooking = async function (idx) {
+    const b = (window._cacheBookingOnline || [])[idx];
+    if (!b) return;
+
+    const pesan = tBooking('konfirmasi_batal')
+      .replace('{kode}', b.kode_booking)
+      .replace('{nama}', b.nama);
+    if (!confirm(pesan)) return;
+
+    const client = getSupabaseClient();
+    if (client) {
+      await client.from('booking_online').update({ status: 'Batal' }).eq('id', b.id);
+    }
+    await window.muatBookingOnline();
+  };
+
+  // Pantau perubahan bahasa otomatis
+  function pasangPendengarBahasa() {
+    document.querySelectorAll('select').forEach(sel => {
+      if (/lang|bahasa/i.test(sel.id || sel.name || '')) {
+        sel.addEventListener('change', () => setTimeout(window.refreshBahasaBookingOnline, 100));
+      }
+    });
+
+    new MutationObserver(() => window.refreshBahasaBookingOnline())
+      .observe(document.documentElement, { attributes: true, attributeFilter: ['lang'] });
+  }
+
+  window.addEventListener('load', () => {
+    setTimeout(() => {
+      buatPanelDOM();
+      pasangPendengarBahasa();
+      window.muatBookingOnline();
+    }, 1200);
+  });
+})();
 
 
 
