@@ -1311,7 +1311,7 @@ function tambahKeKeranjangServis() {
   ['sProduk', 'sKeluhan', 'sCatatan'].forEach(x => { if ($(x)) $(x).value = ''; });
   if (typeof resetFotoKondisiServis === 'function') resetFotoKondisiServis();
   $('sJasa').value = 0;
-  $('sGaransi').value = 'garansi';
+  if (typeof sembunyikanDropdownGaransi === 'function') sembunyikanDropdownGaransi();
   resetModeKlaim();
   if (isKlaimProduk) { modeKlaimProdukJualId = ''; const b = $('klaimBanner'); if (b) b.style.display = 'none'; }
   document.querySelectorAll('.chk-kondisi').forEach(cb => cb.checked = false);
