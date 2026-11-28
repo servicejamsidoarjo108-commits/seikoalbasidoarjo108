@@ -1602,6 +1602,11 @@ async function tambahStokBaterai() {
       const stokLama = sb.stok || 0;
       const hppLama = sb.harga_beli || 0;
       await ubahStok('stok_baterai', sb.id, stokInput);
+      const hargaJual = Math.max(0, num('sbJual'));
+      if (hargaJual > 0 && hargaJual !== sb.harga_jual) {
+      await dbOk(supabaseClient.from('stok_baterai').update({ harga_jual: hargaJual, updated_at: nowISO() }).eq('id', sb.id));
+      }
+
       if (isPemilik() && stokInput > 0 && hargaBeli > 0) {
         const totalStok = stokLama + stokInput;
         const hppBaru = totalStok > 0 ? Math.round(((stokLama * hppLama) + (stokInput * hargaBeli)) / totalStok) : hargaBeli;
@@ -9263,6 +9268,148 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
       } catch (_) {}
     }
   }, 30000); // Cek setiap 30 detik
+})();
+
+// === MODUL MASTER HARGA (SETTING), AUTO-FILL 3 MENU & NONAKTIFKAN UNIFIED RESTOCK ===
+(function () {
+  function pasangDatalist(inputId, listId, items, onMatch) {
+    const inp = $(inputId);
+    if (!inp) return;
+    let dl = $(listId);
+    if (!dl) {
+      dl = document.createElement('datalist');
+      dl.id = listId;
+      document.body.appendChild(dl);
+      inp.setAttribute('list', listId);
+      inp.addEventListener('change', () => onMatch(inp.value.trim()));
+      inp.addEventListener('input', () => onMatch(inp.value.trim()));
+    }
+    dl.innerHTML = items.map(nama => `<option value="${esc(nama)}"></option>`).join('');
+  }
+
+  function pasangKartuMasterHarga() {
+    const secSetting = $('setting');
+    if (!secSetting || !isPemilik()) return;
+    if ($('cardMasterHarga')) return;
+
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.id = 'cardMasterHarga';
+    card.innerHTML = `
+      <h3>💰 Master Harga Modal & Jual (Khusus Pemilik)</h3>
+      <p style="font-size:12px;color:#64748b;margin-top:0">Ubah harga modal atau jual di satu tempat. Otomatis terpanggil saat input Produk, Spare Part, Baterai, maupun Pembelian Supplier.</p>
+      <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
+        <input id="cariMasterHarga" placeholder="🔍 Cari nama barang / tipe..." oninput="renderMasterHarga()" style="flex:1;min-width:180px;">
+        <select id="filterMasterHarga" onchange="renderMasterHarga()" style="width:auto;min-width:130px;">
+          <option value="semua">Semua Kategori</option>
+          <option value="produk">Produk (Jam)</option>
+          <option value="sparepart">Spare Part</option>
+          <option value="stok_baterai">Baterai</option>
+        </select>
+      </div>
+      <div id="listMasterHarga" style="max-height:420px;overflow-y:auto;overflow-x:auto;border:1px solid #e2e8f0;border-radius:8px;"></div>
+    `;
+    secSetting.insertBefore(card, secSetting.firstChild);
+  }
+
+  window.renderMasterHarga = function () {
+    const el = $('listMasterHarga');
+    if (!el || !isPemilik()) return;
+    const q = txt('cariMasterHarga').toLowerCase();
+    const f = $('filterMasterHarga')?.value || 'semua';
+
+    const semua = [
+      ...(db.produk || []).map(x => ({ tipe: 'produk', label: 'JAM', id: x.id, nama: x.nama, beli: x.harga_beli || 0, jual: x.harga_jual || 0 })),
+      ...(db.sparePart || []).map(x => ({ tipe: 'sparepart', label: 'PART', id: x.id, nama: x.nama, beli: x.harga_beli || 0, jual: x.harga_jual || 0 })),
+      ...(db.stokBaterai || []).map(x => ({ tipe: 'stok_baterai', label: 'BAT', id: x.id, nama: x.tipe, beli: x.harga_beli || 0, jual: x.harga_jual || 0 }))
+    ].filter(x => (f === 'semua' || x.tipe === f) && (!q || x.nama.toLowerCase().includes(q)));
+
+    if (!semua.length) {
+      el.innerHTML = '<div class="empty" style="padding:16px">Barang tidak ditemukan</div>';
+      return;
+    }
+
+    el.innerHTML = `<table style="margin:0;min-width:520px;">
+      <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
+        <tr><th>Barang</th><th style="width:125px;">Harga Modal</th><th style="width:125px;">Harga Jual</th><th style="width:70px;">Aksi</th></tr>
+      </thead>
+      <tbody>` + semua.map(x => {
+        const key = `${x.tipe}_${x.id}`;
+        const margin = x.jual > 0 ? Math.round(((x.jual - x.beli) / x.jual) * 100) + '%' : '-';
+        return `<tr>
+          <td><span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span><strong>${esc(x.nama)}</strong><br><small style="color:#64748b;">Margin: ${margin}</small></td>
+          <td><input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="padding:6px;font-size:13px;"></td>
+          <td><input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="padding:6px;font-size:13px;"></td>
+          <td><button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')">Simpan</button></td>
+        </tr>`;
+      }).join('') + `</tbody></table>`;
+  };
+
+  window.simpanSatuMasterHarga = async function (tipe, id) {
+    if (!isPemilik()) return flash('Hanya Pemilik yang dapat mengubah Master Harga.', 'err');
+    const key = `${tipe}_${id}`;
+    const beli = Math.max(0, +($(`mhBeli_${key}`)?.value) || 0);
+    const jual = Math.max(0, +($(`mhJual_${key}`)?.value) || 0);
+    try {
+      await dbOk(supabaseClient.from(tipe).update({ harga_jual: jual, updated_at: nowISO() }).eq('id', id));
+      await simpanModal(tipe, id, beli);
+      await catatLog('MASTER_HARGA', `Update ${tipe} (${id}): Modal ${rp(beli)}, Jual ${rp(jual)}`);
+      flash('Master harga diperbarui!');
+      tarikSemuaData();
+    } catch (e) {
+      flash('Gagal update harga: ' + e.message, 'err');
+    }
+  };
+
+  function sinkronMasterHargaUI() {
+    // 1. Sembunyikan Unified Restock
+    if ($('cardRestockLain')) $('cardRestockLain').style.display = 'none';
+
+    // 2. Pasang & render Master Harga di Setting (Pemilik)
+    pasangKartuMasterHarga();
+    if ($('listMasterHarga')) renderMasterHarga();
+
+    // 3. Auto-fill form Produk
+    pasangDatalist('pNama', 'dlMasterProduk', (db.produk || []).map(p => p.nama), val => {
+      if (txt('pId')) return; // Jangan timpa saat mode Edit
+      const p = (db.produk || []).find(x => x.nama.toLowerCase() === val.toLowerCase());
+      if (!p) return;
+      if ($('pMerek') && p.merek) $('pMerek').value = p.merek;
+      if ($('pHBeli') && isPemilik()) $('pHBeli').value = p.harga_beli || 0;
+      if ($('pHJual')) $('pHJual').value = p.harga_jual || 0;
+      if ($('pSerial') && p.barcode) $('pSerial').value = p.barcode;
+    });
+
+    // 4. Auto-fill form Spare Part
+    pasangDatalist('spNama', 'dlMasterSparepart', (db.sparePart || []).map(s => s.nama), val => {
+      const sp = (db.sparePart || []).find(x => x.nama.toLowerCase() === val.toLowerCase());
+      if (!sp) return;
+      if ($('spKat') && sp.kategori) $('spKat').value = sp.kategori;
+      if ($('spBeli') && isPemilik()) $('spBeli').value = sp.harga_beli || 0;
+      if ($('spJual')) $('spJual').value = sp.harga_jual || 0;
+      if ($('spMin') && sp.min_stok !== undefined) $('spMin').value = sp.min_stok;
+    });
+
+    // 5. Auto-fill form Baterai
+    pasangDatalist('sbTipe', 'dlMasterBaterai', (db.stokBaterai || []).map(b => b.tipe), val => {
+      const sb = (db.stokBaterai || []).find(x => x.tipe.toUpperCase() === val.toUpperCase());
+      if (!sb) return;
+      if ($('sbBeli') && isPemilik()) $('sbBeli').value = sb.harga_beli || 0;
+      if ($('sbJual')) $('sbJual').value = sb.harga_jual || 0;
+      if ($('sbMin') && sb.min_stok !== undefined) $('sbMin').value = sb.min_stok;
+    });
+  }
+
+  // Jalankan otomatis setiap kali render() dipanggil
+  if (typeof render === 'function') {
+    const origRender = render;
+    render = function (...args) {
+      const res = origRender.apply(this, args);
+      sinkronMasterHargaUI();
+      return res;
+    };
+  }
+  setTimeout(sinkronMasterHargaUI, 500);
 })();
 
 
