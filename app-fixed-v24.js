@@ -9273,7 +9273,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
   }, 30000); // Cek setiap 30 detik
 })();
 
-// === MODUL MASTER HARGA (SETTING), AUTO-FILL 3 MENU & NONAKTIFKAN UNIFIED RESTOCK ===
+// === MODUL MASTER HARGA (SETTING), TAMBAH BARU, AUTO-FILL & NONAKTIFKAN UNIFIED RESTOCK ===
 (function () {
   function pasangDatalist(inputId, listId, items, onMatch) {
     const inp = $(inputId);
@@ -9300,7 +9300,27 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
     card.id = 'cardMasterHarga';
     card.innerHTML = `
       <h3>💰 Master Harga Modal & Jual (Khusus Pemilik)</h3>
-      <p style="font-size:12px;color:#64748b;margin-top:0">Ubah harga modal atau jual di satu tempat. Otomatis terpanggil saat input Produk, Spare Part, Baterai, maupun Pembelian Supplier.</p>
+      <p style="font-size:12px;color:#64748b;margin-top:0">Input barang baru atau ubah harga modal & jual di satu tempat. Otomatis terpanggil saat input Produk, Spare Part, Baterai, maupun Pembelian Supplier.</p>
+
+      <!-- FORM TAMBAH MASTER BARU -->
+      <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;margin-bottom:14px;">
+        <div style="font-weight:700;font-size:12px;color:#0f172a;margin-bottom:8px;">➕ Tambah Master Barang Baru (Stok Awal 0)</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
+          <select id="mhNewTipe" style="width:auto;min-width:135px;">
+            <option value="produk">Produk (Jam)</option>
+            <option value="sparepart">Spare Part</option>
+            <option value="stok_baterai">Baterai</option>
+          </select>
+          <input id="mhNewNama" placeholder="Nama Produk / Spare Part / Tipe Baterai *" style="flex:1;min-width:180px;">
+        </div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+          <input type="number" min="0" id="mhNewBeli" placeholder="Harga Modal (Rp)" style="flex:1;min-width:130px;">
+          <input type="number" min="0" id="mhNewJual" placeholder="Harga Jual (Rp)" style="flex:1;min-width:130px;">
+          <button class="btn ok" onclick="tambahMasterHargaBaru()" style="width:auto;padding:10px 18px;">+ Simpan Master</button>
+        </div>
+      </div>
+
+      <!-- CARI & FILTER -->
       <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap;">
         <input id="cariMasterHarga" placeholder="🔍 Cari nama barang / tipe..." oninput="renderMasterHarga()" style="flex:1;min-width:180px;">
         <select id="filterMasterHarga" onchange="renderMasterHarga()" style="width:auto;min-width:130px;">
@@ -9314,6 +9334,42 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
     `;
     secSetting.insertBefore(card, secSetting.firstChild);
   }
+
+  window.tambahMasterHargaBaru = async function () {
+    if (!isPemilik()) return flash('Hanya Pemilik yang dapat menambah Master Harga.', 'err');
+    const tipe = $('mhNewTipe')?.value || 'produk';
+    const nama = txt('mhNewNama');
+    const beli = Math.max(0, num('mhNewBeli'));
+    const jual = Math.max(0, num('mhNewJual'));
+    if (!nama) return flash('Nama barang / tipe baterai wajib diisi', 'err');
+
+    try {
+      let newId, data;
+      if (tipe === 'produk') {
+        if ((db.produk || []).some(p => p.nama.toLowerCase() === nama.toLowerCase())) return flash('Produk ini sudah ada di Master Harga', 'err');
+        newId = genId('PRD');
+        data = { id: newId, nama, merek: '', barcode: '', harga_jual: jual, stok: 0, updated_at: nowISO() };
+      } else if (tipe === 'sparepart') {
+        if ((db.sparePart || []).some(s => s.nama.toLowerCase() === nama.toLowerCase())) return flash('Spare Part ini sudah ada di Master Harga', 'err');
+        newId = genId('SP');
+        data = { id: newId, nama, kategori: 'Lainnya', harga_jual: jual, stok: 0, min_stok: 2, updated_at: nowISO() };
+      } else {
+        const tipeBat = nama.toUpperCase();
+        if ((db.stokBaterai || []).some(b => b.tipe.toUpperCase() === tipeBat)) return flash('Tipe Baterai ini sudah ada di Master Harga', 'err');
+        newId = genId('SB');
+        data = { id: newId, tipe: tipeBat, harga_jual: jual, stok: 0, min_stok: 5 };
+      }
+
+      await dbOk(supabaseClient.from(tipe).insert([data]));
+      await simpanModal(tipe, newId, beli);
+      await catatLog('MASTER_HARGA', `Tambah master ${tipe}: ${nama} (Modal ${rp(beli)}, Jual ${rp(jual)})`);
+      ['mhNewNama', 'mhNewBeli', 'mhNewJual'].forEach(id => { if ($(id)) $(id).value = ''; });
+      flash(`Master "${nama}" berhasil ditambahkan!`);
+      tarikSemuaData();
+    } catch (e) {
+      flash('Gagal menambah master: ' + e.message, 'err');
+    }
+  };
 
   window.renderMasterHarga = function () {
     const el = $('listMasterHarga');
@@ -9365,16 +9421,12 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
   };
 
   function sinkronMasterHargaUI() {
-    // 1. Sembunyikan Unified Restock
     if ($('cardRestockLain')) $('cardRestockLain').style.display = 'none';
-
-    // 2. Pasang & render Master Harga di Setting (Pemilik)
     pasangKartuMasterHarga();
     if ($('listMasterHarga')) renderMasterHarga();
 
-    // 3. Auto-fill form Produk
     pasangDatalist('pNama', 'dlMasterProduk', (db.produk || []).map(p => p.nama), val => {
-      if (txt('pId')) return; // Jangan timpa saat mode Edit
+      if (txt('pId')) return;
       const p = (db.produk || []).find(x => x.nama.toLowerCase() === val.toLowerCase());
       if (!p) return;
       if ($('pMerek') && p.merek) $('pMerek').value = p.merek;
@@ -9383,7 +9435,6 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
       if ($('pSerial') && p.barcode) $('pSerial').value = p.barcode;
     });
 
-    // 4. Auto-fill form Spare Part
     pasangDatalist('spNama', 'dlMasterSparepart', (db.sparePart || []).map(s => s.nama), val => {
       const sp = (db.sparePart || []).find(x => x.nama.toLowerCase() === val.toLowerCase());
       if (!sp) return;
@@ -9393,7 +9444,6 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
       if ($('spMin') && sp.min_stok !== undefined) $('spMin').value = sp.min_stok;
     });
 
-    // 5. Auto-fill form Baterai
     pasangDatalist('sbTipe', 'dlMasterBaterai', (db.stokBaterai || []).map(b => b.tipe), val => {
       const sb = (db.stokBaterai || []).find(x => x.tipe.toUpperCase() === val.toUpperCase());
       if (!sb) return;
@@ -9403,7 +9453,6 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
     });
   }
 
-  // Jalankan otomatis setiap kali render() dipanggil
   if (typeof render === 'function') {
     const origRender = render;
     render = function (...args) {
