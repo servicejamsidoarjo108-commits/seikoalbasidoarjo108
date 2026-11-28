@@ -266,6 +266,10 @@ function rp(n) {
       <div class="detail">${t.no}: <b>${esc(item.id)}</b></div>
       <div class="detail">${t.keluhan}: ${esc(item.keluhan || '-')}</div>
       ${item.kondisi_fisik && item.kondisi_fisik !== '-' ? `<div class="detail warn">⚠️ ${t.kondisiAwal}: ${esc(item.kondisi_fisik)}</div>` : ''}
+      ${Array.isArray(item.foto_kondisi) && item.foto_kondisi.length ? `
+      <div style="display:flex;gap:6px;margin:8px 0;flex-wrap:wrap;">
+      ${item.foto_kondisi.map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}','_blank')" style="width:68px;height:68px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" alt="Foto kondisi">`).join('')}
+      </div>` : ''}
       <div style="margin-top:6px;border-top:1px dashed #cbd5e1;padding-top:6px;">
         ${rincian}
         <div class="row"><span class="label">${t.biaya}</span><span class="value">${rp(item.biaya_pelanggan)}</span></div>
