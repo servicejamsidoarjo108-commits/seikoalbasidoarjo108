@@ -9461,12 +9461,17 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
         if (wrap && !wrap.dataset.gridRapi) {
           wrap.dataset.gridRapi = '1';
           wrap.style.display = 'grid';
-          wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(135px, 1fr))';
+          wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(145px, 1fr))';
           wrap.style.gap = '8px';
           Array.from(wrap.children).forEach(b => {
             b.style.width = '100%';
+            b.style.boxSizing = 'border-box';
+            b.style.whiteSpace = 'normal';
+            b.style.lineHeight = '1.25';
+            b.style.padding = '10px 12px';
             b.style.textAlign = 'center';
             b.style.justifyContent = 'center';
+            b.style.alignItems = 'center';
             b.style.margin = '0';
           });
         }
