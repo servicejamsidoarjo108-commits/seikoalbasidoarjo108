@@ -3890,18 +3890,48 @@ function aturFormPembelian() {
 
 function tambahBarisPembelian() { barisPembelian.push({ tipe: 'produk', item_id: '', qty: 1, harga: 0 }); renderBarisPembelian(); }
 function hapusBarisPembelian(i) { barisPembelian.splice(i, 1); if (!barisPembelian.length) tambahBarisPembelian(); else renderBarisPembelian(); }
+
+function getMasterBarang(tipe, id) {
+  if (!id) return null;
+  if (tipe === 'produk') return db.produk.find(x => String(x.id) === String(id)) || null;
+  if (tipe === 'sparepart') return db.sparePart.find(x => String(x.id) === String(id)) || null;
+  return db.stokBaterai.find(x => String(x.id) === String(id)) || null;
+}
+
+function teksMargin(beli, jual) {
+  if (!jual) return '<span style="color:#64748b;">Harga jual belum diisi</span>';
+  const untung = jual - beli;
+  const persen = Math.round((untung / jual) * 100);
+  const warna = untung < 0 ? '#dc2626' : (persen < 20 ? '#d97706' : '#16a34a');
+  return `<span style="color:${warna};font-weight:600;">Margin: ${rp(untung)} (${persen}%)</span>`;
+}
+
 function ubahBarisPembelian(i, kolom, nilai) {
   const b = barisPembelian[i]; if (!b) return;
-  if (kolom === 'tipe') { b.tipe = nilai; b.item_id = ''; renderBarisPembelian(); return; }
-  if (kolom === 'item_id') b.item_id = nilai;
-  else b[kolom] = Math.max(0, +nilai || 0);
+  if (kolom === 'tipe') {
+    b.tipe = nilai; b.item_id = ''; b.harga = 0; b.harga_jual = 0; b.harga_jual_awal = 0;
+    renderBarisPembelian(); return;
+  }
+  if (kolom === 'item_id') {
+    b.item_id = nilai;
+    const m = getMasterBarang(b.tipe, nilai);
+    b.harga = m ? (m.harga_beli || 0) : 0;
+    b.harga_jual = m ? (m.harga_jual || 0) : 0;
+    b.harga_jual_awal = b.harga_jual;
+    renderBarisPembelian(); return;
+  }
+  b[kolom] = Math.max(0, +nilai || 0);
+  const elM = $(`pbMargin_${i}`);
+  if (elM && b.item_id) elM.innerHTML = teksMargin(b.harga || 0, b.harga_jual || 0);
   hitungTotalPembelian();
 }
+
 function hitungTotalPembelian() {
   const total = barisPembelian.reduce((s, b) => s + (b.qty || 0) * (b.harga || 0), 0);
   if ($('pbTotal')) $('pbTotal').textContent = rp(total);
   return total;
 }
+
 function renderBarisPembelian() {
   const gaya = 'padding:7px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;color:#0f172a;font-size:13px;box-sizing:border-box;';
   $('pbBaris').innerHTML = barisPembelian.map((b, i) => `
@@ -3917,9 +3947,11 @@ function renderBarisPembelian() {
         <button onclick="hapusBarisPembelian(${i})" style="border:none;background:#fee2e2;color:#b91c1c;border-radius:6px;width:32px;">✕</button>
       </div>
       <div style="display:flex;gap:6px;align-items:center;">
-        <input type="number" min="1" value="${b.qty}" oninput="ubahBarisPembelian(${i},'qty',this.value)" placeholder="Qty" style="${gaya}width:28%;">
-        <input type="number" min="0" value="${b.harga || ''}" oninput="ubahBarisPembelian(${i},'harga',this.value)" placeholder="Harga beli / unit" style="${gaya}flex:1;">
+        <input type="number" min="1" value="${b.qty}" oninput="ubahBarisPembelian(${i},'qty',this.value)" placeholder="Qty" style="${gaya}width:20%;">
+        <input type="number" min="0" value="${b.harga || ''}" oninput="ubahBarisPembelian(${i},'harga',this.value)" placeholder="Modal / unit" style="${gaya}flex:1;">
+        <input type="number" min="0" value="${b.harga_jual || ''}" oninput="ubahBarisPembelian(${i},'harga_jual',this.value)" placeholder="Harga jual" style="${gaya}flex:1;">
       </div>
+      ${b.item_id ? `<div id="pbMargin_${i}" style="font-size:11px;margin-top:4px;">${teksMargin(b.harga || 0, b.harga_jual || 0)}</div>` : ''}
     </div>`).join('');
   hitungTotalPembelian();
 }
