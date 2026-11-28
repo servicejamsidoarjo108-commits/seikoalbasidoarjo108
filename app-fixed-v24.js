@@ -9324,7 +9324,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
 
       <!-- FORM TAMBAH MASTER BARU -->
       <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;margin-bottom:14px;">
-        <div style="font-weight:700;font-size:12px;color:#0f172a;margin-bottom:8px;">➕ <span>Tambah Master Barang Baru (Stok Awal 0)</span></div>
+        <div style="font-weight:700;font-size:12px;color:#0f172a;margin-bottom:8px;">➕<span>Tambah Master Barang Baru (Stok Awal 0)</span></div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           <select id="mhNewTipe" style="width:auto;min-width:135px;">
             <option value="produk">Produk (Jam)</option>
