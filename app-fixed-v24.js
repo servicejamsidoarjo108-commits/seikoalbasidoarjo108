@@ -9414,7 +9414,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
         const key = `${x.tipe}_${x.id}`;
         const margin = x.jual > 0 ? Math.round(((x.jual - x.beli) / x.jual) * 100) + '%' : '-';
         return `<tr>
-          <td><span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span><strong>${esc(x.nama)}</strong><br><small style="color:#64748b;">Margin: ${margin}</small></td>
+          <td><span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span><strong>${esc(x.nama)}</strong><br><small style="color:#64748b;"><span>Margin</span>: ${margin}</small></td>
           <td><input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="padding:6px;font-size:13px;"></td>
           <td><input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="padding:6px;font-size:13px;"></td>
           <td><button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')">Simpan</button></td>
