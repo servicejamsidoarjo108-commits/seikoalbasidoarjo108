@@ -9324,7 +9324,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
 
       <!-- FORM TAMBAH MASTER BARU -->
       <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;margin-bottom:14px;">
-        <div style="font-weight:700;font-size:12px;color:#0f172a;margin-bottom:8px;">➕<span>Tambah Master Barang Baru (Stok Awal 0)</span></div>
+        <p style="font-weight:700;font-size:12px;color:#0f172a;margin:0 0 8px 0;">Tambah Master Barang Baru (Stok Awal 0)</p>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           <select id="mhNewTipe" style="width:auto;min-width:135px;">
             <option value="produk">Produk (Jam)</option>
@@ -9416,7 +9416,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
         const key = `${x.tipe}_${x.id}`;
         const margin = x.jual > 0 ? Math.round(((x.jual - x.beli) / x.jual) * 100) + '%' : '-';
         return `<tr>
-          <td><span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span><strong>${esc(x.nama)}</strong><br><small style="color:#64748b;"><span>Margin</span>: ${margin}</small></td>
+          <td><span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span><strong>${esc(x.nama)}</strong><br><p style="display:inline;margin:0;font-size:11px;color:#64748b;">Margin</p><small style="color:#64748b;">: ${margin}</small></td>
           <td><input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="padding:6px;font-size:13px;"></td>
           <td><input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="padding:6px;font-size:13px;"></td>
           <td><button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')">Simpan</button></td>
