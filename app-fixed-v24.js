@@ -9408,21 +9408,32 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
       return;
     }
 
-    el.innerHTML = `<table style="margin:0;min-width:520px;">
-      <thead style="position:sticky;top:0;background:#f8fafc;z-index:1;">
-        <tr><th>Barang</th><th style="width:125px;">Harga Modal</th><th style="width:125px;">Harga Jual</th><th style="width:70px;">Aksi</th></tr>
-      </thead>
-      <tbody>` + semua.map(x => {
-        const key = `${x.tipe}_${x.id}`;
-        const margin = x.jual > 0 ? Math.round(((x.jual - x.beli) / x.jual) * 100) + '%' : '-';
-        return `<tr>
-          <td><span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span><strong>${esc(x.nama)}</strong><br><p style="display:inline;margin:0;font-size:11px;color:#64748b;">Margin</p><small style="color:#64748b;">: ${margin}</small></td>
-          <td><input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="padding:6px;font-size:13px;"></td>
-          <td><input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="padding:6px;font-size:13px;"></td>
-          <td><button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')">Simpan</button></td>
-        </tr>`;
-      }).join('') + `</tbody></table>`;
-  };
+        el.innerHTML = semua.map(x => {
+      const key = `${x.tipe}_${x.id}`;
+      const margin = x.jual > 0 ? Math.round(((x.jual - x.beli) / x.jual) * 100) + '%' : '-';
+      return `<div style="padding:10px 12px;border-bottom:1px solid #e2e8f0;background:#fff;">
+        <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;">
+          <div style="min-width:0;">
+            <span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span>
+            <strong style="font-size:14px;word-break:break-word;">${esc(x.nama)}</strong>
+          </div>
+          <div style="white-space:nowrap;font-size:11px;color:#64748b;">
+            <p style="display:inline;margin:0;">Margin</p>: <b>${margin}</b>
+          </div>
+        </div>
+        <div style="display:flex;gap:6px;align-items:flex-end;">
+          <div style="flex:1;min-width:0;">
+            <p style="margin:0 0 2px 0;font-size:10px;color:#64748b;font-weight:600;">Harga Modal</p>
+            <input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="width:100%;padding:7px;font-size:13px;box-sizing:border-box;">
+          </div>
+          <div style="flex:1;min-width:0;">
+            <p style="margin:0 0 2px 0;font-size:10px;color:#64748b;font-weight:600;">Harga Jual</p>
+            <input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="width:100%;padding:7px;font-size:13px;box-sizing:border-box;">
+          </div>
+          <button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')" style="height:34px;padding:0 12px;white-space:nowrap;">Simpan</button>
+        </div>
+      </div>`;
+    }).join('');
 
   window.simpanSatuMasterHarga = async function (tipe, id) {
     if (!isPemilik()) return flash('Hanya Pemilik yang dapat mengubah Master Harga.', 'err');
@@ -9441,6 +9452,25 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
   };
 
   function sinkronMasterHargaUI() {
+        // Rapikan tombol Pilih Cepat Merek & Keluhan jadi grid rata penuh
+    document.querySelectorAll('button').forEach(btn => {
+      const t = btn.textContent.trim();
+      if (t === 'Seiko 5' || t === 'Jam Mati') {
+        const wrap = btn.parentElement;
+        if (wrap && !wrap.dataset.gridRapi) {
+          wrap.dataset.gridRapi = '1';
+          wrap.style.display = 'grid';
+          wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(125px, 1fr))';
+          wrap.style.gap = '8px';
+          Array.from(wrap.children).forEach(b => {
+            b.style.width = '100%';
+            b.style.textAlign = 'center';
+            b.style.margin = '0';
+          });
+        }
+      }
+    });
+
     if ($('cardRestockLain')) $('cardRestockLain').style.display = 'none';
     pasangKartuMasterHarga();
     if ($('listMasterHarga')) renderMasterHarga();
