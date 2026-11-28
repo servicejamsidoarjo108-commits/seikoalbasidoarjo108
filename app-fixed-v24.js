@@ -9453,19 +9453,20 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
   };
 
   function sinkronMasterHargaUI() {
-        // Rapikan tombol Pilih Cepat Merek & Keluhan jadi grid rata penuh
+  // Rapikan tombol Pilih Cepat & Tab Pengaturan jadi grid rata penuh
     document.querySelectorAll('button').forEach(btn => {
       const t = btn.textContent.trim();
-      if (t === 'Seiko 5' || t === 'Jam Mati') {
+      if (t === 'Seiko 5' || t === 'Jam Mati' || t.includes('Identitas') || t.includes('Identity') || t.includes('店铺信息')) {
         const wrap = btn.parentElement;
         if (wrap && !wrap.dataset.gridRapi) {
           wrap.dataset.gridRapi = '1';
           wrap.style.display = 'grid';
-          wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(125px, 1fr))';
+          wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(135px, 1fr))';
           wrap.style.gap = '8px';
           Array.from(wrap.children).forEach(b => {
             b.style.width = '100%';
             b.style.textAlign = 'center';
+            b.style.justifyContent = 'center';
             b.style.margin = '0';
           });
         }
