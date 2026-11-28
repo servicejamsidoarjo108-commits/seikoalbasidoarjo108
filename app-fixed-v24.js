@@ -9140,6 +9140,22 @@ async function simpanFotoKondisiPascaRpc(rpcData, cartItems) {
 document.addEventListener('DOMContentLoaded', () => setTimeout(initUIFotoKondisiServis, 400));
 setTimeout(initUIFotoKondisiServis, 1000);
 
+function sembunyikanDropdownGaransi() {
+  const sel = document.getElementById('sGaransi');
+  if (!sel) return;
+  // Pilih otomatis opsi selain "garansi" (Luar Garansi)
+  const opsiLuar = Array.from(sel.options).find(o => o.value !== 'garansi');
+  if (opsiLuar && !document.getElementById('sParentId')?.value) {
+    sel.value = opsiLuar.value;
+  }
+  // Sembunyikan kotak dropdown + labelnya, biarkan Biaya Jasa melebar rapi
+  const wrap = sel.parentElement;
+  if (wrap) wrap.style.display = 'none';
+}
+
+document.addEventListener('DOMContentLoaded', () => setTimeout(sembunyikanDropdownGaransi, 450));
+setTimeout(sembunyikanDropdownGaransi, 1050);
+
 
 
 
