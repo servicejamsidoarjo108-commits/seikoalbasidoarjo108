@@ -3305,6 +3305,7 @@ function render() {
       <p>${_t.total}: ${rp(s.biaya_pelanggan)} ${s.paid ? `<span class="badge ok">${_t.lunas}</span>` : `<span class="badge warn">${_t.sisa} ${rp(s.sisa)}</span>`}</p>
       ${s.tgl_garansi_servis_sampai ? `<p style="font-size:11px;color:#64748b">${_t.garansi} ${new Date(s.tgl_garansi_servis_sampai).toLocaleDateString('id-ID')} 23:59</p>` : ''}
       ${s.tgl_diambil ? `<p style="font-size:11px;color:#15803d;font-weight:700;">✅ ${_t.diambil}: ${new Date(s.tgl_diambil).toLocaleString('id-ID')} (${esc(s.diambil_oleh || s.customer)})</p>` : ''}
+      ${Array.isArray(s.foto_kondisi) && s.foto_kondisi.length ? `<div style="display:flex;gap:6px;margin:8px 0 6px;flex-wrap:wrap;">${s.foto_kondisi.map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}','_blank')" style="width:56px;height:56px;object-fit:cover;border-radius:8px;border:1px solid #cbd5e1;cursor:pointer;" alt="Foto kondisi">`).join('')}</div>` : ''}
       <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
         ${s.status === 'diambil'
           ? (s.ttd_ambil || s.tgl_diambil ? `<button class="btn-sm ok" onclick="lihatBuktiAmbil('${id}')">✍️ Bukti Ambil</button>` : '')
