@@ -2949,6 +2949,12 @@ async function hapusPelanggan(id) {
 }
 
 // === SPAREPART ===
+    async function tambahSparePart() {
+  if (!isAdmin()) return flash('Akses ditolak.', 'err');
+  if (!checkRequired(['spNama'])) return flash('Lengkapi kolom wajib', 'err');
+  const nama = txt('spNama'), kategori = $('spKat').value, stokInput = Math.max(0, Math.floor(num('spStok')));
+  const existing = db.sparePart.find(sp => sp.nama.toLowerCase() === nama.toLowerCase());
+  try {
     if (existing) {
       const stokLama = existing.stok || 0;
       const hppLama = existing.harga_beli || 0;
@@ -2966,8 +2972,6 @@ async function hapusPelanggan(id) {
         await simpanModal('sparepart', existing.id, hppBaru);
       }
       flash(`Stok ${nama} ditambahkan (Total: ${stokBaru})`);
-    }
-
     } else {
       const newId = genId('SP');
       await dbOk(supabaseClient.from('sparepart').insert([{
@@ -2983,7 +2987,6 @@ async function hapusPelanggan(id) {
     tarikSemuaData();
   } catch (e) { flash('Gagal menyimpan: ' + e.message, 'err'); }
 }
-
 
 async function editSparePart(id) {
   if (!isAdmin()) return flash('Akses ditolak', 'err');
