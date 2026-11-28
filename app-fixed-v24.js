@@ -9413,27 +9413,30 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
       const margin = x.jual > 0 ? Math.round(((x.jual - x.beli) / x.jual) * 100) + '%' : '-';
       return `<div style="padding:10px 12px;border-bottom:1px solid #e2e8f0;background:#fff;">
         <div style="display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:8px;">
-          <div style="min-width:0;">
-            <span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span>
-            <strong style="font-size:14px;word-break:break-word;">${esc(x.nama)}</strong>
-          </div>
-          <div style="white-space:nowrap;font-size:11px;color:#64748b;">
-            <p style="display:inline;margin:0;">Margin</p>: <b>${margin}</b>
-          </div>
+        <div style="min-width:0;">
+        <span class="badge proses" style="font-size:9px;margin-right:4px;">${x.label}</span>
+        <strong style="font-size:14px;word-break:break-word;">${esc(x.nama)}</strong>
+        </div>
+        <div style="white-space:nowrap;font-size:11px;color:#64748b;">
+        <p style="display:inline;margin:0;">Margin</p>: <b>${margin}</b>
+        </div>
         </div>
         <div style="display:flex;gap:6px;align-items:flex-end;">
-          <div style="flex:1;min-width:0;">
-            <p style="margin:0 0 2px 0;font-size:10px;color:#64748b;font-weight:600;">Harga Modal</p>
-            <input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="width:100%;padding:7px;font-size:13px;box-sizing:border-box;">
-          </div>
-          <div style="flex:1;min-width:0;">
-            <p style="margin:0 0 2px 0;font-size:10px;color:#64748b;font-weight:600;">Harga Jual</p>
-            <input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="width:100%;padding:7px;font-size:13px;box-sizing:border-box;">
-          </div>
-          <button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')" style="height:34px;padding:0 12px;white-space:nowrap;">Simpan</button>
+        <div style="flex:1;min-width:0;">
+        <p style="margin:0 0 2px 0;font-size:10px;color:#64748b;font-weight:600;">Harga Modal</p>
+        <input type="number" min="0" id="mhBeli_${esc(key)}" value="${x.beli}" style="width:100%;padding:7px;font-size:13px;box-sizing:border-box;">
         </div>
-      </div>`;
+        <div style="flex:1;min-width:0;">
+        <p style="margin:0 0 2px 0;font-size:10px;color:#64748b;font-weight:600;">Harga Jual</p>
+        <input type="number" min="0" id="mhJual_${esc(key)}" value="${x.jual}" style="width:100%;padding:7px;font-size:13px;box-sizing:border-box;">
+        </div>
+        <button class="btn-sm ok" onclick="simpanSatuMasterHarga('${x.tipe}','${esc(x.id)}')" style="height:34px;padding:0 12px;white-space:nowrap;">Simpan</button>
+        </div>
+        </div>`;
     }).join('');
+  };
+
+  window.simpanSatuMasterHarga = async function (tipe, id) {
 
   window.simpanSatuMasterHarga = async function (tipe, id) {
     if (!isPemilik()) return flash('Hanya Pemilik yang dapat mengubah Master Harga.', 'err');
