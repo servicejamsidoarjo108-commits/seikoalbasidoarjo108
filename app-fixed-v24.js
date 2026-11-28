@@ -5637,6 +5637,23 @@ const I18N_DICT = {
   'Laporan Audit Ringkas & Kartu Audit (Pemilik)': { en: 'Audit Summary & Audit Card (Owner)', zh: '盘点汇总与盘点卡 (店主)' },
   'Riwayat Pelanggan': { en: 'Customer History', zh: '客户消费记录' },
   'Pengeluaran Bulanan (Sewa, Listrik, Gaji, dll.)': { en: 'Monthly Expenses (Rent, Utilities, Salary)', zh: '月度固定支出 (房租/水电/工资)' },
+  
+  // Master Harga Modal & Jual
+  '💰 Master Harga Modal & Jual (Khusus Pemilik)': { en: '💰 Master Cost & Selling Price (Owner Only)', zh: '💰 成本价与售价主档 (仅限店主)' },
+  'Master Harga Modal & Jual (Khusus Pemilik)': { en: 'Master Cost & Selling Price (Owner Only)', zh: '成本价与售价主档 (仅限店主)' },
+  'Input barang baru atau ubah harga modal & jual di satu tempat. Otomatis terpanggil saat input Produk, Spare Part, Baterai, maupun Pembelian Supplier.': { en: 'Add new items or edit cost & selling prices in one place. Auto-fills when adding Products, Spare Parts, Batteries, or Supplier Purchases.', zh: '在一处新增商品或修改成本价与售价。录入商品、配件、电池或供应商采购时自动填入。' },
+  '➕ Tambah Master Barang Baru (Stok Awal 0)': { en: '➕ Add New Master Item (Initial Stock 0)', zh: '➕ 新增主档商品 (初始库存为 0)' },
+  'Produk (Jam)': { en: 'Products (Watches)', zh: '商品 (手表)' },
+  'Nama Produk / Spare Part / Tipe Baterai *': { en: 'Product Name / Spare Part / Battery Type *', zh: '商品名称 / 配件 / 电池型号 *' },
+  'Harga Modal (Rp)': { en: 'Cost Price (Rp)', zh: '成本价 (Rp)' },
+  'Harga Jual (Rp)': { en: 'Selling Price (Rp)', zh: '售价 (Rp)' },
+  '+ Simpan Master': { en: '+ Save Master', zh: '+ 保存主档' },
+  '🔍 Cari nama barang / tipe...': { en: '🔍 Search item name / type...', zh: '🔍 搜索商品名称 / 型号...' },
+  'Semua Kategori': { en: 'All Categories', zh: '全部分类' },
+  'Harga Modal': { en: 'Cost Price', zh: '成本价' },
+  'Barang': { en: 'Item', zh: '商品' },
+  'Barang tidak ditemukan': { en: 'Item not found', zh: '未找到商品' },
+
 
   // Tab Setting & Laporan
   'Identitas': { en: 'Identity', zh: '店铺信息' },
