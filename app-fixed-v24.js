@@ -3316,7 +3316,9 @@ function render() {
         ${btnBayar}${btnStruk}${btnKartu}${btnKlaim}
         ${s.telp ? `<button class="btn-sm warn" onclick="waServisSelesai('${id}')">WA</button>` : ''}
         ${isAdmin() ? `<button class="btn-sm danger" onclick="hapusServis('${id}')">Hapus</button>` : ''}
-      </div></div>`;
+        </div>
+        ${Array.isArray(s.foto_kondisi) && s.foto_kondisi.length ? `<div style="display:flex;gap:6px;margin-top:8px;flex-wrap:wrap;">${s.foto_kondisi.map(u => `<img src="${esc(u)}" onclick="window.open('${esc(u)}','_blank')" style="width:52px;height:52px;object-fit:cover;border-radius:6px;border:1px solid #cbd5e1;cursor:pointer;" alt="Foto kondisi">`).join('')}</div>` : ''}
+        </div>`;
   }).join('') : '<div class="empty">Tidak ada servis</div>');
   if ($('hasilCekGaransi')) renderCekGaransi();
 
