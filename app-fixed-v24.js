@@ -2944,15 +2944,25 @@ async function hapusPelanggan(id) {
 }
 
 // === SPAREPART ===
-async function tambahSparePart() {
-  if (!isAdmin()) return flash('Akses ditolak.', 'err');
-  if (!checkRequired(['spNama'])) return flash('Lengkapi kolom wajib', 'err');
-  const nama = txt('spNama'), kategori = $('spKat').value, stokInput = Math.max(0, Math.floor(num('spStok')));
-  const existing = db.sparePart.find(sp => sp.nama.toLowerCase() === nama.toLowerCase());
-  try {
     if (existing) {
+      const stokLama = existing.stok || 0;
+      const hppLama = existing.harga_beli || 0;
+      const hargaBeli = Math.max(0, num('spBeli'));
+      const hargaJual = Math.max(0, num('spJual'));
       const stokBaru = await ubahStok('sparepart', existing.id, stokInput);
+      if (hargaJual > 0 && hargaJual !== existing.harga_jual) {
+        await dbOk(supabaseClient.from('sparepart').update({ harga_jual: hargaJual, updated_at: nowISO() }).eq('id', existing.id));
+      }
+      if (isPemilik() && hargaBeli > 0) {
+        const totalStok = stokLama + stokInput;
+        const hppBaru = (stokInput > 0 && totalStok > 0)
+          ? Math.round(((stokLama * hppLama) + (stokInput * hargaBeli)) / totalStok)
+          : hargaBeli;
+        await simpanModal('sparepart', existing.id, hppBaru);
+      }
       flash(`Stok ${nama} ditambahkan (Total: ${stokBaru})`);
+    }
+
     } else {
       const newId = genId('SP');
       await dbOk(supabaseClient.from('sparepart').insert([{
