@@ -9093,8 +9093,8 @@ function initUIFotoKondisiServis() {
   if (!inputLain || document.getElementById('boxFotoKondisiServis')) return;
   const parent = inputLain.parentElement;
   inputLain.style.display = 'none';
-  const oldLabel = parent.querySelector('label');
-  if (oldLabel) oldLabel.style.display = 'none';
+  const oldLabel = inputLain.previousElementSibling;
+  if (oldLabel && oldLabel.tagName === 'LABEL') oldLabel.style.display = 'none';
 
   const box = document.createElement('div');
   box.id = 'boxFotoKondisiServis';
