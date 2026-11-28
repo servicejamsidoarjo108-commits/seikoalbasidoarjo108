@@ -9437,8 +9437,6 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
   };
 
   window.simpanSatuMasterHarga = async function (tipe, id) {
-
-  window.simpanSatuMasterHarga = async function (tipe, id) {
     if (!isPemilik()) return flash('Hanya Pemilik yang dapat mengubah Master Harga.', 'err');
     const key = `${tipe}_${id}`;
     const beli = Math.max(0, +($(`mhBeli_${key}`)?.value) || 0);
