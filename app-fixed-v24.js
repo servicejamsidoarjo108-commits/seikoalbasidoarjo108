@@ -5653,7 +5653,8 @@ const I18N_DICT = {
   'Harga Modal': { en: 'Cost Price', zh: '成本价' },
   'Barang': { en: 'Item', zh: '商品' },
   'Barang tidak ditemukan': { en: 'Item not found', zh: '未找到商品' },
-
+  'Tambah Master Barang Baru (Stok Awal 0)': { en: 'Add New Master Item (Initial Stock 0)', zh: '新增主档商品 (初始库存为 0)' },
+  'Margin': { en: 'Margin', zh: '利润率' },
 
   // Tab Setting & Laporan
   'Identitas': { en: 'Identity', zh: '店铺信息' },
