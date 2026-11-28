@@ -9156,6 +9156,40 @@ function sembunyikanDropdownGaransi() {
 document.addEventListener('DOMContentLoaded', () => setTimeout(sembunyikanDropdownGaransi, 450));
 setTimeout(sembunyikanDropdownGaransi, 1050);
 
+// === MODUL AUTO-LOGOUT SEMUA AKUN ===
+(function () {
+  const AUTO_LOGOUT_MENIT = 30; // Ubah angka ini (misal: 15, 30, atau 60 menit)
+  const KEY_LAST_ACTIVE = 'horopos_last_active';
+
+  function catatAktivitas() {
+    localStorage.setItem(KEY_LAST_ACTIVE, String(Date.now()));
+  }
+
+  ['click', 'keydown', 'touchstart', 'scroll', 'mousemove'].forEach(ev => {
+    window.addEventListener(ev, catatAktivitas, { passive: true });
+  });
+
+  catatAktivitas();
+
+  setInterval(async () => {
+    if (typeof supabaseClient === 'undefined') return;
+    const last = Number(localStorage.getItem(KEY_LAST_ACTIVE) || Date.now());
+    const selisihMenit = (Date.now() - last) / 60000;
+
+    if (selisihMenit >= AUTO_LOGOUT_MENIT) {
+      try {
+        const { data } = await supabaseClient.auth.getSession();
+        if (data && data.session) {
+          localStorage.removeItem(KEY_LAST_ACTIVE);
+          await supabaseClient.auth.signOut();
+          location.reload();
+        }
+      } catch (_) {}
+    }
+  }, 30000); // Cek setiap 30 detik
+})();
+
+
 
 
 
