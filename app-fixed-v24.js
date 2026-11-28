@@ -9158,7 +9158,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
 
 // === MODUL AUTO-LOGOUT SEMUA AKUN ===
 (function () {
-  const AUTO_LOGOUT_MENIT = 30; // Ubah angka ini (misal: 15, 30, atau 60 menit)
+  const AUTO_LOGOUT_MENIT = 10; // Ubah angka ini (misal: 15, 30, atau 60 menit)
   const KEY_LAST_ACTIVE = 'horopos_last_active';
 
   function catatAktivitas() {
