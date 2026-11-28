@@ -5655,6 +5655,8 @@ const I18N_DICT = {
   'Barang tidak ditemukan': { en: 'Item not found', zh: '未找到商品' },
   'Tambah Master Barang Baru (Stok Awal 0)': { en: 'Add New Master Item (Initial Stock 0)', zh: '新增主档商品 (初始库存为 0)' },
   'Margin': { en: 'Margin', zh: '利润率' },
+  'Aksi': { en: 'Action', zh: '操作' },
+
 
   // Tab Setting & Laporan
   'Identitas': { en: 'Identity', zh: '店铺信息' },
@@ -9322,7 +9324,7 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
 
       <!-- FORM TAMBAH MASTER BARU -->
       <div style="background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px;margin-bottom:14px;">
-        <div style="font-weight:700;font-size:12px;color:#0f172a;margin-bottom:8px;">➕ Tambah Master Barang Baru (Stok Awal 0)</div>
+        <div style="font-weight:700;font-size:12px;color:#0f172a;margin-bottom:8px;">➕ <span>Tambah Master Barang Baru (Stok Awal 0)</div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;">
           <select id="mhNewTipe" style="width:auto;min-width:135px;">
             <option value="produk">Produk (Jam)</option>
