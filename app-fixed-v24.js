@@ -9150,6 +9150,7 @@ function sembunyikanDropdownGaransi() {
   // Sembunyikan kotak dropdown + labelnya, biarkan Biaya Jasa melebar rapi
   const wrap = sel.parentElement;
   if (wrap) wrap.style.display = 'none';
+  if (wrap && wrap.parentElement) wrap.parentElement.style.gridTemplateColumns = '1fr';
 }
 
 document.addEventListener('DOMContentLoaded', () => setTimeout(sembunyikanDropdownGaransi, 450));
