@@ -9453,22 +9453,31 @@ setTimeout(sembunyikanDropdownGaransi, 1050);
   };
 
   function sinkronMasterHargaUI() {
-  // Rapikan tombol Pilih Cepat & Tab Pengaturan jadi grid rata penuh
+      // Rapikan semua tombol Pilih Cepat, Tab Pengaturan, Kas Kecil, Uang Pas & Ekspor Excel
     document.querySelectorAll('button').forEach(btn => {
       const t = btn.textContent.trim();
-      if (t === 'Seiko 5' || t === 'Jam Mati' || t.includes('Identitas') || t.includes('Identity') || t.includes('店铺信息')) {
+      const isKecil = (t === '50rb' || t === 'Seiko' || t === 'Seiko 5');
+      const isSedang = (
+        t === 'Jam Mati' ||
+        t.includes('Identitas') || t.includes('Identity') || t.includes('店铺信息') ||
+        t.includes('Excel Penjualan') || t.includes('Excel Servis') ||
+        t.includes('Potong Rantai 15rb') || t.includes('Springbar 10rb')
+      );
+      if (isKecil || isSedang) {
         const wrap = btn.parentElement;
         if (wrap && !wrap.dataset.gridRapi) {
           wrap.dataset.gridRapi = '1';
           wrap.style.display = 'grid';
-          wrap.style.gridTemplateColumns = 'repeat(auto-fit, minmax(145px, 1fr))';
+          wrap.style.gridTemplateColumns = isKecil
+            ? 'repeat(auto-fit, minmax(95px, 1fr))'
+            : 'repeat(auto-fit, minmax(145px, 1fr))';
           wrap.style.gap = '8px';
           Array.from(wrap.children).forEach(b => {
             b.style.width = '100%';
             b.style.boxSizing = 'border-box';
             b.style.whiteSpace = 'normal';
             b.style.lineHeight = '1.25';
-            b.style.padding = '10px 12px';
+            b.style.padding = '10px 8px';
             b.style.textAlign = 'center';
             b.style.justifyContent = 'center';
             b.style.alignItems = 'center';
