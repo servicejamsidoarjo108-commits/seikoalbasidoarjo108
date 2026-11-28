@@ -3976,6 +3976,13 @@ async function kirimPembelian() {
       p_jatuh_tempo: status === 'hutang' ? ($('pbTempo').value || null) : null
     });
     if (error) throw error;
+    for (const b of items) {
+    if (b.harga_jual > 0 && b.harga_jual !== b.harga_jual_awal) {
+    const tabel = b.tipe === 'produk' ? 'produk' : (b.tipe === 'sparepart' ? 'sparepart' : 'stok_baterai');
+    await dbOk(supabaseClient.from(tabel).update({ harga_jual: b.harga_jual }).eq('id', b.item_id));
+    }
+    }
+
     flash(`Pembelian ${rp(data.total)} dari ${data.supplier} tersimpan (${status === 'hutang' ? 'masuk hutang usaha' : 'lunas'})`);
     tutupFormPembelian();
     tarikSemuaData();
