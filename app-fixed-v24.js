@@ -3580,6 +3580,31 @@ function render() {
   if (typeof terapkanBahasa === 'function') terapkanBahasa();
 }
 
+function isiHargaRestock() {
+  const tipe = $('rsTipe')?.value, id = $('rsItem')?.value;
+  const inputHarga = $('rsHarga');
+  if (!inputHarga) return;
+  const m = getMasterBarang(tipe, id);
+  if (m) inputHarga.value = m.harga_beli || 0;
+
+  let info = $('rsInfoHarga');
+  if (!info && inputHarga.parentElement) {
+    info = document.createElement('div');
+    info.id = 'rsInfoHarga';
+    info.style.cssText = 'font-size:11px;margin-top:4px;color:#64748b;';
+    inputHarga.parentElement.appendChild(info);
+    inputHarga.addEventListener('input', () => {
+      const cur = getMasterBarang($('rsTipe')?.value, $('rsItem')?.value);
+      if (cur && $('rsInfoHarga')) {
+        $('rsInfoHarga').innerHTML = `Jual: <b>${rp(cur.harga_jual || 0)}</b> • ${teksMargin(num('rsHarga'), cur.harga_jual || 0)}`;
+      }
+    });
+  }
+  if (info) {
+    info.innerHTML = m ? `Jual: <b>${rp(m.harga_jual || 0)}</b> • ${teksMargin(m.harga_beli || 0, m.harga_jual || 0)}` : '';
+  }
+}
+
 function updateRsItem() {
   const tipe = $('rsTipe').value, sel = $('rsItem');
   if (!sel) return;
@@ -3590,6 +3615,8 @@ function updateRsItem() {
   if (tipe === 'baterai') opts += db.stokBaterai.map(p => `<option value="${esc(p.id)}">${esc(p.tipe)}</option>`).join('');
   sel.innerHTML = opts;
   if (prev && Array.from(sel.options).some(o => o.value === prev)) sel.value = prev;
+  sel.onchange = isiHargaRestock;
+  isiHargaRestock();
 }
 
 const toggleWrap = (wrapId, selectId, kecuali = ['tunai']) => { const w = $(wrapId), s = $(selectId); if (w && s) w.style.display = kecuali.includes(s.value) ? 'none' : 'grid'; };
